@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
+<title>T3 Pet settings</title><link rel="stylesheet" href="settings.css"></head>
+<body>
+<!-- THESIS: Plain preferences for a desktop companion. OWN-WORLD: Carbon palette, DM Sans, 4px control corners. STORY: Verify connection, choose a chat, adjust the pet. FIRST VIEWPORT: Connection at top, folder and chat fields, appearance below, save at bottom. FORM: User-pinned standard form, seed 3506dd7e. FINISH: Verify rendered states and document the shipped design. -->
+<main>
+  <div class="connection-row"><strong id="connection">Looking for T3 Code…</strong><span id="version"></span></div>
+  <p id="connection-detail" role="status">Reading local status.</p>
+  <form id="settings-form">
+    <label for="directory">T3 Code data folder</label>
+    <div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div>
+    <p class="help" id="folder-help">Choose the userdata folder containing state.sqlite. T3 Pet reads status only and does not change T3 Code data.</p>
+    <label for="follow">Follow</label>
+    <select id="follow"><option value="">All chats · requests for attention first</option></select>
+    <p class="help" id="following-detail">Watching local chats across providers.</p>
+    <div class="divider"></div>
+    <div class="appearance-row">
+      <div><label for="size">Pet size</label><select id="size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div>
+      <div><label for="preview">Preview animation</label><select id="preview"><option value="">Follow T3 Code</option><option value="idle">Resting</option><option value="working">Working</option><option value="waiting">Needs attention</option><option value="done">Finished</option><option value="error">Error</option><option value="offline">Offline</option></select></div>
+    </div>
+    <div class="checks">
+      <label class="check"><input id="reduced-motion" type="checkbox">Use still poses</label>
+      <label class="check"><input id="login" type="checkbox">Start T3 Pet when I sign in</label>
+    </div>
+    <div class="actions"><button class="primary" type="submit" id="save">Save settings</button><span id="save-result" role="status"></span></div>
+  </form>
+  <div class="instructions">Drag the pet to move it. Right-click for controls.<br>Previews return to live status after 10 seconds.<br>On Windows, the pet hides while the foreground app is fullscreen.</div>
+  <footer><span>Local companion · <span id="chat-count">0 chats</span></span><button class="text-button" id="quit" type="button">Quit T3 Pet</button></footer>
+</main>
+<script src="settings.js"></script></body></html>

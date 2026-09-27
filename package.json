@@ -1,0 +1,74 @@
+{
+  "name": "t3code-pet",
+  "productName": "T3 Pet",
+  "version": "0.2.14",
+  "description": "A desktop pet that follows your T3 Code agents",
+  "author": "T3 Pet contributors",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "npm run build && tsx --test tests/*.test.ts",
+    "package:win": "npm run build && electron-builder --win nsis --x64",
+    "package:mac": "npm run build && electron-builder --mac dmg",
+    "package:linux": "npm run build && electron-builder --linux AppImage"
+  },
+  "devDependencies": {
+    "@fontsource-variable/dm-sans": "^5.2.8",
+    "@types/node": "^24.0.0",
+    "@types/pngjs": "^6.0.5",
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3",
+    "esbuild": "^0.28.2",
+    "pngjs": "^7.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "dev.t3pet.companion",
+    "productName": "T3 Pet",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/icon.png",
+      "assets/icon.ico",
+      "package.json",
+      "!dist/native/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": true,
+      "extraResources": [
+        {
+          "from": "dist/native/foreground-monitor.exe",
+          "to": "native/foreground-monitor.exe"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": false,
+      "artifactName": "T3-Pet-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities",
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility",
+      "icon": "assets/icon.png"
+    }
+  }
+}

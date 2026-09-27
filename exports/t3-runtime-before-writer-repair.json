@@ -1,0 +1,11 @@
+{
+  "thread_id": "3eb3c576-1420-596a-a459-ef478fc317d6",
+  "provider_name": "codex",
+  "adapter_key": "codex",
+  "runtime_mode": "full-access",
+  "status": "stopped",
+  "last_seen_at": "2026-09-27T19:16:55.460Z",
+  "resume_cursor_json": "{\"threadId\": \"01a0e3c9-0b12-77f3-8f82-d8c9617d9006\"}",
+  "runtime_payload_json": "{\"cwd\": \"C:\\\\Users\\\\Carter\\\\Code\\\\t3code-pet\", \"model\": \"gpt-6-astra\", \"activeTurnId\": null, \"lastError\": null, \"modelSelection\": {\"instanceId\": \"codex\", \"model\": \"gpt-6-astra\"}}",
+  "provider_instance_id": "codex"
+}

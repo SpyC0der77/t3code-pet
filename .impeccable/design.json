@@ -1,0 +1,329 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-27T17:16:51.780Z",
+  "title": "Design System: T3 Pet",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "canonical": "#bb86fc",
+        "tonalRamp": [
+          "oklch(15.00% 0.17231 303.07)",
+          "oklch(26.43% 0.17231 303.07)",
+          "oklch(37.86% 0.17231 303.07)",
+          "oklch(49.29% 0.17231 303.07)",
+          "oklch(60.71% 0.17231 303.07)",
+          "oklch(72.14% 0.17231 303.07)",
+          "oklch(83.57% 0.17231 303.07)",
+          "oklch(95.00% 0.17231 303.07)"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Primary Hover",
+        "canonical": "#cba3ff",
+        "tonalRamp": [
+          "oklch(15.00% 0.13368 303.46)",
+          "oklch(26.43% 0.13368 303.46)",
+          "oklch(37.86% 0.13368 303.46)",
+          "oklch(49.29% 0.13368 303.46)",
+          "oklch(60.71% 0.13368 303.46)",
+          "oklch(72.14% 0.13368 303.46)",
+          "oklch(83.57% 0.13368 303.46)",
+          "oklch(95.00% 0.13368 303.46)"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "#121212",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 89.88)",
+          "oklch(26.43% 0.00000 89.88)",
+          "oklch(37.86% 0.00000 89.88)",
+          "oklch(49.29% 0.00000 89.88)",
+          "oklch(60.71% 0.00000 89.88)",
+          "oklch(72.14% 0.00000 89.88)",
+          "oklch(83.57% 0.00000 89.88)",
+          "oklch(95.00% 0.00000 89.88)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#1e1e1e",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 89.88)",
+          "oklch(26.43% 0.00000 89.88)",
+          "oklch(37.86% 0.00000 89.88)",
+          "oklch(49.29% 0.00000 89.88)",
+          "oklch(60.71% 0.00000 89.88)",
+          "oklch(72.14% 0.00000 89.88)",
+          "oklch(83.57% 0.00000 89.88)",
+          "oklch(95.00% 0.00000 89.88)"
+        ]
+      },
+      "button": {
+        "role": "neutral",
+        "displayName": "Button",
+        "canonical": "#27232c",
+        "tonalRamp": [
+          "oklch(15.00% 0.01746 305.34)",
+          "oklch(26.43% 0.01746 305.34)",
+          "oklch(37.86% 0.01746 305.34)",
+          "oklch(49.29% 0.01746 305.34)",
+          "oklch(60.71% 0.01746 305.34)",
+          "oklch(72.14% 0.01746 305.34)",
+          "oklch(83.57% 0.01746 305.34)",
+          "oklch(95.00% 0.01746 305.34)"
+        ]
+      },
+      "button-hover": {
+        "role": "neutral",
+        "displayName": "Button Hover",
+        "canonical": "#39333e",
+        "tonalRamp": [
+          "oklch(15.00% 0.02070 309.67)",
+          "oklch(26.43% 0.02070 309.67)",
+          "oklch(37.86% 0.02070 309.67)",
+          "oklch(49.29% 0.02070 309.67)",
+          "oklch(60.71% 0.02070 309.67)",
+          "oklch(72.14% 0.02070 309.67)",
+          "oklch(83.57% 0.02070 309.67)",
+          "oklch(95.00% 0.02070 309.67)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "canonical": "#e1e1e1",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 89.88)",
+          "oklch(26.43% 0.00000 89.88)",
+          "oklch(37.86% 0.00000 89.88)",
+          "oklch(49.29% 0.00000 89.88)",
+          "oklch(60.71% 0.00000 89.88)",
+          "oklch(72.14% 0.00000 89.88)",
+          "oklch(83.57% 0.00000 89.88)",
+          "oklch(95.00% 0.00000 89.88)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#b3adb9",
+        "tonalRamp": [
+          "oklch(15.00% 0.01817 308.19)",
+          "oklch(26.43% 0.01817 308.19)",
+          "oklch(37.86% 0.01817 308.19)",
+          "oklch(49.29% 0.01817 308.19)",
+          "oklch(60.71% 0.01817 308.19)",
+          "oklch(72.14% 0.01817 308.19)",
+          "oklch(83.57% 0.01817 308.19)",
+          "oklch(95.00% 0.01817 308.19)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "canonical": "#49434f",
+        "tonalRamp": [
+          "oklch(15.00% 0.02138 307.86)",
+          "oklch(26.43% 0.02138 307.86)",
+          "oklch(37.86% 0.02138 307.86)",
+          "oklch(49.29% 0.02138 307.86)",
+          "oklch(60.71% 0.02138 307.86)",
+          "oklch(72.14% 0.02138 307.86)",
+          "oklch(83.57% 0.02138 307.86)",
+          "oklch(95.00% 0.02138 307.86)"
+        ]
+      },
+      "border-hover": {
+        "role": "neutral",
+        "displayName": "Border Hover",
+        "canonical": "#77707f",
+        "tonalRamp": [
+          "oklch(15.00% 0.02431 306.58)",
+          "oklch(26.43% 0.02431 306.58)",
+          "oklch(37.86% 0.02431 306.58)",
+          "oklch(49.29% 0.02431 306.58)",
+          "oklch(60.71% 0.02431 306.58)",
+          "oklch(72.14% 0.02431 306.58)",
+          "oklch(83.57% 0.02431 306.58)",
+          "oklch(95.00% 0.02431 306.58)"
+        ]
+      },
+      "divider": {
+        "role": "neutral",
+        "displayName": "Divider",
+        "canonical": "#333035",
+        "tonalRamp": [
+          "oklch(15.00% 0.00970 312.13)",
+          "oklch(26.43% 0.00970 312.13)",
+          "oklch(37.86% 0.00970 312.13)",
+          "oklch(49.29% 0.00970 312.13)",
+          "oklch(60.71% 0.00970 312.13)",
+          "oklch(72.14% 0.00970 312.13)",
+          "oklch(83.57% 0.00970 312.13)",
+          "oklch(95.00% 0.00970 312.13)"
+        ]
+      },
+      "on-primary": {
+        "role": "neutral",
+        "displayName": "On Primary",
+        "canonical": "#19121f",
+        "tonalRamp": [
+          "oklch(15.00% 0.02752 308.61)",
+          "oklch(26.43% 0.02752 308.61)",
+          "oklch(37.86% 0.02752 308.61)",
+          "oklch(49.29% 0.02752 308.61)",
+          "oklch(60.71% 0.02752 308.61)",
+          "oklch(72.14% 0.02752 308.61)",
+          "oklch(83.57% 0.02752 308.61)",
+          "oklch(95.00% 0.02752 308.61)"
+        ]
+      },
+      "error-text": {
+        "role": "neutral",
+        "displayName": "Error Text",
+        "canonical": "#f29cad",
+        "tonalRamp": [
+          "oklch(15.00% 0.10443 6.88)",
+          "oklch(26.43% 0.10443 6.88)",
+          "oklch(37.86% 0.10443 6.88)",
+          "oklch(49.29% 0.10443 6.88)",
+          "oklch(60.71% 0.10443 6.88)",
+          "oklch(72.14% 0.10443 6.88)",
+          "oklch(83.57% 0.10443 6.88)",
+          "oklch(95.00% 0.10443 6.88)"
+        ]
+      },
+      "pet-label": {
+        "role": "neutral",
+        "displayName": "Pet Label",
+        "canonical": "#242226",
+        "tonalRamp": [
+          "oklch(15.00% 0.00794 308.12)",
+          "oklch(26.43% 0.00794 308.12)",
+          "oklch(37.86% 0.00794 308.12)",
+          "oklch(49.29% 0.00794 308.12)",
+          "oklch(60.71% 0.00794 308.12)",
+          "oklch(72.14% 0.00794 308.12)",
+          "oklch(83.57% 0.00794 308.12)",
+          "oklch(95.00% 0.00794 308.12)"
+        ]
+      },
+      "pet-label-border": {
+        "role": "neutral",
+        "displayName": "Pet Label Border",
+        "canonical": "#514d56",
+        "tonalRamp": [
+          "oklch(15.00% 0.01550 305.73)",
+          "oklch(26.43% 0.01550 305.73)",
+          "oklch(37.86% 0.01550 305.73)",
+          "oklch(49.29% 0.01550 305.73)",
+          "oklch(60.71% 0.01550 305.73)",
+          "oklch(72.14% 0.01550 305.73)",
+          "oklch(83.57% 0.01550 305.73)",
+          "oklch(95.00% 0.01550 305.73)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Settings text and controls, using bundled DM Sans registered as Pet Sans."
+      },
+      "connection": {
+        "displayName": "Connection",
+        "purpose": "Real connection state at the top of settings."
+      },
+      "helper": {
+        "displayName": "Helper",
+        "purpose": "Field explanations and footer text."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "button-hover",
+        "value": "background-color 120ms ease",
+        "purpose": "Simple button hover feedback; disabled under reduced motion."
+      },
+      {
+        "name": "sprite-frame",
+        "value": "450ms",
+        "purpose": "Alternate pixel poses; disabled by still-pose or OS reduced-motion preference."
+      },
+      {
+        "name": "sprite-paint",
+        "value": "125ms",
+        "purpose": "Canvas redraw interval while the window is visible."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Save settings",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Commits settings and shows adjacent feedback.",
+      "html": "<button class=\"ds-save\">Save settings</button>",
+      "css": ".ds-save{font:14px 'Pet Sans',sans-serif;border:1px solid var(--border,#49434f);border-radius:4px;padding:9px 14px;cursor:pointer;transition:background-color 120ms ease;background:var(--accent,#bb86fc);color:#19121f;border-color:var(--accent,#bb86fc);font-weight:600}.ds-save:hover{background:#cba3ff}.ds-save:disabled{opacity:.6;cursor:wait}.ds-save:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-save{transition:none}}"
+    },
+    {
+      "name": "Browse",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Opens the native folder picker.",
+      "html": "<button class=\"ds-browse\">Browse…</button>",
+      "css": ".ds-browse{font:14px 'Pet Sans',sans-serif;border:1px solid var(--border,#49434f);border-radius:4px;padding:9px 14px;cursor:pointer;transition:background-color 120ms ease;background:#27232c;color:#e1e1e1}.ds-browse:hover{background:#39333e}.ds-browse:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-browse{transition:none}}"
+    },
+    {
+      "name": "Quit",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "Small footer action.",
+      "html": "<button class=\"ds-quit\">Quit T3 Pet</button>",
+      "css": ".ds-quit{font:12px 'Pet Sans',sans-serif;background:transparent;color:var(--muted,#b3adb9);border:0;padding:6px 0;cursor:pointer}.ds-quit:hover{color:#e1e1e1;text-decoration:underline;text-underline-offset:3px}.ds-quit:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-quit{transition:none}}"
+    },
+    {
+      "name": "Data folder",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Plain labeled path field.",
+      "html": "<label class=\"ds-folder-label\" for=\"ds-folder\">T3 Code data folder</label><input class=\"ds-folder\" id=\"ds-folder\" value=\"C:\\Users\\Carter\\.t3\\userdata\" spellcheck=\"false\">",
+      "css": ".ds-folder-label{display:block;font:500 14px 'Pet Sans',sans-serif;color:#e1e1e1;margin-bottom:8px}.ds-folder{font:14px 'Pet Sans',sans-serif;background:#1e1e1e;color:#e1e1e1;border:1px solid var(--border,#49434f);border-radius:4px;padding:9px 10px;height:40px;caret-color:var(--accent,#bb86fc)}.ds-folder:hover{border-color:#77707f}.ds-folder:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-folder{transition:none}}"
+    },
+    {
+      "name": "Pet status",
+      "kind": "custom",
+      "refersTo": "pet-status",
+      "description": "Readable live status over desktop wallpaper.",
+      "html": "<div class=\"ds-pet-status\" role=\"status\">Working</div>",
+      "css": ".ds-pet-status{display:inline-block;font:12px/18px 'Pet Sans',sans-serif;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e1e1e1;background:#242226;border:1px solid #514d56;padding:2px 8px;border-radius:4px;text-align:center;pointer-events:none}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A quiet pixel companion",
+    "overview": "T3 Pet uses the user-supplied LFG Pet sprite sheets on a transparent desktop window. Existing Carbon settings and lilac controls remain unchanged. Source timing, pixel edges, and transparency are preserved. On Windows the pet automatically hides while a foreground app is fullscreen.",
+    "keyCharacteristics": [
+      "User-supplied LFG pixel character without an enclosing panel.",
+      "Dark neutral settings with lilac controls and focus rings.",
+      "Plain labels, small corners, and no decorative depth."
+    ],
+    "rules": [],
+    "dos": [
+      "Do keep labels above fields and show connection and save feedback in text.",
+      "Do preserve the pet's pixel edges, distinct activity poses, and still-pose option.",
+      "Do keep controls compact, readable, and keyboard focusable."
+    ],
+    "donts": [
+      "Don't add dashboard scaffolding, hero copy, or ornamental headings.",
+      "Don't add gradients, glass, glows, blue accents, or large rounded shells.",
+      "Don't add transform-on-hover effects or use provider identity to select animation."
+    ]
+  }
+}
