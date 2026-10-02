@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { mkdir, copyFile, readdir, unlink, cp, rm } from 'node:fs/promises';
+import { mkdir, copyFile, readdir, unlink, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -19,7 +19,7 @@ for (const pet of ['lfg']) {
 await unlink('dist/cat-icon.mjs').catch(error => { if (error.code !== 'ENOENT') throw error; });
 const bundledPets = join(resolve('dist/renderer'), 'pets');
 await rm(bundledPets, { recursive: true, force: true });
-await cp('assets/pets', bundledPets, { recursive: true });
+// Remove retired imported artwork from incremental builds.
 if (process.platform === 'win32') {
   await mkdir('dist/native', { recursive: true });
   const compiler = join(process.env.WINDIR || 'C:/Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');

@@ -49,7 +49,7 @@ macOS uses a monochrome template paw in the menu bar with a Retina variant. Logi
 - `native/T3Close*`: normal application closure helpers for onboarding, with no forced termination.
 - `src/login-startup.ts`: per-user Linux startup registration and Desktop Entry argument escaping.
 - `assets/lfg/`: unmodified sprite sheets from the LFG Pet repository.
-- `assets/pets/` and `src/pets.ts`: three imported nonhuman characters, source notices, and atlas row/timing adapters. Settings persist the character choice; Lil' Finder Guy remains the default with internal ID `lfg`. Retired selections fall back to it without resetting other settings.
+- `src/pets.ts`: the bundled Lil' Finder Guy character with internal ID `lfg`. Retired selections fall back to it without resetting other settings.
 - `assets/icon.svg`: pet-independent app icon source. The committed 1024px PNG and multi-size ICO exports are used directly by builds. To regenerate them with ImageMagick, run `magick -background none assets/icon.svg -resize 1024x1024 -set Source "T3 Pet authored paw mark; assets/icon.svg" PNG32:assets/icon.png`, then `magick assets/icon.png -define icon:auto-resize=256,128,64,48,32,24,16 assets/icon.ico`. `assets/trayTemplate.svg` is the monochrome macOS variant, exported at 22px and 44px to `trayTemplate.png` and `trayTemplate@2x.png`.
 - `src/renderer/`: pet and settings views.
 - `tests/`: transitions, database safety, and preferences.

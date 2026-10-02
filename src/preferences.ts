@@ -77,7 +77,7 @@ export function loadPreferences(file: string): Preferences {
   try {
     const saved = JSON.parse(readFileSync(file, 'utf8'));
     // Retired characters must not reset unrelated settings on upgrade.
-    if (saved && typeof saved === 'object' && ['bella', 'aetherwing', 'aethercore', 'aethermite', 'aetherbite', 'calian', 'scarlet', 'airi'].includes(saved.petId)) saved.petId = 'lfg';
+    if (saved && typeof saved === 'object' && ['bella', 'aetherwing', 'aethercore', 'aethermite', 'aetherbite', 'calian', 'scarlet', 'airi', 'jadebyte', 'lunari', 'kerno', 'aion', 'floppy', 'oscillo', 'caspian', 'cinder', 'hoggie', 'cat-stack'].includes(saved.petId)) saved.petId = 'lfg';
     return validatePreferences(saved, defaults());
   }
   catch { return defaults(); }

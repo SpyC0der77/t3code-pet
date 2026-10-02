@@ -515,7 +515,7 @@ async function runSmokeTest(directory: string) {
     return {saveRoundTrip: saved.preferences.size === 160 && readBack.preferences.reducedMotion && !readBack.preferences.showLabel, invalidRejected};
   })()`);
   report.controls = controls;
-  traceSmoke('checking imported characters');
+  traceSmoke('checking bundled characters');
   const characterCases = pets.map(character => ({ id: character.id, animations: Object.entries(moodAnimation).map(([mood, name]) => ({ mood, name, ...petAnimation(character.id, name) })) }));
   report.petCatalog = await settingsWindow!.webContents.executeJavaScript(`(async () => {
     const cases = ${JSON.stringify(characterCases)};
@@ -549,6 +549,8 @@ async function runSmokeTest(directory: string) {
       const radio = document.querySelector('input[name=character][value="'+character.id+'"]');
       const preview = document.querySelector('canvas[data-character="'+character.id+'"]');
       radio.closest('label').scrollIntoView({block:'nearest'}); radio.click();
+      const size = document.getElementById('size');
+      size.value = size.value === '160' ? '96' : '160'; size.dispatchEvent(new Event('change',{bubbles:true}));
       if (document.getElementById('save').disabled) throw new Error('Pet choice not marked dirty');
       document.getElementById('save').click();
       for (let retry=0;retry<200 && (document.getElementById('save-result').textContent !== 'Saved' || preview.dataset.pet !== character.id);retry++) await delay(10);
@@ -564,12 +566,15 @@ async function runSmokeTest(directory: string) {
       if (!document.getElementById('pet-credit').textContent.trim()) throw new Error('Missing artwork credit');
       choices++;
     }
-    // Keep an unsaved character across incoming state updates, then discard it.
-    document.querySelector('input[name=character][value=jadebyte]').click();
+    // Keep an unsaved appearance setting across state updates, then discard it.
+    const size = document.getElementById('size');
+    const savedSize = size.value;
+    const draftSize = size.value === '160' ? '128' : '160';
+    size.value = draftSize; size.dispatchEvent(new Event('change',{bubbles:true}));
     await window.pet.savePreferences({size:96}); await delay(40);
-    const draftRetained = selector.value === 'jadebyte';
+    const draftRetained = size.value === draftSize;
     document.getElementById('discard').click();
-    const discarded = selector.value === (await window.pet.getState()).preferences.petId;
+    const discarded = size.value === savedSize;
     const previewIsLocal = !(await window.pet.getState()).preview;
     await window.pet.savePreferences(original);
     document.getElementById('preview').value = 'idle'; document.getElementById('preview').dispatchEvent(new Event('change',{bubbles:true}));

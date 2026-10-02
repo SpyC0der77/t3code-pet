@@ -53,9 +53,9 @@ try {
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
 assert.ok(report.visibility.monitorReady && !report.visibility.monitorFailed, 'Native fullscreen monitor did not run.');
 assert.ok(report.controls.saveRoundTrip && report.controls.invalidRejected);
-assert.equal(report.petCatalog.characters, 11, 'Not every bundled character passed the settings save/preview check.');
-assert.ok(report.petCatalog.frames === 649 && report.petCatalog.draftRetained && report.petCatalog.discarded && report.petChoicePersisted, 'Pet frame decoding, selection persistence, or draft handling failed.');
-assert.ok(report.petCatalog.previewIsLocal && report.petCatalog.radioCount === 11, 'Gallery previews changed live status or omitted choices.');
+assert.equal(report.petCatalog.characters, 1, 'Not every bundled character passed the settings save/preview check.');
+assert.ok(report.petCatalog.frames === 261 && report.petCatalog.draftRetained && report.petCatalog.discarded && report.petChoicePersisted, 'Pet frame decoding, selection persistence, or draft handling failed.');
+assert.ok(report.petCatalog.previewIsLocal && report.petCatalog.radioCount === 1, 'Gallery previews changed live status or omitted choices.');
 assert.ok(report.projectBlocklist.saved && report.projectBlocklist.blocked && report.projectBlocklistPersisted, 'Blocklist did not persist through the settings form.');
 assert.equal(report.projectBlocklist.mood, 'working');
 assert.equal(report.projectBlocklist.waitingCount, 0);
