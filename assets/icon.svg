@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>T3 Pet</title>
+  <desc>Pet-independent paw mark. Authored for T3 Pet using the existing Carbon and lilac palette.</desc>
+  <rect x="8" y="8" width="240" height="240" rx="16" fill="#27232c"/>
+  <g fill="#bb86fc">
+    <ellipse cx="57" cy="107" rx="19" ry="27" transform="rotate(-24 57 107)"/>
+    <ellipse cx="102" cy="69" rx="20" ry="29" transform="rotate(-10 102 69)"/>
+    <ellipse cx="154" cy="69" rx="20" ry="29" transform="rotate(10 154 69)"/>
+    <ellipse cx="199" cy="107" rx="19" ry="27" transform="rotate(24 199 107)"/>
+    <path d="M128 111c-22 0-31 20-44 34-11 12-21 23-21 39 0 17 12 28 29 28 14 0 23-8 36-8s22 8 36 8c17 0 29-11 29-28 0-16-10-27-21-39-13-14-22-34-44-34Z"/>
+  </g>
+</svg>

@@ -5,7 +5,7 @@
 ## Platform
 web
 
-Electron desktop companion, initially installed on Windows. Cross-platform structure; Wayland is outside the requested scope.
+Electron desktop companion for Windows, macOS, and Linux. Linux uses X11, including XWayland in a Wayland session, for positioning and cursor tracking.
 
 ## Stack
 Electron selected by the user. TypeScript and a small HTML/CSS renderer are implementation choices for this first version.
@@ -17,17 +17,17 @@ People using T3 Code who want an animated desktop pet to reflect coding-agent ac
 A floating, draggable pet shows idle, working, waiting, completion, error, and disconnected states without requiring the main T3 Code window to remain visible.
 
 ## Operating context
-The user runs T3 Code Nightly on Windows. This workspace starts empty. Build and install a basic working version now; never start a development server.
+The user runs T3 Code Nightly on Windows and requires macOS and Linux support. Build and package with the npm scripts; never start a development server.
 
 ## Capabilities and constraints
 - Separate companion app alongside the normal T3 Code installation.
 - Provider-independent status from T3 Code's local projections, opened read-only.
 - A local database adapter is the initial integration; remote environments and authenticated streaming are future work.
 - No chat content, provider credentials, or model calls are needed.
+- First-run onboarding checks T3 Code desktop notification preferences. The user can consent to Pet closing T3 Code gracefully and migrating desktop alerts to Pet. Migration changes only the desktop alert setting, backs up the original preferences, and leaves the database read-only.
+- Pet notifications cover approval, input, completion, and failure; they respect the followed-chat filter and fullscreen suppression.
+- Filters independently apply a blocklist or whitelist to projects and chats. A chat must pass both filters to affect pet activity, notifications, or the hover list. Empty blocklists allow all; empty whitelists allow none. Selections use stable IDs, so names and titles remain display metadata. Existing project exclusions and single-chat selections migrate without changing their effect.
 - User-provided AGENTS instructions govern the UI: simple controls, dark muted colors, no decorative dashboard scaffolding.
+- Only nonhuman characters belong in the pet catalogue. The approved choices are Lil' Finder Guy, Jadebyte, Lunari, and Kerno. Bella, the Aether characters, Calian, Scarlet, and Airi are excluded.
 - The user selected their own LFG Pet artwork from SpyC0der77/lfg-codex-pet. Preserve its source animations.
-
-## Evidence on hand
-Installed T3 Code 0.0.43-nightly.20260926.2282, commit 6530de0339d2, stores shared thread/session/turn projections under ~/.t3/userdata/state.sqlite.
-
-The user requires automatic hiding while any fullscreen application is foremost, including games. Windows foreground-window detection implements this without game-specific rules.
+- T3 Pet is a versatile pet companion. App branding and menu, tray, settings, and notification icons must be independent of the selected character. Use the neutral paw mark for app identity.

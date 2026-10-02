@@ -12,4 +12,4 @@ Ready: [40, 80 x 47, 40] ms. Broken: [20, 50 x 47, 30] ms.
 Jumping and walking: 16 frames at 80 ms. Emotion sheets: 7 x 7 cells of 128 x 128.
 Movement sheets: 8 x 2 cells of 192 x 208.
 
-The app and tray icon are derived from the first jumping frame by scripts/build.mjs.
+App and tray icons use a separate paw mark from assets/icon.svg. Builds preserve the pet artwork independently of app branding.

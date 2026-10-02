@@ -1,0 +1,60 @@
+name: Desktop platforms
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+          - os: macos-14
+            target: mac
+          - os: ubuntu-22.04
+            target: linux
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Linux build and desktop libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential libx11-dev libxrandr-dev libxext-dev libgtk-3-0 libnss3 libasound2 libgbm1 libfuse2 xvfb openbox dbus-x11
+      - run: npm ci
+      - run: npm run check
+      - name: Tests
+        if: runner.os != 'Linux'
+        run: npm test
+      - name: Package
+        if: runner.os != 'Linux'
+        run: npm run package:${{ matrix.target }}
+      - name: Packaged runtime test
+        if: runner.os != 'Linux'
+        run: npm run test:packaged
+      - name: Linux desktop tests and packages
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run -a -s '-screen 0 1280x900x24' dbus-run-session -- sh -ec '
+            openbox > /tmp/t3pet-openbox.log 2>&1 &
+            npm test
+            npm run package:linux
+            npm run test:packaged
+          '
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t3-pet-${{ matrix.target }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/smoke-*/
+          if-no-files-found: warn

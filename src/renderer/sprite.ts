@@ -1,27 +1,44 @@
 import { animations, frameAt, type AnimationName } from '../animations';
+import { isPetId, petAnimation } from '../pets';
 
-const sheets = new Map<AnimationName, HTMLImageElement>();
+export function createSpriteRenderer() {
+let sheets = new Map<string, HTMLImageElement>();
+let loadedPet = '';
+let requestedPet = '';
+let loading: Promise<void> | undefined;
+let generation = 0;
 const outlineMask = document.createElement('canvas');
-export async function loadSprites() {
-  await Promise.all(Object.entries(animations).map(async ([name, animation]) => {
-    const image = new Image();
-    image.src = `lfg/${animation.file}`;
-    await image.decode();
-    sheets.set(name as AnimationName, image);
-  }));
+function loadSprites(petId = 'lfg'): Promise<void> {
+  const id = isPetId(petId) ? petId : 'lfg';
+  if (requestedPet === id && loading) return loading;
+  requestedPet = id;
+  const request = ++generation;
+  const files = new Set((Object.keys(animations) as AnimationName[]).map(name => petAnimation(id, name).file));
+  loading = Promise.all([...files].map(async file => {
+    const image = new Image(); image.src = file; await image.decode();
+    return [file, image] as const;
+  })).then(images => {
+    if (request !== generation) return;
+    // Only retain the selected pet's decoded sheets in each renderer.
+    sheets = new Map(images); loadedPet = id;
+  });
+  return loading;
 }
 
-export function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elapsed: number, still: boolean, background = false) {
+function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elapsed: number, still: boolean, background = false, petId = 'lfg') {
+  const id = isPetId(petId) ? petId : 'lfg';
+  if (requestedPet !== id) void loadSprites(id).catch(error => console.error('Animation could not load', error));
+  if (loadedPet !== id) return;
   const context = canvas.getContext('2d', { willReadFrequently: true })!;
-  const image = sheets.get(name);
+  const animation = petAnimation(id, name);
+  const image = sheets.get(animation.file);
   if (!image) return;
-  const animation = animations[name];
   const frame = frameAt(animation, elapsed, still);
-  if (canvas.dataset.animation === name && canvas.dataset.frame === String(frame) && canvas.dataset.background === String(background)) return;
+  if (canvas.dataset.pet === id && canvas.dataset.animation === name && canvas.dataset.frame === String(frame) && canvas.dataset.background === String(background)) return;
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.imageSmoothingEnabled = false;
   context.drawImage(image,
-    frame % animation.columns * animation.width, Math.floor(frame / animation.columns) * animation.height,
+    frame % animation.columns * animation.width, ((animation.row ?? 0) + Math.floor(frame / animation.columns)) * animation.height,
     animation.width, animation.height,
     animation.x + (canvas.width - 256) / 2, animation.y + (canvas.height - 256) / 2,
     animation.width * animation.scale, animation.height * animation.scale);
@@ -48,6 +65,13 @@ export function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elaps
     context.globalCompositeOperation = 'source-over';
   }
   canvas.dataset.animation = name;
+  canvas.dataset.pet = id;
   canvas.dataset.frame = String(frame);
   canvas.dataset.background = String(background);
 }
+return { loadSprites, drawSprite, release() {
+  generation++; sheets.clear(); loadedPet = ''; requestedPet = ''; loading = undefined;
+} };
+}
+
+export const { loadSprites, drawSprite } = createSpriteRenderer();

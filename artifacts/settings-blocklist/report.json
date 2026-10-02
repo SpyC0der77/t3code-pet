@@ -1,0 +1,104 @@
+{
+  "electron": "44.5.0",
+  "sqlite": "3.53.4",
+  "connected": true,
+  "message": "Connected to local T3 Code",
+  "threadCount": 66,
+  "mood": "idle",
+  "hoverOpened": false,
+  "hover": {
+    "rows": 2,
+    "buttons": 2,
+    "text": "Chat needing attentionApproval neededWorking chatWorking",
+    "overflow": false,
+    "height": 83,
+    "listHeight": 81
+  },
+  "hoverBounds": {
+    "x": 1400,
+    "y": 921,
+    "width": 300,
+    "height": 83
+  },
+  "hoverEmpty": true,
+  "chatNavigation": {
+    "rejectedUnknown": true,
+    "validChat": true
+  },
+  "animation": {
+    "name": "typing",
+    "frame": "12",
+    "opaquePixels": 22344
+  },
+  "animationAdvanced": true,
+  "visibility": {
+    "fullscreen": false,
+    "petVisible": true,
+    "manualHidden": false,
+    "monitorReady": true,
+    "monitorFailed": false
+  },
+  "controls": {
+    "saveRoundTrip": true,
+    "invalidRejected": true
+  },
+  "projectBlocklist": {
+    "saved": true,
+    "blocked": true,
+    "mood": "working",
+    "waitingCount": 0,
+    "workingCount": 1,
+    "footerFits": true
+  },
+  "projectBlocklistPersisted": true,
+  "window": {
+    "alwaysOnTop": true,
+    "bounds": {
+      "x": 1686,
+      "y": 810,
+      "width": 210,
+      "height": 206
+    }
+  },
+  "ui": {
+    "title": "T3 Pet settings",
+    "fields": 24,
+    "overflow": false,
+    "status": "Connected to T3 Code",
+    "hasBridge": true
+  },
+  "missingChat": "The selected chat is unavailable. Choose another chat or All chats.",
+  "onboardingConnect": {
+    "visible": true,
+    "overflow": false,
+    "bridge": true
+  },
+  "onboardingNotifications": {
+    "visible": true,
+    "migration": true,
+    "text": "T3 Code alerts are on",
+    "overflow": false,
+    "footerFits": true
+  },
+  "onboardingCancellation": {
+    "cancelled": true,
+    "unchanged": true
+  },
+  "onboardingCancelFileUnchanged": true,
+  "nativeCloseHelper": {
+    "packaged": false,
+    "supported": true
+  },
+  "fixtureMigration": "complete",
+  "fixtureMigratedSettings": {
+    "notificationMode": "off",
+    "inAppNotificationsEnabled": true,
+    "futurePreference": "preserved"
+  },
+  "onboardingFinish": {
+    "visible": true,
+    "test": true,
+    "text": "T3 Pet notifications are on. Your pet will alert you when a chat needs attention, finishes, or fails.",
+    "overflow": false
+  }
+}

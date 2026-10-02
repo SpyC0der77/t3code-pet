@@ -4,29 +4,58 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
 <title>T3 Pet settings</title><link rel="stylesheet" href="settings.css"></head>
 <body>
-<!-- THESIS: Plain preferences for a desktop companion. OWN-WORLD: Carbon palette, DM Sans, 4px control corners. STORY: Verify connection, choose a chat, adjust the pet. FIRST VIEWPORT: Connection at top, folder and chat fields, appearance below, save at bottom. FORM: User-pinned standard form, seed 3506dd7e. FINISH: Verify rendered states and document the shipped design. -->
-<main>
-  <div class="connection-row"><strong id="connection">Looking for T3 Code…</strong><span id="version"></span></div>
-  <p id="connection-detail" role="status">Reading local status.</p>
+<!-- THESIS: Compact desktop settings and setup following the user's T3 Code reference.
+OWN-WORLD: DM Sans, white or charcoal system theme, existing lilac accent, flat tabs, 5px controls, neutral paw branding.
+STORY: Connect local status, choose followed chats and ignored projects, adjust the pet, and explicitly choose alerts.
+FIRST VIEWPORT: 580x600 desktop window, small app header, four tabs or three setup steps, one content region, fixed primary action at bottom right.
+FORM: User-pinned utility dialog; no random seed. Filters use searchable project and chat lists, and preserved drafts with Save/Discard.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+<main class="window-shell settings">
+  <header class="window-header"><img class="app-mark" src="../../assets/icon.png" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><span class="header-end" id="version"></span></header>
+  <nav class="settings-tabs" role="tablist" aria-label="Settings">
+    <button id="chats-tab" type="button" role="tab" aria-selected="true" aria-controls="chats-panel">Chats</button>
+    <button id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-panel" tabindex="-1">Filters</button>
+    <button id="pet-tab" type="button" role="tab" aria-selected="false" aria-controls="pet-panel" tabindex="-1">Pet</button>
+    <button id="notifications-tab" type="button" role="tab" aria-selected="false" aria-controls="notifications-panel" tabindex="-1">Notifications</button>
+  </nav>
   <form id="settings-form">
-    <label for="directory">T3 Code data folder</label>
-    <div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div>
-    <p class="help" id="folder-help">Choose the userdata folder containing state.sqlite. T3 Pet reads status only and does not change T3 Code data.</p>
-    <label for="follow">Follow</label>
-    <select id="follow"><option value="">All chats · requests for attention first</option></select>
-    <p class="help" id="following-detail">Watching local chats across providers.</p>
-    <div class="divider"></div>
-    <div class="appearance-row">
-      <div><label for="size">Pet size</label><select id="size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div>
-      <div><label for="preview">Preview animation</label><select id="preview"><option value="">Follow T3 Code</option><option value="idle">Resting</option><option value="working">Working</option><option value="waiting">Needs attention</option><option value="done">Finished</option><option value="error">Error</option><option value="offline">Offline</option></select></div>
-    </div>
-    <div class="checks">
-      <label class="check"><input id="reduced-motion" type="checkbox">Use still poses</label>
-      <label class="check"><input id="login" type="checkbox">Start T3 Pet when I sign in</label>
-    </div>
-    <div class="actions"><button class="primary" type="submit" id="save">Save settings</button><span id="save-result" role="status"></span></div>
+    <section id="chats-panel" class="tab-panel" role="tabpanel" aria-labelledby="chats-tab">
+      <h1 class="panel-title">Chat activity</h1>
+      <p class="panel-description">Your pet follows your local agents.</p>
+      <div class="connection-status"><div><strong id="connection">Looking for T3 Code...</strong><p id="connection-detail" role="status">Checking your local connection.</p></div><span id="chat-count">0 chats</span></div>
+      <details class="data-folder" id="data-folder"><summary>Connection settings</summary><div class="field-group"><label for="directory">T3 Code data folder</label><div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div><p class="help" id="folder-help">Choose the userdata folder containing state.sqlite.</p></div></details>
+    </section>
+    <section id="projects-panel" class="tab-panel projects-panel" role="tabpanel" aria-labelledby="projects-tab" hidden>
+      <h1 class="panel-title">Filters</h1><p class="panel-description">Choose which activity your pet follows. Chats must pass both filters.</p>
+      <div class="filter-heading"><label for="project-mode">Projects</label><select id="project-mode" aria-describedby="blocked-help"><option value="blocklist">Blocklist</option><option value="whitelist">Whitelist</option></select></div>
+      <p class="help filter-help" id="blocked-help">Checked projects are excluded.</p>
+      <input class="project-search" id="project-search" type="search" aria-label="Search projects" placeholder="Search projects…" autocomplete="off" spellcheck="false" aria-controls="blocked-projects">
+      <div class="project-toolbar"><span id="project-summary" role="status">0 selected</span><div class="project-toolbar-actions"><button class="text-button" id="ignore-all" type="button">Select all</button><button class="text-button" id="allow-all" type="button">Select none</button></div></div>
+      <div class="project-list" id="blocked-projects" aria-describedby="blocked-help"></div>
+      <details class="advanced-settings" id="advanced-settings"><summary>Advanced chat filters</summary>
+        <div class="filter-heading"><label for="chat-mode">Chats</label><select id="chat-mode" aria-describedby="chat-filter-help"><option value="blocklist">Blocklist</option><option value="whitelist">Whitelist</option></select></div>
+        <p class="help filter-help" id="chat-filter-help">Checked chats are excluded.</p>
+        <input class="project-search" id="chat-search" type="search" aria-label="Search chats" placeholder="Search chats…" autocomplete="off" spellcheck="false" aria-controls="selected-chats">
+        <div class="project-toolbar"><span id="chat-summary" role="status">0 selected</span><div class="project-toolbar-actions"><button class="text-button" id="select-chats" type="button">Select all</button><button class="text-button" id="clear-chats" type="button">Select none</button></div></div>
+        <div class="project-list chat-filter-list" id="selected-chats" aria-describedby="chat-filter-help"></div>
+      </details>
+    </section>
+    <section id="pet-panel" class="tab-panel" role="tabpanel" aria-labelledby="pet-tab" hidden>
+      <div class="appearance-row field-group"><div><label for="preview">Preview state</label><select id="preview"><option value="idle">Resting</option><option value="working">Working</option><option value="waiting">Needs attention</option><option value="done">Finished</option><option value="error">Error</option><option value="offline">Offline</option></select></div><div><label for="size">Desktop size</label><select id="size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div></div>
+      <input id="pet-id" type="hidden" value="lfg">
+      <div id="pet-gallery" class="pet-gallery" role="group" aria-label="Choose a character" aria-describedby="pet-credit"></div>
+      <p class="help pet-credit" id="pet-credit"></p>
+      <label class="preference-row"><span>Use still poses<span class="help">Keep the character visible without animation.</span></span><input id="reduced-motion" type="checkbox"></label>
+      <label class="preference-row"><span>Start when I sign in<span class="help">Launch T3 Pet automatically.</span></span><input id="login" type="checkbox"></label>
+    </section>
+    <section id="notifications-panel" class="tab-panel" role="tabpanel" aria-labelledby="notifications-tab" hidden>
+      <h1 class="panel-title">Desktop notifications</h1><p class="panel-description">Get an alert when a chat needs you, finishes, or fails.</p>
+      <label class="preference-row"><span>Notifications from T3 Pet<span class="help">Click an alert to open its chat.</span></span><input id="notifications" type="checkbox" aria-describedby="notification-status"></label>
+      <label class="preference-row"><span>Play sounds<span class="help">Include sound with your alerts.</span></span><input id="notification-sound" type="checkbox"></label>
+      <div class="notification-settings"><button id="notification-setup" type="button">Set up notifications…</button><button id="test-notification" type="button">Send a test</button></div>
+      <p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>
+    </section>
+    <footer class="settings-actions"><span id="save-result" role="status">Changes apply after saving.</span><button class="text-button" id="discard" type="button" hidden>Discard</button><button class="primary" type="submit" id="save" disabled>Save changes</button></footer>
   </form>
-  <div class="instructions">Drag the pet to move it. Right-click for controls.<br>Previews return to live status after 10 seconds.<br>On Windows, the pet hides while the foreground app is fullscreen.</div>
-  <footer><span>Local companion · <span id="chat-count">0 chats</span></span><button class="text-button" id="quit" type="button">Quit T3 Pet</button></footer>
 </main>
 <script src="settings.js"></script></body></html>

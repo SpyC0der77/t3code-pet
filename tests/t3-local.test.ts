@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdtempSync, rmSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readThreads, readLocalSnapshot } from '../src/t3-local';
+import { readThreads, readLocalSnapshot, readProjects } from '../src/t3-local';
 import { defaults, validatePreferences, storePreferences, loadPreferences } from '../src/preferences';
 
 test('local adapter reads metadata without changing database bytes', t => {
@@ -18,6 +18,7 @@ test('local adapter reads metadata without changing database bytes', t => {
     CREATE TABLE projection_thread_sessions(thread_id TEXT PRIMARY KEY, provider_name TEXT, provider_instance_id TEXT, status TEXT);
     CREATE TABLE projection_turns(thread_id TEXT, turn_id TEXT, state TEXT, completed_at TEXT);
     INSERT INTO projection_projects VALUES('p','Example');
+    INSERT INTO projection_projects VALUES('empty','No chats yet');
     INSERT INTO projection_threads VALUES('a','p','Active','t','2026-09-27',1,0,NULL,NULL);
     INSERT INTO projection_threads VALUES('b','p','Archived',NULL,'2026-09-27',0,0,'2026-09-27',NULL);
     INSERT INTO projection_threads VALUES('c','p','Deleted',NULL,'2026-09-27',0,0,NULL,'2026-09-27');
@@ -28,6 +29,8 @@ test('local adapter reads metadata without changing database bytes', t => {
   const before = readFileSync(file);
   const rows = readThreads(file);
   assert.equal(rows.length, 1); assert.equal(rows[0].provider, 'future-provider');
+  assert.equal(rows[0].projectId, 'p');
+  assert.deepEqual(readProjects(file).map(project => ({ ...project })), [{ id: 'p', name: 'Example' }, { id: 'empty', name: 'No chats yet' }]);
   assert.equal(rows[0].pendingApproval, 1); assert.equal(rows[0].turnState, 'running');
   assert.deepEqual(readFileSync(file), before);
 });

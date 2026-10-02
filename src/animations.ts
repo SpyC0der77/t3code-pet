@@ -9,6 +9,7 @@ export interface Animation {
   scale: number;
   x: number;
   y: number;
+  row?: number;
 }
 
 const emotion = (file: string, first: number, middle: number, last: number): Animation => ({

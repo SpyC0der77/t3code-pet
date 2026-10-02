@@ -1,6 +1,7 @@
 export type PetMood = 'offline' | 'idle' | 'working' | 'waiting' | 'done' | 'error';
 
 export interface ThreadStatus {
+  projectId?: string | null;
   settledOverride?: string | null;
   snoozedUntil?: string | null;
   id: string;
@@ -17,13 +18,26 @@ export interface ThreadStatus {
 }
 
 export interface Snapshot {
+  projects?: { id: string; name: string }[];
   connected: boolean;
   message: string;
   threads: ThreadStatus[];
   checkedAt: number;
 }
 
+export interface SelectionFilter {
+  mode: 'blocklist' | 'whitelist';
+  selected: { id: string; name: string }[];
+}
+
 export interface Preferences {
+  petId: string;
+  projectFilter: SelectionFilter;
+  chatFilter: SelectionFilter;
+  blockedProjects: { id: string; name: string }[];
+  onboardingCompleted: boolean;
+  notificationsEnabled: boolean;
+  notificationSound: boolean;
   dataDirectory: string;
   followThreadId: string | null;
   size: number;
@@ -43,6 +57,7 @@ export interface PetStatus {
 }
 
 export interface AppState {
+  notificationsSupported: boolean;
   darkBackground: boolean;
   preferences: Preferences;
   snapshot: Snapshot;
@@ -53,6 +68,10 @@ export interface AppState {
 }
 
 export interface PetBridge {
+  notificationSetup(): Promise<NotificationSetup>;
+  finishOnboarding(choice: 'keep' | 'enable' | 'migrate'): Promise<NotificationSetup>;
+  testNotification(): Promise<void>;
+  showOnboarding(): void;
   openChat(threadId: string): Promise<void>;
   hover(): void;
   hoverSize(height: number): void;
@@ -66,6 +85,15 @@ export interface PetBridge {
   mousePassthrough(ignore: boolean): void;
   drag(action: 'start' | 'stop'): void;
   quit(): void;
+}
+
+export interface NotificationSetup {
+  status: 'enabled' | 'off' | 'unknown';
+  mode: string | null;
+  message: string;
+  outcome?: 'cancelled' | 'complete';
+  completed: boolean;
+  supported: boolean;
 }
 
 declare global {

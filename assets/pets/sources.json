@@ -1,0 +1,35 @@
+[
+  {
+    "id": "jadebyte",
+    "author": "shuoyang129 / Codex Pet Collection",
+    "license": "CC BY 4.0",
+    "source": "https://github.com/shuoyang129/codex-pet-collection",
+    "commit": "e88139ee6863b157a4efe85ea3fbe26e03a12dfb",
+    "file": "jadebyte/spritesheet.webp",
+    "sha256": "98f369d36162d6776c51512b21df35ae67bca70863fc61ee7e9703f7c2d58a1c",
+    "width": 1536,
+    "height": 2288
+  },
+  {
+    "id": "lunari",
+    "author": "shuoyang129 / Codex Pet Collection",
+    "license": "CC BY 4.0",
+    "source": "https://github.com/shuoyang129/codex-pet-collection",
+    "commit": "e88139ee6863b157a4efe85ea3fbe26e03a12dfb",
+    "file": "lunari/spritesheet.webp",
+    "sha256": "afa328e54e302a8ffbb5d6d4072827ae949eb30a3448e6e3080e9351a8c6770d",
+    "width": 1536,
+    "height": 2288
+  },
+  {
+    "id": "kerno",
+    "author": "lencx",
+    "license": "MIT",
+    "source": "https://github.com/lencx/pet",
+    "commit": "49d568d871b56f435084c407ae7ba1f676707019",
+    "file": "kerno/spritesheet.webp",
+    "sha256": "ef537f4d883f5676b6f1b50cdea1280469284c21d0cf85ec814de04c5579a051",
+    "width": 1536,
+    "height": 1872
+  }
+]

@@ -15,6 +15,7 @@ function cancelHover() {
 let passthrough: boolean | null = null;
 let spriteReady = false;
 let animation: AnimationName = 'ready';
+let animatedPet = 'lfg';
 let animationStarted = performance.now();
 let animationTime = animationStarted;
 const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -33,8 +34,10 @@ function paint() {
   const still = current.preferences.reducedMotion || motion.matches || current.pet.mood === 'offline';
   if (!dragging) animationTime = performance.now();
   const next = dragging ? animation : moodAnimation[current.pet.mood];
-  if (next !== animation) { animation = next; animationStarted = animationTime; }
-  drawSprite(cat, animation, animationTime - animationStarted, still, current.darkBackground);
+  if (next !== animation || animatedPet !== current.preferences.petId) {
+    animation = next; animatedPet = current.preferences.petId; animationStarted = animationTime;
+  }
+  drawSprite(cat, animation, animationTime - animationStarted, still, current.darkBackground, animatedPet);
 }
 
 // Timestamp-based sampling preserves the source sheets' variable frame durations.

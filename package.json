@@ -1,7 +1,7 @@
 {
   "name": "t3code-pet",
   "productName": "T3 Pet",
-  "version": "0.2.14",
+  "version": "0.5.1",
   "description": "A desktop pet that follows your T3 Code agents",
   "author": "T3 Pet contributors",
   "private": true,
@@ -11,15 +11,16 @@
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
     "test": "npm run build && tsx --test tests/*.test.ts",
-    "package:win": "npm run build && electron-builder --win nsis --x64",
-    "package:mac": "npm run build && electron-builder --mac dmg",
-    "package:linux": "npm run build && electron-builder --linux AppImage"
+    "package:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "package:mac": "npm run build && electron-builder --mac dmg --arm64 --x64 --publish never",
+    "package:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
+    "test:packaged": "node scripts/smoke-packaged.mjs"
   },
   "devDependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
     "@types/node": "^24.0.0",
     "@types/pngjs": "^6.0.5",
-    "electron": "44.4.5",
+    "electron": "44.5.0",
     "electron-builder": "26.15.3",
     "esbuild": "^0.28.2",
     "pngjs": "^7.0.0",
@@ -38,6 +39,7 @@
       "dist/**/*",
       "assets/icon.png",
       "assets/icon.ico",
+      "assets/trayTemplate*.png",
       "package.json",
       "!dist/native/**/*"
     ],
@@ -46,6 +48,10 @@
       "icon": "assets/icon.ico",
       "signAndEditExecutable": true,
       "extraResources": [
+        {
+          "from": "dist/native/t3-close.exe",
+          "to": "native/t3-close.exe"
+        },
         {
           "from": "dist/native/foreground-monitor.exe",
           "to": "native/foreground-monitor.exe"
@@ -63,12 +69,36 @@
     "mac": {
       "target": "dmg",
       "category": "public.app-category.utilities",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "extraResources": [
+        {
+          "from": "dist/native/t3-close",
+          "to": "native/t3-close"
+        },
+        {
+          "from": "dist/native/foreground-monitor",
+          "to": "native/foreground-monitor"
+        }
+      ]
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Utility",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "executableName": "t3-pet",
+      "extraResources": [
+        {
+          "from": "dist/native/t3-close",
+          "to": "native/t3-close"
+        },
+        {
+          "from": "dist/native/foreground-monitor",
+          "to": "native/foreground-monitor"
+        }
+      ]
     }
   }
 }

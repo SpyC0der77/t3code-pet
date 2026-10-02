@@ -3,6 +3,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PetVisibility } from './fullscreen';
+import { nativeWindowId, nativeHelperPath } from './platform';
 
 const wait = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -14,7 +15,7 @@ export async function runFullscreenFixture(directory: string) {
   await window.loadURL('data:text/html,<html><body style="background:%23121212;color:%23e1e1e1;font:18px sans-serif;padding:48px"><p>T3 Pet fullscreen check</p><p>This temporary window will close automatically.</p></body></html>');
   const phase = (name: string, target = window) => writeFileSync(join(directory, 'phase.json'), JSON.stringify({
     name, at: Date.now(), pid: process.pid,
-    handle: target.getNativeWindowHandle().readBigUInt64LE().toString(),
+    handle: nativeWindowId(target.getNativeWindowHandle()),
   }));
   window.showInactive(); phase('normal'); await wait(1700);
   window.maximize(); phase('maximized'); await wait(1700);
@@ -28,13 +29,18 @@ export async function runFullscreenFixture(directory: string) {
 }
 
 export async function runFullscreenCheck(directory: string, petWindow: BrowserWindow, visibility: PetVisibility) {
+  if (process.platform === 'darwin') {
+    // macOS Space transitions cannot be probed by HWND/XID. Use the native
+    // monitor during normal use; do not report a Windows geometry test as passed.
+    throw new Error('The automated fullscreen fixture supports Windows and Linux X11.');
+  }
   mkdirSync(directory, { recursive: true });
   const args = [...(app.isPackaged ? [] : [app.getAppPath()]), '--fullscreen-fixture', directory];
   const child = spawn(process.execPath, args, { windowsHide: true, stdio: 'ignore' });
   let exited = false;
   child.once('exit', () => { exited = true; });
   child.once('error', () => { exited = true; });
-  const helper = app.isPackaged ? join(process.resourcesPath, 'native', 'foreground-monitor.exe') : join(__dirname, 'native', 'foreground-monitor.exe');
+  const helper = nativeHelperPath(app.isPackaged ? process.resourcesPath : __dirname, 'foreground-monitor');
   const results: Record<string, { fullscreen: boolean; foreground: boolean; automaticFullscreen: boolean; petVisible: boolean }> = {};
   const deadline = Date.now() + 20_000;
   try {

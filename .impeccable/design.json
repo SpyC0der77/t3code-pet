@@ -1,247 +1,151 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-27T17:16:51.780Z",
+  "generatedAt": "2026-10-01T20:42:52.267Z",
   "title": "Design System: T3 Pet",
   "extensions": {
     "colorMeta": {
       "primary": {
         "role": "primary",
-        "displayName": "Primary",
-        "canonical": "#bb86fc",
-        "tonalRamp": [
-          "oklch(15.00% 0.17231 303.07)",
-          "oklch(26.43% 0.17231 303.07)",
-          "oklch(37.86% 0.17231 303.07)",
-          "oklch(49.29% 0.17231 303.07)",
-          "oklch(60.71% 0.17231 303.07)",
-          "oklch(72.14% 0.17231 303.07)",
-          "oklch(83.57% 0.17231 303.07)",
-          "oklch(95.00% 0.17231 303.07)"
-        ]
+        "displayName": "primary",
+        "canonical": "#7652a8"
       },
       "primary-hover": {
         "role": "primary",
-        "displayName": "Primary Hover",
-        "canonical": "#cba3ff",
-        "tonalRamp": [
-          "oklch(15.00% 0.13368 303.46)",
-          "oklch(26.43% 0.13368 303.46)",
-          "oklch(37.86% 0.13368 303.46)",
-          "oklch(49.29% 0.13368 303.46)",
-          "oklch(60.71% 0.13368 303.46)",
-          "oklch(72.14% 0.13368 303.46)",
-          "oklch(83.57% 0.13368 303.46)",
-          "oklch(95.00% 0.13368 303.46)"
-        ]
+        "displayName": "primary hover",
+        "canonical": "#654392"
       },
       "canvas": {
         "role": "neutral",
-        "displayName": "Canvas",
-        "canonical": "#121212",
-        "tonalRamp": [
-          "oklch(15.00% 0.00000 89.88)",
-          "oklch(26.43% 0.00000 89.88)",
-          "oklch(37.86% 0.00000 89.88)",
-          "oklch(49.29% 0.00000 89.88)",
-          "oklch(60.71% 0.00000 89.88)",
-          "oklch(72.14% 0.00000 89.88)",
-          "oklch(83.57% 0.00000 89.88)",
-          "oklch(95.00% 0.00000 89.88)"
-        ]
+        "displayName": "canvas",
+        "canonical": "#ffffff"
       },
       "surface": {
         "role": "neutral",
-        "displayName": "Surface",
-        "canonical": "#1e1e1e",
-        "tonalRamp": [
-          "oklch(15.00% 0.00000 89.88)",
-          "oklch(26.43% 0.00000 89.88)",
-          "oklch(37.86% 0.00000 89.88)",
-          "oklch(49.29% 0.00000 89.88)",
-          "oklch(60.71% 0.00000 89.88)",
-          "oklch(72.14% 0.00000 89.88)",
-          "oklch(83.57% 0.00000 89.88)",
-          "oklch(95.00% 0.00000 89.88)"
-        ]
-      },
-      "button": {
-        "role": "neutral",
-        "displayName": "Button",
-        "canonical": "#27232c",
-        "tonalRamp": [
-          "oklch(15.00% 0.01746 305.34)",
-          "oklch(26.43% 0.01746 305.34)",
-          "oklch(37.86% 0.01746 305.34)",
-          "oklch(49.29% 0.01746 305.34)",
-          "oklch(60.71% 0.01746 305.34)",
-          "oklch(72.14% 0.01746 305.34)",
-          "oklch(83.57% 0.01746 305.34)",
-          "oklch(95.00% 0.01746 305.34)"
-        ]
-      },
-      "button-hover": {
-        "role": "neutral",
-        "displayName": "Button Hover",
-        "canonical": "#39333e",
-        "tonalRamp": [
-          "oklch(15.00% 0.02070 309.67)",
-          "oklch(26.43% 0.02070 309.67)",
-          "oklch(37.86% 0.02070 309.67)",
-          "oklch(49.29% 0.02070 309.67)",
-          "oklch(60.71% 0.02070 309.67)",
-          "oklch(72.14% 0.02070 309.67)",
-          "oklch(83.57% 0.02070 309.67)",
-          "oklch(95.00% 0.02070 309.67)"
-        ]
+        "displayName": "surface",
+        "canonical": "#f7f5f9"
       },
       "text": {
         "role": "neutral",
-        "displayName": "Text",
-        "canonical": "#e1e1e1",
-        "tonalRamp": [
-          "oklch(15.00% 0.00000 89.88)",
-          "oklch(26.43% 0.00000 89.88)",
-          "oklch(37.86% 0.00000 89.88)",
-          "oklch(49.29% 0.00000 89.88)",
-          "oklch(60.71% 0.00000 89.88)",
-          "oklch(72.14% 0.00000 89.88)",
-          "oklch(83.57% 0.00000 89.88)",
-          "oklch(95.00% 0.00000 89.88)"
-        ]
+        "displayName": "text",
+        "canonical": "#29252e"
       },
       "muted": {
         "role": "neutral",
-        "displayName": "Muted",
-        "canonical": "#b3adb9",
-        "tonalRamp": [
-          "oklch(15.00% 0.01817 308.19)",
-          "oklch(26.43% 0.01817 308.19)",
-          "oklch(37.86% 0.01817 308.19)",
-          "oklch(49.29% 0.01817 308.19)",
-          "oklch(60.71% 0.01817 308.19)",
-          "oklch(72.14% 0.01817 308.19)",
-          "oklch(83.57% 0.01817 308.19)",
-          "oklch(95.00% 0.01817 308.19)"
-        ]
+        "displayName": "muted",
+        "canonical": "#68616f"
       },
       "border": {
         "role": "neutral",
-        "displayName": "Border",
-        "canonical": "#49434f",
-        "tonalRamp": [
-          "oklch(15.00% 0.02138 307.86)",
-          "oklch(26.43% 0.02138 307.86)",
-          "oklch(37.86% 0.02138 307.86)",
-          "oklch(49.29% 0.02138 307.86)",
-          "oklch(60.71% 0.02138 307.86)",
-          "oklch(72.14% 0.02138 307.86)",
-          "oklch(83.57% 0.02138 307.86)",
-          "oklch(95.00% 0.02138 307.86)"
-        ]
-      },
-      "border-hover": {
-        "role": "neutral",
-        "displayName": "Border Hover",
-        "canonical": "#77707f",
-        "tonalRamp": [
-          "oklch(15.00% 0.02431 306.58)",
-          "oklch(26.43% 0.02431 306.58)",
-          "oklch(37.86% 0.02431 306.58)",
-          "oklch(49.29% 0.02431 306.58)",
-          "oklch(60.71% 0.02431 306.58)",
-          "oklch(72.14% 0.02431 306.58)",
-          "oklch(83.57% 0.02431 306.58)",
-          "oklch(95.00% 0.02431 306.58)"
-        ]
+        "displayName": "border",
+        "canonical": "#ddd7e3"
       },
       "divider": {
         "role": "neutral",
-        "displayName": "Divider",
-        "canonical": "#333035",
-        "tonalRamp": [
-          "oklch(15.00% 0.00970 312.13)",
-          "oklch(26.43% 0.00970 312.13)",
-          "oklch(37.86% 0.00970 312.13)",
-          "oklch(49.29% 0.00970 312.13)",
-          "oklch(60.71% 0.00970 312.13)",
-          "oklch(72.14% 0.00970 312.13)",
-          "oklch(83.57% 0.00970 312.13)",
-          "oklch(95.00% 0.00970 312.13)"
-        ]
+        "displayName": "divider",
+        "canonical": "#ebe7ef"
       },
       "on-primary": {
-        "role": "neutral",
-        "displayName": "On Primary",
-        "canonical": "#19121f",
-        "tonalRamp": [
-          "oklch(15.00% 0.02752 308.61)",
-          "oklch(26.43% 0.02752 308.61)",
-          "oklch(37.86% 0.02752 308.61)",
-          "oklch(49.29% 0.02752 308.61)",
-          "oklch(60.71% 0.02752 308.61)",
-          "oklch(72.14% 0.02752 308.61)",
-          "oklch(83.57% 0.02752 308.61)",
-          "oklch(95.00% 0.02752 308.61)"
-        ]
+        "role": "primary",
+        "displayName": "on primary",
+        "canonical": "#ffffff"
       },
       "error-text": {
         "role": "neutral",
-        "displayName": "Error Text",
-        "canonical": "#f29cad",
-        "tonalRamp": [
-          "oklch(15.00% 0.10443 6.88)",
-          "oklch(26.43% 0.10443 6.88)",
-          "oklch(37.86% 0.10443 6.88)",
-          "oklch(49.29% 0.10443 6.88)",
-          "oklch(60.71% 0.10443 6.88)",
-          "oklch(72.14% 0.10443 6.88)",
-          "oklch(83.57% 0.10443 6.88)",
-          "oklch(95.00% 0.10443 6.88)"
-        ]
+        "displayName": "error text",
+        "canonical": "#a52f46"
+      },
+      "selected": {
+        "role": "neutral",
+        "displayName": "selected",
+        "canonical": "#f3edf9"
+      },
+      "dark-primary": {
+        "role": "primary",
+        "displayName": "dark primary",
+        "canonical": "#bb86fc"
+      },
+      "dark-primary-hover": {
+        "role": "primary",
+        "displayName": "dark primary hover",
+        "canonical": "#cba3ff"
+      },
+      "dark-canvas": {
+        "role": "neutral",
+        "displayName": "dark canvas",
+        "canonical": "#181619"
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "dark surface",
+        "canonical": "#211e24"
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "dark text",
+        "canonical": "#eeeaf1"
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "dark muted",
+        "canonical": "#b6afbe"
+      },
+      "dark-border": {
+        "role": "neutral",
+        "displayName": "dark border",
+        "canonical": "#49414f"
+      },
+      "dark-divider": {
+        "role": "neutral",
+        "displayName": "dark divider",
+        "canonical": "#353039"
+      },
+      "dark-on-primary": {
+        "role": "primary",
+        "displayName": "dark on primary",
+        "canonical": "#211527"
+      },
+      "dark-error-text": {
+        "role": "neutral",
+        "displayName": "dark error text",
+        "canonical": "#f29cad"
+      },
+      "dark-selected": {
+        "role": "neutral",
+        "displayName": "dark selected",
+        "canonical": "#302638"
       },
       "pet-label": {
         "role": "neutral",
-        "displayName": "Pet Label",
-        "canonical": "#242226",
-        "tonalRamp": [
-          "oklch(15.00% 0.00794 308.12)",
-          "oklch(26.43% 0.00794 308.12)",
-          "oklch(37.86% 0.00794 308.12)",
-          "oklch(49.29% 0.00794 308.12)",
-          "oklch(60.71% 0.00794 308.12)",
-          "oklch(72.14% 0.00794 308.12)",
-          "oklch(83.57% 0.00794 308.12)",
-          "oklch(95.00% 0.00794 308.12)"
-        ]
+        "displayName": "pet label",
+        "canonical": "#242226"
       },
       "pet-label-border": {
         "role": "neutral",
-        "displayName": "Pet Label Border",
-        "canonical": "#514d56",
-        "tonalRamp": [
-          "oklch(15.00% 0.01550 305.73)",
-          "oklch(26.43% 0.01550 305.73)",
-          "oklch(37.86% 0.01550 305.73)",
-          "oklch(49.29% 0.01550 305.73)",
-          "oklch(60.71% 0.01550 305.73)",
-          "oklch(72.14% 0.01550 305.73)",
-          "oklch(83.57% 0.01550 305.73)",
-          "oklch(95.00% 0.01550 305.73)"
-        ]
+        "displayName": "pet label border",
+        "canonical": "#514d56"
+      },
+      "pet-text": {
+        "role": "neutral",
+        "displayName": "Pet text",
+        "canonical": "#e1e1e1"
       }
     },
     "typographyMeta": {
       "body": {
         "displayName": "Body",
-        "purpose": "Settings text and controls, using bundled DM Sans registered as Pet Sans."
+        "purpose": "DM Sans settings controls, 14px."
       },
-      "connection": {
-        "displayName": "Connection",
-        "purpose": "Real connection state at the top of settings."
+      "title": {
+        "displayName": "Task title",
+        "purpose": "Functional 18px panel title."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "13px medium field and preference labels."
       },
       "helper": {
         "displayName": "Helper",
-        "purpose": "Field explanations and footer text."
+        "purpose": "12px supporting text, 18px line height."
       }
     },
     "shadows": [],
@@ -253,50 +157,33 @@
       },
       {
         "name": "sprite-frame",
-        "value": "450ms",
-        "purpose": "Alternate pixel poses; disabled by still-pose or OS reduced-motion preference."
-      },
-      {
-        "name": "sprite-paint",
-        "value": "125ms",
-        "purpose": "Canvas redraw interval while the window is visible."
+        "value": "Original source frame durations",
+        "purpose": "LFG retains elapsed-time source loops. Still poses and OS reduced motion stop frame changes."
       }
     ],
-    "breakpoints": []
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "490px",
+        "purpose": "Use 16px horizontal padding below this width."
+      }
+    ],
+    "settingsLayout": {
+      "width": 580,
+      "height": 600,
+      "minWidth": 470,
+      "minHeight": 500,
+      "tabs": [
+        "Chats",
+        "Filters",
+        "Pet",
+        "Notifications"
+      ],
+      "footer": "Fixed Save/Discard",
+      "projectList": "Searchable project filter and matching Advanced chat filter, independent blocklist/whitelist modes"
+    }
   },
   "components": [
-    {
-      "name": "Save settings",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Commits settings and shows adjacent feedback.",
-      "html": "<button class=\"ds-save\">Save settings</button>",
-      "css": ".ds-save{font:14px 'Pet Sans',sans-serif;border:1px solid var(--border,#49434f);border-radius:4px;padding:9px 14px;cursor:pointer;transition:background-color 120ms ease;background:var(--accent,#bb86fc);color:#19121f;border-color:var(--accent,#bb86fc);font-weight:600}.ds-save:hover{background:#cba3ff}.ds-save:disabled{opacity:.6;cursor:wait}.ds-save:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-save{transition:none}}"
-    },
-    {
-      "name": "Browse",
-      "kind": "button",
-      "refersTo": "button-secondary",
-      "description": "Opens the native folder picker.",
-      "html": "<button class=\"ds-browse\">Browse…</button>",
-      "css": ".ds-browse{font:14px 'Pet Sans',sans-serif;border:1px solid var(--border,#49434f);border-radius:4px;padding:9px 14px;cursor:pointer;transition:background-color 120ms ease;background:#27232c;color:#e1e1e1}.ds-browse:hover{background:#39333e}.ds-browse:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-browse{transition:none}}"
-    },
-    {
-      "name": "Quit",
-      "kind": "button",
-      "refersTo": "button-text",
-      "description": "Small footer action.",
-      "html": "<button class=\"ds-quit\">Quit T3 Pet</button>",
-      "css": ".ds-quit{font:12px 'Pet Sans',sans-serif;background:transparent;color:var(--muted,#b3adb9);border:0;padding:6px 0;cursor:pointer}.ds-quit:hover{color:#e1e1e1;text-decoration:underline;text-underline-offset:3px}.ds-quit:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-quit{transition:none}}"
-    },
-    {
-      "name": "Data folder",
-      "kind": "input",
-      "refersTo": "field",
-      "description": "Plain labeled path field.",
-      "html": "<label class=\"ds-folder-label\" for=\"ds-folder\">T3 Code data folder</label><input class=\"ds-folder\" id=\"ds-folder\" value=\"C:\\Users\\Carter\\.t3\\userdata\" spellcheck=\"false\">",
-      "css": ".ds-folder-label{display:block;font:500 14px 'Pet Sans',sans-serif;color:#e1e1e1;margin-bottom:8px}.ds-folder{font:14px 'Pet Sans',sans-serif;background:#1e1e1e;color:#e1e1e1;border:1px solid var(--border,#49434f);border-radius:4px;padding:9px 10px;height:40px;caret-color:var(--accent,#bb86fc)}.ds-folder:hover{border-color:#77707f}.ds-folder:focus-visible{outline:2px solid var(--accent,#bb86fc);outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-folder{transition:none}}"
-    },
     {
       "name": "Pet status",
       "kind": "custom",
@@ -304,20 +191,29 @@
       "description": "Readable live status over desktop wallpaper.",
       "html": "<div class=\"ds-pet-status\" role=\"status\">Working</div>",
       "css": ".ds-pet-status{display:inline-block;font:12px/18px 'Pet Sans',sans-serif;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e1e1e1;background:#242226;border:1px solid #514d56;padding:2px 8px;border-radius:4px;text-align:center;pointer-events:none}"
+    },
+    {
+      "name": "Save changes",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Commits drafts with adjacent feedback; enabled only for changes.",
+      "html": "<button class=\"ds-save\">Save changes</button>",
+      "css": ".ds-save{--ds-accent:#7652a8;--ds-hover:#654392;--ds-on-accent:#ffffff;font:600 14px/1.45 'Pet Sans',sans-serif;min-height:32px;padding:6px 12px;border:1px solid var(--ds-accent,#7652a8);border-radius:5px;background:var(--ds-accent,#7652a8);color:var(--ds-on-accent,#ffffff);cursor:pointer;transition:background-color 120ms ease}.ds-save:hover:not(:disabled){background:var(--ds-hover,#654392)}.ds-save:focus-visible{outline:2px solid var(--ds-accent,#7652a8);outline-offset:2px}.ds-save:disabled{opacity:.5;cursor:default}@media(prefers-color-scheme:dark){.ds-save{--ds-accent:#bb86fc;--ds-hover:#cba3ff;--ds-on-accent:#211527}}@media(prefers-reduced-motion:reduce){.ds-save{transition:none}}"
     }
   ],
   "narrative": {
     "northStar": "A quiet pixel companion",
-    "overview": "T3 Pet uses the user-supplied LFG Pet sprite sheets on a transparent desktop window. Existing Carbon settings and lilac controls remain unchanged. Source timing, pixel edges, and transparency are preserved. On Windows the pet automatically hides while a foreground app is fullscreen.",
+    "overview": "The pet carries the character; settings and onboarding use compact desktop dialogs based on the user's T3 Code reference. App identity remains a neutral paw, independent of the selected sprite.",
     "keyCharacteristics": [
-      "User-supplied LFG pixel character without an enclosing panel.",
-      "Dark neutral settings with lilac controls and focus rings.",
-      "Plain labels, small corners, and no decorative depth."
+      "Transparent pixel character with source timing preserved.",
+      "Compact system light/dark settings with lilac controls.",
+      "Searchable project and chat filters, retained drafts and fixed Save/Discard.",
+      "Explicit consent before notification migration."
     ],
     "rules": [],
     "dos": [
       "Do keep labels above fields and show connection and save feedback in text.",
-      "Do preserve the pet's pixel edges, distinct activity poses, and still-pose option.",
+      "Do preserve original artwork, distinct activity poses, and still poses. Use pixelated rendering for LFG.",
       "Do keep controls compact, readable, and keyboard focusable."
     ],
     "donts": [

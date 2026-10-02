@@ -15,7 +15,7 @@ export function readThreads(databasePath: string): ThreadStatus[] {
     }
     // Only metadata. Message text, tool payloads, credentials and auth tables are never queried.
     const rows = db.prepare(`
-      SELECT t.thread_id AS id, t.title, COALESCE(p.title, '') AS project,
+      SELECT t.thread_id AS id, t.title, t.project_id AS projectId, COALESCE(p.title, '') AS project,
         COALESCE(s.provider_name, s.provider_instance_id, '') AS provider,
         s.status AS sessionStatus, t.latest_turn_id AS turnId,
         u.state AS turnState, u.completed_at AS completedAt, t.updated_at AS updatedAt,
@@ -33,6 +33,16 @@ export function readThreads(databasePath: string): ThreadStatus[] {
   } finally {
     db.close();
   }
+}
+
+export function readProjects(databasePath: string): { id: string; name: string }[] {
+  const db = new DatabaseSync(databasePath, { readOnly: true });
+  try {
+    db.exec('PRAGMA query_only = ON; PRAGMA busy_timeout = 300;');
+    const columns = new Set((db.prepare('PRAGMA table_info(projection_projects)').all() as { name: string }[]).map(column => column.name));
+    return db.prepare(`SELECT project_id AS id, COALESCE(title, '') AS name FROM projection_projects
+      ${columns.has('deleted_at') ? 'WHERE deleted_at IS NULL' : ''} ORDER BY title, project_id`).all() as unknown as { id: string; name: string }[];
+  } finally { db.close(); }
 }
 
 function portIsOpen(host: string, port: number): Promise<boolean> {
@@ -72,7 +82,7 @@ export async function readLocalSnapshot(dataDirectory: string): Promise<Snapshot
     }
     const connectHost = host === '0.0.0.0' ? '127.0.0.1' : host === '::' ? '::1' : host;
     if (!await portIsOpen(connectHost, port)) return { ...base, connected: false, message: 'Waiting for T3 Code. Reconnecting automatically.' };
-    return { connected: true, message: 'Connected to local T3 Code', threads: readThreads(databasePath), checkedAt: Date.now() };
+    return { connected: true, message: 'Connected to local T3 Code', threads: readThreads(databasePath), projects: readProjects(databasePath), checkedAt: Date.now() };
   } catch (error) {
     const text = error instanceof Error ? error.message : '';
     const message = text.includes('locked') || text.includes('busy')

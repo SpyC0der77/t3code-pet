@@ -1,55 +1,42 @@
 import { build } from 'esbuild';
-import { mkdir, copyFile, readdir, writeFile, readFile, unlink } from 'node:fs/promises';
-import { deflateSync } from 'node:zlib';
+import { mkdir, copyFile, readdir, unlink, cp, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { PNG } from 'pngjs';
 
 await mkdir('dist/renderer', { recursive: true });
 await mkdir('assets', { recursive: true });
 await build({ entryPoints: ['src/main.ts', 'src/preload.ts'], outdir: 'dist', bundle: true, platform: 'node', format: 'cjs', external: ['electron'], outExtension: { '.js': '.cjs' }, target: 'node24' });
-await build({ entryPoints: ['src/renderer/pet.ts', 'src/renderer/settings.ts', 'src/renderer/hover.ts'], outdir: 'dist/renderer', bundle: true, platform: 'browser', target: 'chrome140', format: 'iife' });
+await build({ entryPoints: ['src/renderer/pet.ts', 'src/renderer/settings.ts', 'src/renderer/hover.ts', 'src/renderer/onboarding.ts'], outdir: 'dist/renderer', bundle: true, platform: 'browser', target: 'chrome140', format: 'iife' });
 for (const name of await readdir('src/renderer')) if (/\.(html|css)$/.test(name)) await copyFile(`src/renderer/${name}`, `dist/renderer/${name}`);
 await copyFile('node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2', 'dist/renderer/font.woff2');
 await copyFile('node_modules/@fontsource-variable/dm-sans/LICENSE', 'dist/renderer/FONT-LICENSE.txt');
 
-// Copy the user's original sprite sheets without modifying their pixels.
-await mkdir('dist/renderer/lfg', { recursive: true });
-for (const name of await readdir('assets/lfg')) await copyFile('assets/lfg/' + name, 'dist/renderer/lfg/' + name);
+// Preserve the original bundled LFG artwork.
+for (const pet of ['lfg']) {
+  await mkdir(`dist/renderer/${pet}`, { recursive: true });
+  for (const name of await readdir(`assets/${pet}`)) await copyFile(`assets/${pet}/${name}`, `dist/renderer/${pet}/${name}`);
+}
 await unlink('dist/cat-icon.mjs').catch(error => { if (error.code !== 'ENOENT') throw error; });
+const bundledPets = join(resolve('dist/renderer'), 'pets');
+await rm(bundledPets, { recursive: true, force: true });
+await cp('assets/pets', bundledPets, { recursive: true });
 if (process.platform === 'win32') {
   await mkdir('dist/native', { recursive: true });
   const compiler = join(process.env.WINDIR || 'C:/Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
   execFileSync(compiler, ['/nologo', '/optimize+', '/target:exe', '/platform:anycpu', '/out:' + resolve('dist/native/foreground-monitor.exe'), resolve('native/ForegroundMonitor.cs')], { stdio: 'inherit', windowsHide: true });
+  execFileSync(compiler, ['/nologo', '/optimize+', '/target:exe', '/out:' + resolve('dist/native/t3-close.exe'), resolve('native/T3Close.cs')], { stdio: 'inherit', windowsHide: true });
+  execFileSync(compiler, ['/nologo', '/target:winexe', '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', '/out:' + resolve('dist/native/T3PetCloseFixture.exe'), resolve('native/T3PetCloseFixture.cs')], { stdio: 'inherit', windowsHide: true });
 }
-// Use the first jumping pose for the app icon.
-const sheet = PNG.sync.read(await readFile('assets/lfg/jumping.png'));
-const size = 256;
-const raw = Buffer.alloc((size * 4 + 1) * size);
-for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-  const sx = Math.floor(x * 208 / size) - 8;
-  const sy = Math.floor(y * 208 / size);
-  if (sx < 0 || sx >= 192) continue;
-  const from = (sy * sheet.width + sx) * 4;
-  sheet.data.copy(raw, y * (size * 4 + 1) + 1 + x * 4, from, from + 4);
+if (process.platform === 'darwin') {
+  await mkdir('dist/native', { recursive: true });
+  execFileSync('clang', ['-O2', '-arch', 'arm64', '-arch', 'x86_64', '-fobjc-arc', '-framework', 'AppKit', '-o', 'dist/native/t3-close', 'native/T3CloseMac.m'], { stdio: 'inherit' });
+  execFileSync('clang', ['-O2', '-arch', 'arm64', '-arch', 'x86_64', '-fobjc-arc', '-framework', 'AppKit', '-framework', 'CoreGraphics', '-o', 'dist/native/foreground-monitor', 'native/ForegroundMonitorMac.m'], { stdio: 'inherit' });
 }
-function crc32(bytes) {
-  let crc = 0xffffffff;
-  for (const byte of bytes) { crc ^= byte; for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1)); }
-  return (crc ^ 0xffffffff) >>> 0;
+if (process.platform === 'linux') {
+  await mkdir('dist/native', { recursive: true });
+  execFileSync('cc', ['-O2', '-Wall', '-Wextra', '-o', 'dist/native/t3-close', 'native/T3CloseLinux.c', '-lX11'], { stdio: 'inherit' });
+  execFileSync('cc', ['-O2', '-Wall', '-Wextra', '-o', 'dist/native/foreground-monitor', 'native/ForegroundMonitorLinux.c', '-lX11', '-lXrandr', '-lXext'], { stdio: 'inherit' });
 }
-function chunk(type, data) {
-  const body = Buffer.concat([Buffer.from(type), data]);
-  const length = Buffer.alloc(4), checksum = Buffer.alloc(4);
-  length.writeUInt32BE(data.length); checksum.writeUInt32BE(crc32(body));
-  return Buffer.concat([length, body, checksum]);
-}
-const header = Buffer.alloc(13);
-header.writeUInt32BE(size, 0); header.writeUInt32BE(size, 4); header[8] = 8; header[9] = 6;
-const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('tEXt', Buffer.from('Source\0LFG Pet by SpyC0der77; jumping.png first frame; commit 60716f8273e4a69b40dace98b241ab5c23733217.')), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-await writeFile('assets/icon.png', png);
-const icoHeader = Buffer.alloc(22);
-icoHeader.writeUInt16LE(1, 2); icoHeader.writeUInt16LE(1, 4);
-icoHeader.writeUInt16LE(1, 10); icoHeader.writeUInt16LE(32, 12); icoHeader.writeUInt32LE(png.length, 14); icoHeader.writeUInt32LE(22, 18);
-await writeFile('assets/icon.ico', Buffer.concat([icoHeader, png]));
+// App identity is independent of the selected pet. Use the committed icon assets;
+// never regenerate menu, tray, or notification icons from a sprite sheet.
 console.log('Built T3 Pet.');

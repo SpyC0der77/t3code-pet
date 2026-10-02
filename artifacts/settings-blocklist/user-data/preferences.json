@@ -1,0 +1,13 @@
+{
+  "onboardingCompleted": false,
+  "notificationsEnabled": false,
+  "notificationSound": true,
+  "dataDirectory": "C:\\Users\\Carter\\.t3\\userdata",
+  "followThreadId": null,
+  "blockedProjects": [],
+  "size": 128,
+  "reducedMotion": false,
+  "showLabel": true,
+  "launchAtLogin": false,
+  "position": null
+}

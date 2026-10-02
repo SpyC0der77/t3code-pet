@@ -15,10 +15,10 @@ export interface ForegroundSample {
 /** Hide immediately; reveal only after one normal window has settled. No delayed
  * callback can reveal a pet after a newer fullscreen observation has arrived. */
 export class FullscreenStabilizer {
-  hidden = true;
+  hidden: boolean;
   private candidate: string | null = null;
   private candidateSince = 0;
-  constructor(private readonly revealDelay = 400) {}
+  constructor(private readonly revealDelay = 400, initiallyHidden = true) { this.hidden = initiallyHidden; }
 
   sample(sample: ForegroundSample, now: number): boolean {
     // Dragging or focusing the pet must neither hide it nor override a game.
@@ -48,14 +48,14 @@ export function parseForegroundSample(line: string): ForegroundSample | null {
   return { kind: kinds[match[1] as keyof typeof kinds], windowId: match[2] };
 }
 
-/** One small persistent Windows helper; no shell process on every poll. */
+/** One persistent native helper per platform; no shell process on every poll. */
 export function watchFullscreen(executable: string, petWindowHandle: string, onChange: (fullscreen: boolean) => void, onFailure: () => void, onBackground: (dark: boolean) => void): () => void {
   let child: ChildProcess | undefined;
   let retry: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   const launch = () => {
     let failed = false;
-    const stabilizer = new FullscreenStabilizer();
+    const stabilizer = new FullscreenStabilizer(400, process.platform === 'win32');
     child = spawn(executable, [String(process.pid), petWindowHandle], { windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
     const lines = createInterface({ input: child.stdout! });
     lines.on('line', line => {

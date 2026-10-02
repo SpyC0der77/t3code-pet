@@ -2,6 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { AppState, PetBridge } from './shared';
 
 const bridge: PetBridge = {
+  notificationSetup: () => ipcRenderer.invoke('pet:notification-setup'),
+  finishOnboarding: choice => ipcRenderer.invoke('pet:finish-onboarding', choice),
+  testNotification: () => ipcRenderer.invoke('pet:test-notification'),
+  showOnboarding: () => ipcRenderer.send('pet:onboarding'),
   openChat: threadId => ipcRenderer.invoke('pet:open-chat', threadId),
   hover: () => ipcRenderer.send('pet:hover'),
   hoverSize: height => ipcRenderer.send('pet:hover-size', height),

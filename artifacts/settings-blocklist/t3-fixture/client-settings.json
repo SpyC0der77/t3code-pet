@@ -1,0 +1,5 @@
+{
+  "notificationMode": "off",
+  "inAppNotificationsEnabled": true,
+  "futurePreference": "preserved"
+}
