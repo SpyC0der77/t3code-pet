@@ -12,15 +12,17 @@ test('every imported mood references populated atlas cells and unchanged source 
   const sources = JSON.parse(readFileSync('assets/pets/sources.json', 'utf8')) as {
     id: string; file: string; sha256: string; width: number; height: number;
   }[];
-  assert.equal(sources.length, 3);
-  assert.deepEqual(pets.map(pet => pet.id), ['lfg', 'jadebyte', 'lunari', 'kerno']);
-  assert.deepEqual(readdirSync('assets/pets', { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name !== 'licenses').map(entry => entry.name).sort(), ['jadebyte', 'kerno', 'lunari']);
-  assert.deepEqual(readdirSync('dist/renderer/pets', { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name !== 'licenses').map(entry => entry.name).sort(), ['jadebyte', 'kerno', 'lunari']);
+  const expectedIds = ['lfg', 'jadebyte', 'lunari', 'kerno', 'aion', 'floppy', 'oscillo', 'caspian', 'cinder', 'hoggie', 'cat-stack'];
+  assert.equal(sources.length, expectedIds.length - 1);
+  assert.deepEqual(pets.map(pet => pet.id), expectedIds);
+  for (const folder of ['assets/pets', 'dist/renderer/pets']) {
+    assert.deepEqual(readdirSync(folder, { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name !== 'licenses').map(entry => entry.name).sort(), expectedIds.filter(id => id !== 'lfg').sort());
+  }
   for (const source of sources) {
     assert.ok(pets.some(pet => pet.id === source.id));
     const bytes = readFileSync(`assets/pets/${source.file}`);
     assert.equal(createHash('sha256').update(bytes).digest('hex'), source.sha256);
-    const expected = source.id === 'jadebyte' || source.id === 'lunari' ? 7 : 6;
+    const expected = source.id === 'kerno' ? 6 : 7;
     for (const [mood, row, count] of [['idle', 0, expected], ['offline', 0, expected], ['working', 7, 6], ['waiting', 6, 6], ['error', 5, 8], ['done', 4, 5]] as const) {
       const animation = petAnimation(source.id, moodAnimation[mood]);
       assert.equal(animation.row, row);

@@ -1,0 +1,7 @@
+{
+  "id": "floppy",
+  "displayName": "Floppy",
+  "description": "A cheerful 1990s beige desktop PC pet with a CRT monitor and dual floppy drives.",
+  "spriteVersionNumber": 2,
+  "spritesheetPath": "spritesheet.webp"
+}
