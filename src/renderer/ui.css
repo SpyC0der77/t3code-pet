@@ -1,4 +1,5 @@
 @import url("theme.css");
+@import url("dropdown.css");
 * { box-sizing: border-box; }
 body { margin: 0; }
 [hidden] { display: none !important; }
@@ -40,6 +41,7 @@ input[type=checkbox] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; acc
 .notification-check { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 1rem; }
 .notification-check button { font-size: 0.8571rem; }
 fieldset { border: 0; padding: 0; margin: 20px 0 12px; min-width: 0; }
+fieldset > legend:not(.sr-only) { font-weight: 500; margin-bottom: 10px; }
 .notification-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px; margin: 0 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); cursor: pointer; font-weight: 400; }
 .notification-option:last-child { margin-bottom: 0; }
 .notification-option:has(input:checked) { border-color: var(--accent); }

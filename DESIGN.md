@@ -88,6 +88,8 @@ The pet carries the character; settings and onboarding use compact desktop dialo
 
 ## Colors
 
+Chat list rows use the theme's surface color, with the canvas color on hover and press. This applies to both the desktop hover list and the settings activity list; the overlay and accent surface colors remain for their other controls.
+
 Settings, onboarding, and the chat list follow T3 Code's saved palette and appearance mode, including custom colors and light/dark mixes. Theme changes repaint open views while preserving drafts and pet state. The pet artwork keeps its original colors.
 
 ## Typography
@@ -129,6 +131,14 @@ Settings shows notification setup until onboarding has been completed, then hide
 The setup sequence is Connect, Pet, Notifications, Finish. Pet reuses the settings character gallery with animated resting previews, desktop size, and still poses. It starts from saved preferences, retains drafts when navigating back, and saves on Continue. Finish previews the saved character. Compact progress controls place the number above the label, and the pet gallery uses two columns within the scrolling content region.
 
 Completed setup steps display checkmarks; the current step has a neutral selected background and tinted number circle. Connect can be revisited before completing Notifications; future stages and completed migration cannot be entered through the progress control. Keep my current setup is selected by default. Migration requires choosing Switch to T3 Pet and approving the native request to close T3 Code before preferences change. Action text follows the selected choice and retains its arrow. Cancellation leaves preferences unchanged. The finish action opens settings; notification tests report status. Sounds are disabled when Pet notifications are off while retaining their saved preference. Onboarding follows T3 Code's active surfaces, action color, and interface font. The paw identity remains unchanged.
+
+### Custom notifications
+
+Onboarding and the settings notification setup show the OS / Custom appearance choice only after Switch to T3 Pet or Enable Pet notifications is selected. Keeping the current setup hides the choice and preserves the saved style. Migration applies the style only after consent and a successful switch. Cancellation leaves it unchanged.
+
+All selects use a shared custom combobox matching T3 Code's dropdown structure: a compact outlined trigger with a chevron, an opaque theme overlay with 8px corners, selected-row checkmarks and subtle row highlighting. The list opens in the top layer to avoid clipping in scrolling panels and dialogs, fits above or below the trigger within the window, and scrolls long lists. Labels, disabled states, arrow keys, Home/End, Enter/Space, Escape, Tab and type-ahead are supported. Existing select fields retain saved values internally and never display native OS menus.
+
+Settings offers Custom or OS notifications, keeping OS as the upgrade default. The custom surface follows T3 Code's toast structure: a 16px-wide status icon, medium-weight 14px title, 14px description, Open chat action and a close button. It uses the active theme's opaque overlay color, a thin border and 8px corners, without glass or shadows. Each notification has a 360px-wide surface within a 376px window before work-area constraints, with content-driven height beside the pet. Up to three stack with 8px gaps, switch sides near monitor edges and remain within the work area. Hover and keyboard focus pause the ten-second dismissal timer. Escape dismisses. Preview uses the draft style without saving settings. Dragging locks to an axis after four pixels of movement, fades with distance, and dismisses on release after forty pixels. Short or cancelled drags return to the current stack position.
 
 ### Pet and status
 

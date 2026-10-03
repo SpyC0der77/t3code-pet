@@ -48,13 +48,50 @@ const directory = resolve('release', `smoke-${process.platform}-${Date.now()}`);
 const scale = process.env.T3PET_SMOKE_SCALE;
 assert.ok(!scale || ['1', '1.25', '1.5', '2', '3'].includes(scale), 'Invalid smoke display scale.');
 const testNotification = process.env.T3PET_SMOKE_NOTIFICATION === '1';
-const child = spawn(executable, ['--smoke-test', directory, ...(testNotification ? ['--notification-smoke-test'] : []), ...(scale ? [`--force-device-scale-factor=${scale}`] : [])], { stdio: 'inherit', windowsHide: true, env: runtimeEnvironment });
+const testHover = process.env.T3PET_SMOKE_HOVER === '1';
+const testToast = process.env.T3PET_SMOKE_TOAST === '1';
+assert.ok([testNotification, testHover, testToast].filter(Boolean).length <= 1, 'Run notification, hover, and toast smoke modes separately.');
+const child = spawn(executable, ['--smoke-test', directory, ...(testHover ? ['--hover-smoke-test'] : []), ...(testToast ? ['--toast-smoke-test'] : []), ...(testNotification ? ['--notification-smoke-test'] : []), ...(scale ? [`--force-device-scale-factor=${scale}`] : [])], { stdio: 'inherit', windowsHide: true, env: runtimeEnvironment });
 const timeout = setTimeout(() => child.kill(), 60_000);
 try {
   const exit = await new Promise((resolveExit, reject) => { child.once('exit', resolveExit); child.once('error', reject); });
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+if (!testHover) {
+  for (const action of ['end', 'cancel']) {
+    assert.ok(report.customNotifications['dragReflow-' + action] && report.customNotifications['dragRemoval-' + action], 'Short toast drag restored stale stack bounds.');
+  }
+}
+if (testToast) {
+  const checks = report.customNotifications;
+  for (const theme of ['light', 'dark']) {
+    assert.ok(checks[theme].transparent && checks[theme].draggable && !checks[theme].overflow && checks[theme].actionFits, 'Notification transparency or drag affordance failed.');
+    assert.ok(checks[theme + 'Layout'], 'Notification inline layout, corner close button, or content height failed.');
+    assert.ok(checks[theme + 'Bounds'] && checks[theme + 'Paused'] && checks[theme + 'Dismissed'], 'Notification positioning or actions failed.');
+  }
+  for (const key of ['dragMoved', 'dragAxisLocked', 'dragVertical', 'dragLeft', 'dragPaused', 'dragReturned', 'dragCancelled', 'dragFaded', 'dragBelowThreshold', 'dragAutoContinued', 'dragWaitsForRelease', 'dragSlower', 'dragAutoFaded', 'dragOpacityRestored', 'dragDismissed']) assert.ok(checks[key], `Notification ${key} failed.`);
+  console.log(`Packaged ${process.platform} notification smoke test passed. Report: ${directory}`);
+  process.exit(0);
+}
+if (testHover) {
+  assert.ok(report.hoverEmpty && report.hoverIdle && report.hoverDisconnected && report.chatNavigation.rejectedUnknown, 'Idle, empty, or disconnected hover content failed.');
+  assert.equal(report.hover.rows, 2);
+  assert.ok(!report.hover.overflow && report.hover.height >= report.hover.listHeight);
+  console.log(`Packaged ${process.platform} hover smoke test passed. Report: ${directory}`);
+  process.exit(0);
+}
+assert.ok(Object.values(report.notificationChoice).every(Boolean), 'Notification choice did not save or discard correctly.');
+assert.ok(Object.values(report.settingsDropdowns).every(Boolean), 'Custom settings dropdown accessibility, keyboard, bounds, or draft behavior failed.');
+assert.ok(Object.values(report.notificationTestPending).every(Boolean), 'A settings update re-enabled a pending test notification.');
+assert.ok(Object.values(report.onboardingDropdowns).every(Boolean), 'Custom onboarding dropdown selection or bounds failed.');
+assert.ok(Object.values(report.onboardingNotificationStyle).every(Boolean), 'Conditional onboarding style choice, keep behavior, or persistence failed.');
+for (const theme of ['light', 'dark']) {
+  const toast = report.customNotifications[theme];
+  assert.ok(toast.bridge && !toast.overflow && toast.actionFits && toast.theme === theme, 'Custom notification layout or theme failed.');
+  assert.ok(report.customNotifications[theme + 'Bounds'] && report.customNotifications[theme + 'Paused'] && report.customNotifications[theme + 'Dismissed'], 'Custom notification positioning, pause, or action failed.');
+}
+assert.ok(report.customNotifications.bounded && report.customNotifications.cleared, 'Custom notification windows leaked or exceeded the burst limit.');
 assert.ok(Object.values(report.v2State).every(Boolean), 'V2 SQLite status detection failed in packaged Electron.');
 assert.ok(report.visibility.monitorReady && !report.visibility.monitorFailed, 'Native fullscreen monitor did not run.');
 assert.ok(report.controls.saveRoundTrip && report.controls.invalidRejected);
@@ -84,7 +121,7 @@ assert.ok(!report.advancedCompact.overflow && report.advancedCompact.footerFits 
 assert.ok(!report.settingsCompact.overflow && report.settingsCompact.footerFits, 'Compact settings layout overflowed.');
 assert.ok(report.ui.hasBridge && !report.ui.overflow);
 assert.ok(report.animation.opaquePixels > 0);
-assert.ok(report.hoverEmpty && report.chatNavigation.rejectedUnknown, 'The empty hover list was not hidden.');
+assert.ok(report.hoverEmpty && report.hoverIdle && report.hoverDisconnected && report.chatNavigation.rejectedUnknown, 'Idle, empty, or disconnected hover content failed.');
 assert.ok(report.onboardingConnect.bridge && !report.onboardingConnect.overflow);
 assert.ok(Object.values(report.notificationModal).every(Boolean), 'Settings notification modal, cancellation, compact layout, or apply failed.');
 assert.ok(Object.values(report.onboardingPet).every(Boolean), 'Onboarding pet selection, navigation, persistence, or finish preview failed.');

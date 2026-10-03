@@ -1,4 +1,4 @@
-import type { NotificationSetup } from '../shared';
+import type { NotificationSetup, Preferences } from '../shared';
 
 export type NotificationChoice = 'keep' | 'enable' | 'migrate';
 
@@ -11,22 +11,35 @@ export function createNotificationChoices(host: HTMLElement) {
         <label class="notification-option" id="enable-option" hidden><input type="radio" name="notification-choice" value="enable"><span><strong>Enable Pet notifications</strong><span>Get alerts for approval, input, completion, and errors.</span></span></label>
         <label class="notification-option"><input type="radio" name="notification-choice" value="keep" checked><span><strong id="keep-label">Keep my current setup</strong><span id="keep-detail">Leave notification settings unchanged.</span></span></label>
       </fieldset>
+      <fieldset id="notification-appearance" hidden><legend>How should Pet show notifications?</legend>
+        <label class="notification-option"><input type="radio" name="notification-appearance" value="os" checked><span><strong>OS notifications</strong><span id="os-notification-detail">Use your system's notification style and notification center.</span></span></label>
+        <label class="notification-option"><input type="radio" name="notification-appearance" value="custom"><span><strong>Custom notifications</strong><span>Use your T3 Code theme and show alerts beside the pet.</span></span></label>
+      </fieldset>
       <p class="help">T3 Code's in-app and mobile notices stay unchanged. Alerts pause during fullscreen use where supported.</p>`;
   const element = (id: string) => host.querySelector<HTMLElement>('#' + id)!;
   const radio = (value: string) => host.querySelector<HTMLInputElement>('input[value=' + value + ']')!;
+  const choice = () => host.querySelector<HTMLInputElement>('input[name=notification-choice]:checked')!.value as NotificationChoice;
+  function showAppearance() { element('notification-appearance').hidden = choice() === 'keep'; }
+  host.addEventListener('change', showAppearance);
   return {
-    choice() { return host.querySelector<HTMLInputElement>('input[name=notification-choice]:checked')!.value as NotificationChoice; },
-    reset() { radio('keep').checked = true; },
-    render(setup: NotificationSetup, busy: boolean, enabled: boolean) {
+    choice,
+    style() { return choice() === 'keep' ? undefined : host.querySelector<HTMLInputElement>('input[name=notification-appearance]:checked')!.value as Preferences['notificationStyle']; },
+    reset(style: Preferences['notificationStyle'] = 'os') { radio('keep').checked = true; radio(style).checked = true; showAppearance(); },
+    render(setup: NotificationSetup, busy: boolean, enabled: boolean, osSupported: boolean) {
       element('notification-check').textContent = setup.status === 'enabled' ? 'T3 Code alerts are on' : setup.status === 'off' ? 'T3 Code alerts are off' : 'Notification settings unavailable';
-      element('notification-detail').textContent = setup.supported ? setup.message : 'Desktop notifications are unavailable on this system. You can still use your pet.';
+      element('notification-detail').textContent = setup.message;
       element('migrate-option').hidden = setup.status !== 'enabled';
       element('enable-option').hidden = setup.status === 'enabled';
       const migrate = radio('migrate'); const enable = radio('enable');
-      migrate.disabled = busy || !setup.supported || setup.status !== 'enabled';
-      enable.disabled = busy || !setup.supported || setup.status !== 'off';
+      migrate.disabled = busy || setup.status !== 'enabled';
+      enable.disabled = busy || setup.status !== 'off';
+      radio('os').disabled = busy || !osSupported;
+      radio('custom').disabled = busy;
+      if (!osSupported && radio('os').checked) radio('custom').checked = true;
+      element('os-notification-detail').textContent = osSupported ? "Use your system's notification style and notification center." : 'Unavailable on this system. Choose Custom notifications.';
       if (!busy && ((migrate.checked && migrate.disabled) || (enable.checked && enable.disabled))) radio('keep').checked = true;
       element('keep-detail').textContent = enabled ? 'Keep your existing Pet and T3 Code notification preferences.' : 'Leave T3 Code as it is. Pet notifications will stay off.';
+      showAppearance();
     },
   };
 }

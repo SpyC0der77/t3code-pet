@@ -1,7 +1,7 @@
 import type { AppState, NotificationSetup } from '../shared';
 import { createNotificationChoices, notificationAction } from './notification-choices';
 
-export function createNotificationModal(enabled: () => boolean, updated: (state: AppState) => void) {
+export function createNotificationModal(state: () => AppState, updated: (state: AppState) => void) {
   const dialog = document.getElementById('notification-dialog') as HTMLDialogElement;
   const choicesHost = document.getElementById('notification-choices')!;
   const choices = createNotificationChoices(choicesHost);
@@ -18,7 +18,7 @@ export function createNotificationModal(enabled: () => boolean, updated: (state:
   }
   function render() {
     for (const control of dialog.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input,button')) control.disabled = busy;
-    if (setup) choices.render(setup, busy, enabled());
+    if (setup) choices.render(setup, busy, state().preferences.notificationsEnabled, state().notificationsSupported);
     else for (const radio of choicesHost.querySelectorAll<HTMLInputElement>('input')) radio.disabled = true;
     (document.getElementById('notification-apply') as HTMLButtonElement).disabled = busy || !setup;
     action.textContent = busy ? checking ? 'Checking…' : 'Applying…' : notificationAction(choices.choice());
@@ -39,7 +39,7 @@ export function createNotificationModal(enabled: () => boolean, updated: (state:
     event.preventDefault(); if (busy || !setup) return;
     busy = true; error.hidden = true; render();
     try {
-      const result = await window.pet.finishOnboarding(choices.choice());
+      const result = await window.pet.finishOnboarding(choices.choice(), choices.style());
       setup = result;
       if (result.outcome === 'cancelled') { error.textContent = result.message; error.hidden = false; return; }
       updated(await window.pet.getState());
@@ -50,7 +50,7 @@ export function createNotificationModal(enabled: () => boolean, updated: (state:
   return {
     async open() {
       if (dialog.open) return;
-      setup = null; choices.reset(); error.hidden = true;
+      setup = null; choices.reset(state().preferences.notificationStyle); error.hidden = true;
       dialog.showModal(); heading.focus();
       await check();
     },

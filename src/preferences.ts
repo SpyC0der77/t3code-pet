@@ -5,7 +5,7 @@ import type { Preferences } from './shared';
 import { isPetId } from './pets';
 
 export function defaults(): Preferences {
-  return { petId: 'lfg', onboardingCompleted: false, notificationsEnabled: false, notificationSound: true,
+  return { petId: 'lfg', onboardingCompleted: false, notificationsEnabled: false, notificationSound: true, notificationStyle: 'os',
     dataDirectory: join(homedir(), '.t3', 'userdata'), followThreadId: null, blockedProjects: [],
     projectFilter: { mode: 'blocklist', selected: [] }, chatFilter: { mode: 'blocklist', selected: [] }, size: 128,
     reducedMotion: false, showLabel: true, launchAtLogin: false, position: null };
@@ -15,6 +15,10 @@ export function validatePreferences(input: unknown, current: Preferences): Prefe
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid settings.');
   const raw = input as Record<string, unknown>;
   const next = { ...current };
+  if ('notificationStyle' in raw) {
+    if (raw.notificationStyle !== 'custom' && raw.notificationStyle !== 'os') throw new Error('Invalid notification style.');
+    next.notificationStyle = raw.notificationStyle;
+  }
   if ('petId' in raw) {
     if (!isPetId(raw.petId)) throw new Error('Invalid pet.');
     next.petId = raw.petId;

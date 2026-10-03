@@ -1,4 +1,5 @@
 import { applyUiTheme } from './theme';
+import { enhanceDropdowns, syncDropdowns, closeDropdowns } from './dropdown';
 import type { AppState, NotificationSetup } from '../shared';
 import { loadSprites, drawSprite } from './sprite';
 import { moodAnimation } from '../animations';
@@ -10,6 +11,7 @@ const element = (id: string) => document.getElementById(id)!;
 const button = (id: string) => element(id) as HTMLButtonElement;
 const directory = element('directory') as HTMLInputElement;
 const notificationChoices = createNotificationChoices(element('notifications-step'));
+enhanceDropdowns();
 let step = 0;
 let busy = false;
 let initialized = false;
@@ -46,8 +48,10 @@ function setBusy(value: boolean) {
   actionLabel();
   renderSetup();
   updateStepControls();
+  syncDropdowns();
 }
 function showStep(value: number) {
+  closeDropdowns();
   step = value; clearError();
   steps.forEach((id, i) => { element(id).hidden = i !== value; });
   document.querySelectorAll('.steps button').forEach((item, i) => {
@@ -65,7 +69,7 @@ function showStep(value: number) {
 }
 function renderSetup() {
   if (!setup) return;
-  notificationChoices.render(setup, busy, state?.preferences.notificationsEnabled ?? false);
+  notificationChoices.render(setup, busy, state?.preferences.notificationsEnabled ?? false, state?.notificationsSupported ?? false);
   actionLabel();
 }
 async function checkSetup() {
@@ -82,7 +86,9 @@ function render(value: AppState) {
     selectedPet = value.preferences.petId;
     petSize.value = String(value.preferences.size);
     petStill.checked = value.preferences.reducedMotion;
+    notificationChoices.reset(value.preferences.notificationStyle);
     updatePet(); initialized = true;
+    syncDropdowns();
   }
   element('connection').textContent = value.snapshot.connected ? 'Connected to T3 Code' : 'T3 Code is not connected';
   element('connection-detail').textContent = value.snapshot.message;
@@ -138,7 +144,7 @@ element('onboarding-form').addEventListener('submit', async event => {
       await checkSetup(); showStep(2);
     } else if (step === 2) {
       const choice = notificationChoices.choice();
-      const result = await window.pet.finishOnboarding(choice);
+      const result = await window.pet.finishOnboarding(choice, notificationChoices.style());
       setup = result; renderSetup();
       if (result.outcome === 'cancelled') return;
       state = await window.pet.getState();
@@ -157,7 +163,7 @@ button('test-notification').addEventListener('click', async () => {
   button('test-notification').disabled = true;
   try {
     await window.pet.testNotification();
-    element('test-result').textContent = 'Test requested. If no alert appears, allow T3 Pet in system notification settings.';
+    element('test-result').textContent = state.preferences.notificationStyle === 'custom' ? 'Test sent beside your pet.' : 'Test requested. If no alert appears, allow T3 Pet in system notification settings.';
   } catch (error) { element('test-result').textContent = errorText(error); }
   finally { button('test-notification').disabled = false; }
 });

@@ -1,4 +1,5 @@
 import { applyUiTheme } from './theme';
+import { enhanceDropdowns, syncDropdowns, closeDropdowns } from './dropdown';
 import type { AppState, PetMood, Preferences, SelectionFilter } from '../shared';
 import { createPetGallery } from './pet-gallery';
 import { pets } from '../pets';
@@ -22,6 +23,7 @@ function updatePreview() { gallery.preview(select('preview').value as PetMood, i
 let current: AppState;
 let saved: Preferences | undefined;
 let saving = false;
+let testingNotification = false;
 let activitySignature = '';
 function renderActivity() {
   const snapshot = current.snapshot;
@@ -81,6 +83,7 @@ function draft() {
     size: Number(select('size').value), reducedMotion: input('reduced-motion').checked,
     launchAtLogin: input('login').checked, notificationsEnabled: input('notifications').checked,
     notificationSound: input('notification-sound').checked,
+    notificationStyle: select('notification-style').value as Preferences['notificationStyle'],
   };
 }
 function dirty() {
@@ -97,9 +100,18 @@ function updateControls(message?: string) {
   button('notification-setup').title = changed ? 'Save or discard your changes before opening setup.' : '';
   button('reopen-onboarding').disabled = saving || changed;
   button('reopen-onboarding').title = changed ? 'Save or discard your changes before reopening onboarding.' : '';
-  input('notification-sound').disabled = !current?.notificationsSupported || !input('notifications').checked;
+  updateNotificationControls();
   if (message) text('save-result', message);
   else { element('save-result').classList.remove('error'); text('save-result', changed ? 'Unsaved changes' : 'Changes apply after saving.'); }
+}
+function updateNotificationControls() {
+  const supported = select('notification-style').value === 'custom' || !!current?.notificationsSupported;
+  input('notifications').disabled = saving || !supported;
+  input('notification-sound').disabled = saving || !supported || !input('notifications').checked;
+  select('notification-style').disabled = saving;
+  button('test-notification').disabled = saving || testingNotification || !supported;
+  text('notification-style-help', select('notification-style').value === 'custom' ? 'Custom alerts use your T3 Code theme and appear beside the pet.' : supported ? 'OS alerts use your system notification settings and notification center.' : 'OS notifications are unavailable on this system. Choose Custom to receive alerts.');
+  syncDropdowns();
 }
 function renderSelector(kind: Kind) {
   if (!current) return;
@@ -160,10 +172,12 @@ function hydrate(p: Preferences) {
   input('pet-id').value=p.petId;showPetCredit();
   input('reduced-motion').checked=p.reducedMotion;input('login').checked=p.launchAtLogin;
   input('notifications').checked=p.notificationsEnabled;input('notification-sound').checked=p.notificationSound;
+  select('notification-style').value=p.notificationStyle;
   renderSelectors();updateControls();updatePreview();
 }
 const tabs = [...document.querySelectorAll<HTMLButtonElement>('[role=tab]')];
 function showTab(index: number, focus = false) {
+  closeDropdowns();
   tabs.forEach((tab, i) => { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; element(tab.getAttribute('aria-controls')!).hidden = i !== index; });
   if (focus) tabs[index].focus();
 }
@@ -184,10 +198,9 @@ function render(state: AppState) {
   text('connection', state.snapshot.connected ? 'Connected to T3 Code' : 'Not connected');
   text('connection-detail', state.snapshot.connected ? 'Agent status updates automatically.' : state.snapshot.message);
   text('version', `v${state.version}`); text('chat-count', `${state.snapshot.threads.length} ${state.snapshot.threads.length === 1 ? 'chat' : 'chats'}`);
-  input('login').disabled = saving || !state.supportsLoginStartup; input('notifications').disabled = saving || !state.notificationsSupported;
-  button('test-notification').disabled = !state.notificationsSupported;
+  input('login').disabled = saving || !state.supportsLoginStartup;
   input('login').closest('label')!.title = state.supportsLoginStartup ? '' : 'Login startup is unavailable on this system.';
-  input('notification-sound').disabled = saving || !state.notificationsSupported || !input('notifications').checked;
+  updateNotificationControls();
 }
 window.pet.onState(render); void window.pet.getState().then(render);
 input('activity-search').addEventListener('input', () => { if (current) renderActivity(); });
@@ -213,14 +226,16 @@ button('browse').addEventListener('click', async () => {
 });
 select('preview').addEventListener('change', updatePreview);
 input('reduced-motion').addEventListener('change', updatePreview);
-const notificationModal = createNotificationModal(() => current.preferences.notificationsEnabled, render);
+const notificationModal = createNotificationModal(() => current, render);
+enhanceDropdowns();
 button('notification-setup').addEventListener('click', () => { if (!dirty()) void notificationModal.open(); });
 button('reopen-onboarding').addEventListener('click', () => { if (!saving && !dirty()) window.pet.showOnboarding(); });
 button('test-notification').addEventListener('click', async () => {
-  button('test-notification').disabled = true;
-  try { await window.pet.testNotification(); text('notification-status', 'Test sent. If no alert appears, allow T3 Pet in system notification settings.'); }
+  if (testingNotification) return;
+  testingNotification = true; updateNotificationControls();
+  try { await window.pet.testNotification(select('notification-style').value as Preferences['notificationStyle']); text('notification-status', select('notification-style').value === 'custom' ? 'Test sent beside your pet.' : 'Test sent. If no alert appears, allow T3 Pet in system notification settings.'); }
   catch (error) { text('notification-status', errorText(error)); }
-  finally { button('test-notification').disabled = !current.notificationsSupported; }
+  finally { testingNotification = false; updateControls(); }
 });
 element('settings-form').addEventListener('submit', async event => {
   event.preventDefault(); if (saving || !dirty()) return;
@@ -233,8 +248,7 @@ element('settings-form').addEventListener('submit', async event => {
   finally {
     controls.forEach((control, index) => { control.disabled = disabled[index]; });
     saving = false; button('save').disabled = !dirty(); button('discard').disabled = false; button('notification-setup').disabled = dirty();
-    button('reopen-onboarding').disabled = dirty();
-    input('notification-sound').disabled = !current.notificationsSupported || !input('notifications').checked;
+    updateControls(element('save-result').textContent ?? undefined);
     renderSelectors();
   }
 });

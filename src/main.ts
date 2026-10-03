@@ -10,6 +10,7 @@ import { PetVisibility, watchFullscreen } from './fullscreen';
 import { runFullscreenCheck, runFullscreenFixture } from './fullscreen-test';
 import { loadPreferences, storePreferences, validatePreferences } from './preferences';
 import { ChatNotifications, type ChatNotification } from './notifications';
+import { ToastWindows } from './toast-windows';
 import { allowedSnapshot } from './project-filter';
 import { inspectNotifications, migrateNotifications, closeT3, consentedSwitch } from './t3-notifications';
 import { nativeHelperPath, nativeWindowId } from './platform';
@@ -48,6 +49,7 @@ app.setAppUserModelId('dev.t3pet.companion');
 
 let petWindow: BrowserWindow | null = null;
 let testingHover = false;
+let testingToasts = false;
 let darkBackground = false;
 let settingsWindow: BrowserWindow | null = null;
 let onboardingView = false;
@@ -55,6 +57,9 @@ let migrationMessage = '';
 let migrating = false;
 const notifications = new ChatNotifications();
 const activeNotifications = new Set<Notification>();
+const customNotifications = new ToastWindows(() => petWindow, () => uiTheme,
+  async (threadId, test) => { if (test) showSettings(); else await openNotifiedChat(threadId); },
+  error => { migrationMessage = `Could not show the custom notification: ${error instanceof Error ? error.message : String(error)}`; publish(); });
 let tray: Tray | null = null;
 let preferences: Preferences;
 let preferencesPath: string;
@@ -90,11 +95,13 @@ function publish() {
   tray?.setToolTip(`T3 Pet · ${value.pet.label}`);
   tray?.setContextMenu(menu());
   if (!testingHover) hoverPanel.publish();
+  customNotifications.publish();
 }
 
 function persist() { storePreferences(preferencesPath, preferences); }
 
 function applyVisibility() {
+  if (!testingToasts && (visibility.fullscreen || !fullscreenCheckReady)) customNotifications.clear();
   if (!petWindow || petWindow.isDestroyed()) return;
   if (visibility.visible) {
     if (!petWindow.isVisible()) petWindow.showInactive();
@@ -197,7 +204,14 @@ function showSettings(onboarding = false) {
 function setupState(): NotificationSetup {
   const inspected = inspectNotifications(preferences.dataDirectory);
   return { ...inspected, message: migrationMessage || inspected.message,
-    completed: preferences.onboardingCompleted, supported: Notification.isSupported() };
+    completed: preferences.onboardingCompleted, supported: notificationSupported() };
+}
+
+function notificationSupported(style = preferences.notificationStyle) { return style === 'custom' || Notification.isSupported(); }
+function clearNotifications() {
+  customNotifications.clear();
+  for (const notice of activeNotifications) notice.close();
+  activeNotifications.clear();
 }
 
 async function openNotifiedChat(threadId: string) {
@@ -207,7 +221,12 @@ async function openNotifiedChat(threadId: string) {
   else await shell.openExternal(url);
 }
 
-function showNotification(notice: ChatNotification, test = false) {
+function showNotification(notice: ChatNotification, test = false, style = preferences.notificationStyle) {
+  if (style === 'custom') {
+    const win = customNotifications.show(notice, test);
+    if (preferences.notificationSound && !smokeDirectory) shell.beep();
+    return win;
+  }
   if (!Notification.isSupported()) throw new Error('Desktop notifications are unavailable on this system.');
   if (smokeDirectory && !process.argv.includes('--notification-smoke-test')) { traceSmoke(`notification ${notice.title}`); return null; }
   const notification = new Notification({ title: `T3 Pet · ${notice.title}`, body: notice.body,
@@ -286,7 +305,7 @@ async function poll() {
       snapshot = next;
       const followed = allowedSnapshot(snapshot, preferences);
       pet = machine.update(followed, null);
-      for (const notice of notifications.update(followed, Notification.isSupported() && preferences.notificationsEnabled,
+      for (const notice of notifications.update(followed, notificationSupported() && preferences.notificationsEnabled,
         null, visibility.fullscreen || !fullscreenCheckReady || previewMood !== null || !!smokeDirectory)) {
         showNotification(notice);
       }
@@ -305,12 +324,14 @@ function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) {
 
 function registerIpc() {
   ipcMain.handle('pet:notification-setup', event => { trusted(event); return setupState(); });
-  ipcMain.handle('pet:finish-onboarding', async (event, choice: unknown) => {
+  ipcMain.handle('pet:finish-onboarding', async (event, choice: unknown, requestedStyle: unknown) => {
     trusted(event);
     if (event.sender !== settingsWindow?.webContents) throw new Error('Open notification setup to change notification ownership.');
     if (!['keep', 'enable', 'migrate'].includes(choice as string)) throw new Error('Choose a notification option.');
+    if (requestedStyle !== undefined && requestedStyle !== 'os' && requestedStyle !== 'custom') throw new Error('Invalid notification style.');
+    const style = choice === 'keep' ? preferences.notificationStyle : requestedStyle ?? preferences.notificationStyle;
     if (migrating) throw new Error('The switch is in progress. Please wait.');
-    if (choice !== 'keep' && !Notification.isSupported()) throw new Error('Desktop notifications are unavailable on this system.');
+    if (choice !== 'keep' && !notificationSupported(style)) throw new Error('OS notifications are unavailable on this system. Choose Custom notifications.');
     if (choice === 'migrate' && inspectNotifications(preferences.dataDirectory).status === 'unknown') throw new Error('Check the T3 Code data folder before switching notifications.');
     if (choice === 'enable' && inspectNotifications(preferences.dataDirectory).status !== 'off') throw new Error('Check T3 Code notifications first. Use Switch to T3 Pet if its alerts are on.');
     if (choice === 'migrate') {
@@ -325,25 +346,55 @@ function registerIpc() {
             buttons: ['Cancel', 'Close T3 Code and switch'], defaultId: 0, cancelId: 0, noLink: true });
           return answer.response === 1;
         }, () => closeT3(helper), () => migrateNotifications(preferences.dataDirectory, app.getPath('userData'), sound => {
-          const next = { ...preferences, notificationSound: sound, notificationsEnabled: true, onboardingCompleted: true };
-          storePreferences(preferencesPath, next); preferences = next; notifications.reset();
+          const next = { ...preferences, notificationStyle: style, notificationSound: sound, notificationsEnabled: true, onboardingCompleted: true };
+          storePreferences(preferencesPath, next); preferences = next; notifications.reset(); clearNotifications();
         }));
         migrationMessage = result === 'cancelled' ? 'Switch cancelled. Your notification settings have not changed.' : 'T3 Code desktop alerts are off. T3 Pet notifications are on. You can reopen T3 Code.';
         publish(); return { ...setupState(), outcome: result };
       } finally { migrating = false; }
     }
     const next = { ...preferences,
-      onboardingCompleted: true, notificationsEnabled: choice === 'enable' ? true : preferences.notificationsEnabled };
+      notificationStyle: style, onboardingCompleted: true, notificationsEnabled: choice === 'enable' ? true : preferences.notificationsEnabled };
     storePreferences(preferencesPath, next);
     preferences = next;
+    if (choice !== 'keep') { notifications.reset(); clearNotifications(); }
     migrationMessage = '';
     publish();
     return { ...setupState(), outcome: 'complete' };
   });
-  ipcMain.handle('pet:test-notification', event => {
+  ipcMain.handle('pet:test-notification', (event, style: unknown) => {
     trusted(event);
     if (visibility.fullscreen || !fullscreenCheckReady) throw new Error('Leave fullscreen, then try the notification again.');
-    showNotification({ threadId: '', title: 'Test notification', body: 'Your pet can alert you when a chat needs attention, finishes, or fails.', kind: 'test' }, true);
+    if (style !== undefined && style !== 'custom' && style !== 'os') throw new Error('Invalid notification style.');
+    showNotification({ threadId: '', title: 'Test notification', body: 'Your pet can alert you when a chat needs attention, finishes, or fails.', kind: 'test' }, true, style ?? preferences.notificationStyle);
+  });
+  const toastEntry = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+    if (event.senderFrame !== event.sender.mainFrame) throw new Error('Unknown frame.');
+    const entry = customNotifications.entryFor(event.sender);
+    if (!entry) throw new Error('Unknown notification.');
+    return entry;
+  };
+  ipcMain.handle('toast:get', event => { toastEntry(event); return customNotifications.view(event.sender); });
+  ipcMain.handle('toast:open', event => { toastEntry(event); return customNotifications.activate(event.sender); });
+  ipcMain.on('toast:dismiss', event => {
+    if (event.senderFrame !== event.sender.mainFrame) return;
+    const entry = customNotifications.entryFor(event.sender);
+    if (entry) customNotifications.dismiss(entry.id);
+  });
+  ipcMain.on('toast:pause', (event, paused: unknown) => {
+    if (event.senderFrame !== event.sender.mainFrame || typeof paused !== 'boolean') return;
+    const entry = customNotifications.entryFor(event.sender);
+    if (entry) customNotifications.pause(event.sender, paused);
+  });
+  ipcMain.on('toast:drag', (event, action: unknown, x: unknown, y: unknown) => {
+    if (event.senderFrame !== event.sender.mainFrame || !customNotifications.entryFor(event.sender)) return;
+    if (action !== 'start' && action !== 'move' && action !== 'end' && action !== 'cancel') return;
+    if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 1_000_000 || Math.abs(y) > 1_000_000) return;
+    customNotifications.drag(event.sender, action, x, y);
+  });
+  ipcMain.on('toast:size', (event, height: unknown) => {
+    if (event.senderFrame !== event.sender.mainFrame || !customNotifications.entryFor(event.sender)) return;
+    if (typeof height === 'number' && Number.isFinite(height)) customNotifications.resize(event.sender, height);
   });
   ipcMain.on('pet:onboarding', event => { trusted(event); showSettings(true); });
   ipcMain.handle('pet:open-chat', async (event, threadId: unknown) => {
@@ -376,6 +427,7 @@ function registerIpc() {
     const directoryChanged = next.dataDirectory !== preferences.dataDirectory;
     const filterKey = (p: Preferences) => JSON.stringify([p.projectFilter.mode, p.projectFilter.selected.map(item => item.id).sort(), p.chatFilter.mode, p.chatFilter.selected.map(item => item.id).sort()]);
     const filtersChanged = filterKey(next) !== filterKey(preferences);
+    const notificationChanged = next.notificationStyle !== preferences.notificationStyle || next.notificationsEnabled !== preferences.notificationsEnabled;
     if (next.launchAtLogin !== preferences.launchAtLogin && !smokeDirectory) {
       if (process.platform === 'linux') setLinuxLoginStartup(next.launchAtLogin,
         linuxStartupCommand(process.execPath, app.getAppPath(), app.isPackaged, process.env.APPIMAGE));
@@ -383,11 +435,10 @@ function registerIpc() {
     }
     storePreferences(preferencesPath, next);
     preferences = next;
+    if (notificationChanged || filtersChanged || directoryChanged) { notifications.reset(); clearNotifications(); }
     if (filtersChanged) {
       machine.reset();
       notifications.reset();
-      for (const notice of activeNotifications) notice.close();
-      activeNotifications.clear();
     }
     if (directoryChanged) {
       notifications.reset();
@@ -433,6 +484,7 @@ function registerIpc() {
       if (Date.now() - started > 30_000) { stopDrag(); return; }
       const cursor = screen.getCursorScreenPoint();
       petWindow?.setPosition(Math.round(x + cursor.x - origin.x), Math.round(y + cursor.y - origin.y));
+      customNotifications.position();
     }, 16);
   });
 }
@@ -490,7 +542,13 @@ async function runSmokeTest(directory: string) {
   hoverWindow.hide();
   hoverWindow.webContents.send('pet:state', { ...fixtureState, snapshot: { ...snapshot, connected: true, threads: [] } });
   await wait(100);
-  report.hoverEmpty = await hoverWindow.webContents.executeJavaScript(`document.querySelectorAll('li').length === 0 && document.querySelector('main').hidden`);
+  report.hoverEmpty = await hoverWindow.webContents.executeJavaScript(`document.querySelectorAll('li').length === 0 && !document.querySelector('main').hidden && !document.getElementById('empty').hidden && document.getElementById('empty').textContent === 'No unsettled chats.'`);
+  hoverWindow.webContents.send('pet:state', { ...fixtureState, snapshot: { ...snapshot, connected: true, threads: [{ ...fixtureThread, pendingApproval: 0, turnState: 'completed' }, { ...fixtureThread, id: 'settled-test', pendingApproval: 0, settledOverride: 'settled' }] } });
+  await wait(100);
+  report.hoverIdle = await hoverWindow.webContents.executeJavaScript(`document.querySelectorAll('li').length === 1 && document.querySelector('.status').textContent === 'Completed' && !document.querySelector('main').hidden && document.getElementById('empty').hidden`);
+  hoverWindow.webContents.send('pet:state', { ...fixtureState, snapshot: { ...snapshot, connected: false, message: 'Open T3 Code to connect.', threads: [] } });
+  await wait(100);
+  report.hoverDisconnected = await hoverWindow.webContents.executeJavaScript(`!document.querySelector('main').hidden && !document.getElementById('empty').hidden && document.getElementById('empty').textContent === 'Open T3 Code to connect.'`);
   testingHover = false;
   hoverPanel.publish();
   await wait(100);
@@ -736,8 +794,103 @@ async function runSmokeTest(directory: string) {
   const hoverTheme = await hoverWindow.webContents.executeJavaScript(`({id:document.documentElement.dataset.theme,appearance:document.documentElement.style.colorScheme,canvas:document.documentElement.style.getPropertyValue('--canvas')})`);
   report.themeSync = { settings: settingsTheme, hover: hoverTheme, draftRetained: settingsTheme.draft === themeDraft, petUnchanged: beforeThemePet === JSON.stringify(pet), liveWatcher: uiTheme.id === 'iris' && uiTheme.appearance === 'dark' };
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('discard').click()`);
+  const notificationPreferences = { notificationStyle: preferences.notificationStyle, notificationsEnabled: preferences.notificationsEnabled };
+  report.settingsDropdowns = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    document.getElementById('notifications-tab').click();
+    const selects = [...document.querySelectorAll('select')];
+    const allCustom = selects.every(select => select.hidden && select.tabIndex === -1 && getComputedStyle(select).display === 'none' && document.getElementById(select.id+'-trigger')?.getAttribute('role') === 'combobox');
+    const source = document.getElementById('notification-style');
+    const trigger = document.getElementById('notification-style-trigger');
+    trigger.scrollIntoView({block:'nearest'}); trigger.focus(); trigger.click();
+    const popup = document.getElementById('notification-style-listbox');
+    const initial = source.value;
+    const checked = popup.querySelectorAll('[aria-selected=true]').length === 1;
+    const bounds = popup.getBoundingClientRect();
+    const fits = bounds.left>=0 && bounds.right<=innerWidth && bounds.top>=0 && bounds.bottom<=innerHeight;
+    const key = value => trigger.dispatchEvent(new KeyboardEvent('keydown',{key:value,bubbles:true,cancelable:true}));
+    key('ArrowDown'); key('Enter');
+    const keyboard = source.value !== initial && trigger.getAttribute('aria-expanded')==='false' && document.activeElement===trigger;
+    document.getElementById('discard').click();
+    const discarded = source.value === initial && trigger.textContent.includes(source.selectedOptions[0].textContent);
+    const closedArrows = ['ArrowDown', 'ArrowUp'].every(arrow => {
+      key(arrow);
+      const moved = document.getElementById(trigger.getAttribute('aria-activedescendant'))?.dataset.value !== initial && source.value === initial;
+      key('Enter');
+      const committed = source.value !== initial;
+      document.getElementById('discard').click();
+      return moved && committed;
+    });
+    trigger.click(); key('Home'); key('Escape');
+    const escaped = source.value === initial && trigger.getAttribute('aria-expanded')==='false';
+    key('c');
+    const typed = document.getElementById(trigger.getAttribute('aria-activedescendant'))?.dataset.value === 'custom';
+    key('Tab');
+    const tabClosed = trigger.getAttribute('aria-expanded')==='false';
+    trigger.click(); document.getElementById('notifications-panel').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+    const outside = trigger.getAttribute('aria-expanded')==='false';
+    source.disabled=true; await new Promise(resolve=>setTimeout(resolve,20));
+    const disabled=trigger.disabled; source.disabled=false;
+    await new Promise(resolve=>setTimeout(resolve,20));
+    return {allCustom, checked, fits, keyboard, discarded, closedArrows, escaped, typed, tabClosed, outside, disabled, restored:!trigger.disabled};
+  })()`);
+  report.notificationTestPending = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    const style = document.getElementById('notification-style');
+    const test = document.getElementById('test-notification');
+    style.value = 'custom'; style.dispatchEvent(new Event('change', {bubbles:true}));
+    test.click();
+    const initiallyDisabled = test.disabled;
+    document.getElementById('notification-sound').dispatchEvent(new Event('change', {bubbles:true}));
+    const disabledAfterChange = test.disabled;
+    document.getElementById('discard').click();
+    const disabledAfterDiscard = test.disabled;
+    for (let i=0;i<40 && test.disabled;i++) await new Promise(resolve=>setTimeout(resolve,25));
+    return {initiallyDisabled, disabledAfterChange, disabledAfterDiscard, restored:!test.disabled};
+  })()`);
+  customNotifications.clear();
+  if (process.argv.includes('--hover-smoke-test')) {
+    writeFileSync(join(directory, 'report.json'), JSON.stringify(report, null, 2));
+    app.quit();
+    return;
+  }
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-style-trigger').scrollIntoView({block:'nearest'});document.getElementById('notification-style-trigger').click()`);
+  await wait(50);
+  writeFileSync(join(directory, 'dropdown-settings.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-style-trigger').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);
+  report.notificationChoice = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    document.getElementById('notifications-tab').click();
+    const style = document.getElementById('notification-style');
+    const original = style.value;
+    style.value = original === 'os' ? 'custom' : 'os'; style.dispatchEvent(new Event('change', {bubbles:true}));
+    const dirty = !document.getElementById('save').disabled;
+    document.getElementById('discard').click();
+    const discarded = style.value === original && document.getElementById('save').disabled;
+    style.value = 'custom'; style.dispatchEvent(new Event('change', {bubbles:true}));
+    document.getElementById('save').click();
+    await new Promise(resolve => setTimeout(resolve, 150));
+    return {dirty, discarded, saved: (await window.pet.getState()).preferences.notificationStyle === 'custom'};
+  })()`);
+  // Keep explicitly created smoke fixtures alive while the real desktop changes focus.
+  testingToasts = true;
+  const notificationChecks: Record<string, unknown> = {};
   for (const theme of ['light', 'dark'] as const) {
     await smokeTheme(theme);
+    const toast = customNotifications.show({threadId: '', title: 'Approval needed', body: 'Update the notification settings', kind: 'Approval needed'}, true);
+    await wait(160);
+    notificationChecks[theme] = await toast.webContents.executeJavaScript(`({theme:document.documentElement.style.colorScheme, title:document.getElementById('title').textContent, overflow:document.documentElement.scrollWidth>innerWidth, actionFits:document.getElementById('open').getBoundingClientRect().bottom<=innerHeight, bridge:!!window.petToast, transparent:getComputedStyle(document.documentElement).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)', draggable:typeof window.petToast.drag==='function'&&getComputedStyle(document.querySelector('main')).cursor==='grab'})`);
+    writeFileSync(join(directory, `notification-${theme}.png`), (await toast.webContents.capturePage()).toPNG());
+    notificationChecks[theme + 'Layout'] = await toast.webContents.executeJavaScript(`(() => {
+      const main=document.querySelector('main').getBoundingClientRect(), message=document.querySelector('.message').getBoundingClientRect(), action=document.getElementById('open').getBoundingClientRect(), close=document.getElementById('dismiss').getBoundingClientRect();
+      return message.right<=action.left && Math.abs((action.top+action.bottom-main.top-main.bottom)/2)<2 && close.top<main.top && close.right>main.right && close.top>=0 && close.right<=innerWidth && Math.abs(innerHeight-main.height-16)<2;
+    })()`);
+    const area = screen.getDisplayMatching(petWindow!.getBounds()).workArea;
+    const bounds = toast.getBounds();
+    notificationChecks[theme + 'Bounds'] = bounds.x >= area.x && bounds.y >= area.y && bounds.x + bounds.width <= area.x + area.width && bounds.y + bounds.height <= area.y + area.height;
+    await toast.webContents.executeJavaScript(`window.petToast.pause(true)`);
+    notificationChecks[theme + 'Paused'] = customNotifications.entryFor(toast.webContents)?.resumedAt === null;
+    if (theme === 'light') await toast.webContents.executeJavaScript(`window.petToast.dismiss()`);
+    else await toast.webContents.executeJavaScript(`window.petToast.open()`);
+    await wait(30);
+    notificationChecks[theme + 'Dismissed'] = toast.isDestroyed();
     await settingsWindow!.webContents.executeJavaScript(`document.getElementById('pet-tab').click()`);
     await wait(100);
     writeFileSync(join(directory, `settings-pet-${theme}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
@@ -745,6 +898,87 @@ async function runSmokeTest(directory: string) {
     await wait(100);
     writeFileSync(join(directory, `settings-projects-${theme}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
   }
+  const draggedToast = customNotifications.show({threadId: '', title: 'Drag notification', body: 'Dismiss by dragging', kind: 'test'}, true);
+  await new Promise<void>((resolve, reject) => {
+    if (!draggedToast.webContents.isLoading()) { resolve(); return; }
+    draggedToast.webContents.once('did-finish-load', resolve);
+    draggedToast.webContents.once('did-fail-load', (_event, _code, description) => reject(new Error(description)));
+  });
+  await wait(100);
+  const dragOrigin = draggedToast.getBounds();
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',108,104)`);
+  await wait(50);
+  const movedBounds = draggedToast.getBounds();
+  notificationChecks.dragMoved = movedBounds.x === dragOrigin.x + 8 && movedBounds.y === dragOrigin.y;
+  const dragOpacity = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity)`);
+  notificationChecks.dragFaded = Math.abs(dragOpacity - (1 - 8 / dragOrigin.width)) < .01;
+  notificationChecks.dragPaused = customNotifications.entryFor(draggedToast.webContents)?.resumedAt === null;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('move',108,300)`);
+  await wait(50);
+  notificationChecks.dragAxisLocked = draggedToast.getBounds().x === dragOrigin.x + 8 && draggedToast.getBounds().y === dragOrigin.y;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('end',108,300)`);
+  await wait(50);
+  notificationChecks.dragReturned = draggedToast.getBounds().x === dragOrigin.x && draggedToast.getBounds().y === dragOrigin.y;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',96,92);window.petToast.drag('move',0,92)`);
+  await wait(50);
+  notificationChecks.dragVertical = draggedToast.getBounds().x === dragOrigin.x && draggedToast.getBounds().y === dragOrigin.y - 8;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('end',0,92)`);
+  await wait(50);
+  notificationChecks.dragReturned = notificationChecks.dragReturned && !draggedToast.isDestroyed() && draggedToast.getBounds().y === dragOrigin.y;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',92,104)`);
+  await wait(50);
+  notificationChecks.dragLeft = draggedToast.getBounds().x === dragOrigin.x - 8 && draggedToast.getBounds().y === dragOrigin.y;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('cancel',92,104)`);
+  await wait(50);
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',114,100);window.petToast.drag('cancel',114,100)`);
+  await wait(50);
+  notificationChecks.dragCancelled = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x;
+  await wait(150);
+  notificationChecks.dragOpacityRestored = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity) === 1`);
+  for (const action of ['end', 'cancel'] as const) {
+    customNotifications.drag(draggedToast.webContents, 'start', 100, 100);
+    customNotifications.drag(draggedToast.webContents, 'move', 108, 100);
+    const sibling = customNotifications.show({threadId: 'drag-sibling', title: 'Turn finished', body: 'Arrived during drag', kind: 'Turn finished'});
+    await wait(100);
+    customNotifications.drag(draggedToast.webContents, action, 108, 100);
+    const returned = draggedToast.getBounds();
+    const siblingBounds = sibling.getBounds();
+    notificationChecks['dragReflow-' + action] = returned.y + returned.height + 8 === siblingBounds.y;
+    // Removing a sibling while dragging must also restore the current stack position.
+    customNotifications.drag(draggedToast.webContents, 'start', 100, 100);
+    customNotifications.drag(draggedToast.webContents, 'move', 108, 100);
+    customNotifications.dismiss(customNotifications.entryFor(sibling.webContents)!.id);
+    customNotifications.drag(draggedToast.webContents, action, 108, 100);
+    notificationChecks['dragRemoval-' + action] = draggedToast.getBounds().y === dragOrigin.y;
+  }
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',139,100)`);
+  await wait(50);
+  notificationChecks.dragBelowThreshold = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x + 39;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('move',140,100)`);
+  await wait(200);
+  notificationChecks.dragWaitsForRelease = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x + 40;
+  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('end',140,100)`);
+  await wait(80);
+  const autoBounds = draggedToast.getBounds();
+  notificationChecks.dragAutoContinued = autoBounds.x > dragOrigin.x + 40 && autoBounds.y === dragOrigin.y;
+  notificationChecks.dragSlower = !draggedToast.isDestroyed() && autoBounds.x < dragOrigin.x + dragOrigin.width * .7;
+  notificationChecks.dragAutoFaded = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity) < .9`);
+  await wait(450);
+  notificationChecks.dragDismissed = draggedToast.isDestroyed();
+  if (process.argv.includes('--toast-smoke-test')) {
+    report.customNotifications = notificationChecks;
+    writeFileSync(join(directory, 'report.json'), JSON.stringify(report, null, 2));
+    app.quit();
+    return;
+  }
+  const burst = Array.from({length:4}, (_, i) => customNotifications.show({threadId: 'toast-fixture-' + i, title: 'Turn finished', body: 'A finished chat', kind: 'Turn finished'}));
+  await wait(160);
+  notificationChecks.bounded = customNotifications.windows.size === 3 && burst[0]!.isDestroyed();
+  customNotifications.clear();
+  notificationChecks.cleared = customNotifications.windows.size === 0;
+  testingToasts = false;
+  report.customNotifications = notificationChecks;
+  preferences = { ...preferences, ...notificationPreferences }; persist(); publish();
   settingsWindow!.setSize(470, 500);
   await wait(100);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('pet-tab').click()`);
@@ -811,7 +1045,10 @@ async function runSmokeTest(directory: string) {
     const modal = document.getElementById('notification-dialog');
     for (let i=0;i<40 && document.getElementById('notification-apply').disabled;i++) await new Promise(r=>setTimeout(r,25));
     const opened = modal.open && document.title === 'T3 Pet settings' && modal.querySelector('h1').textContent === 'Choose your notifications';
+    const styleHidden = document.getElementById('notification-appearance').hidden;
     document.querySelector('input[value=migrate]').click();
+    const styleShown = !document.getElementById('notification-appearance').hidden;
+    document.querySelector('input[name=notification-appearance][value=custom]').click();
     const action = document.getElementById('notification-action-label').textContent === 'Switch notifications';
     document.getElementById('notification-apply').click();
     for (let i=0;i<40 && document.getElementById('notification-apply').disabled;i++) await new Promise(r=>setTimeout(r,25));
@@ -823,7 +1060,7 @@ async function runSmokeTest(directory: string) {
     const reset = document.querySelector('input[value=keep]').checked;
     const setupVisible = !document.getElementById('notification-setup').hidden;
     const globalOnboarding = !document.getElementById('reopen-onboarding').closest('[role=tabpanel]');
-    return {opened, action, cancelled, closed, reset, setupVisible, globalOnboarding};
+    return {opened, styleHidden, styleShown, action, cancelled, closed, reset, setupVisible, globalOnboarding};
   })()`);
   await wait(80);
   writeFileSync(join(directory, 'notification-modal.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
@@ -831,8 +1068,17 @@ async function runSmokeTest(directory: string) {
   await wait(80);
   (report.notificationModal as Record<string, boolean>).compact = await settingsWindow!.webContents.executeJavaScript(`(() => { const modal=document.getElementById('notification-dialog'); const action=document.getElementById('notification-apply').getBoundingClientRect(); return modal.scrollWidth <= modal.clientWidth && action.bottom <= innerHeight && action.top >= 0; })()`);
   writeFileSync(join(directory, 'notification-modal-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  const keptToast = customNotifications.show({threadId: '', title: 'Keep active alert', body: 'Setup must leave this visible', kind: 'test'}, true);
+  notifications.reset();
+  const trackingSnapshot = { ...snapshot, connected: true, threads: [{ ...fixtureThread, pendingApproval: 0, pendingInput: 0, turnState: 'running' }] };
+  notifications.update(trackingSnapshot, true, null, false);
+  const waitingSnapshot = { ...trackingSnapshot, threads: [{ ...trackingSnapshot.threads[0]!, pendingApproval: 1 }] };
+  notifications.update(waitingSnapshot, true, null, true);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-apply').click()`);
   await wait(150);
+  (report.notificationModal as Record<string, boolean>).keptActive = !keptToast.isDestroyed();
+  (report.notificationModal as Record<string, boolean>).keptTracking = notifications.update(waitingSnapshot, true, null, false).some(notice => notice.kind === 'Approval needed');
+  customNotifications.clear(); notifications.reset();
   (report.notificationModal as Record<string, boolean>).applied = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('notification-dialog').open && document.title === 'T3 Pet settings' && document.getElementById('notification-setup').hidden`);
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);
@@ -878,6 +1124,16 @@ async function runSmokeTest(directory: string) {
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('connection-settings').open = false`);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
+  report.onboardingDropdowns = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const source=document.getElementById('pet-size');const trigger=document.getElementById('pet-size-trigger');
+    const allCustom=[...document.querySelectorAll('select')].every(select=>select.hidden && document.getElementById(select.id+'-trigger')?.getAttribute('role')==='combobox');
+    trigger.scrollIntoView({block:'nearest'});trigger.click();
+    const popup=document.getElementById('pet-size-listbox');const rect=popup.getBoundingClientRect();
+    const fits=rect.left>=0 && rect.right<=innerWidth && rect.top>=0 && rect.bottom<=innerHeight;
+    trigger.dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));
+    trigger.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+    return {allCustom,fits,keyboard:source.value==='96' && trigger.textContent.includes('Small'),closed:trigger.getAttribute('aria-expanded')==='false'};
+  })()`);
   report.onboardingPet = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const visible = !document.getElementById('pet-step').hidden;
     const choices = document.querySelectorAll('#pet-gallery input[name=character]').length === 4;
@@ -897,6 +1153,22 @@ async function runSmokeTest(directory: string) {
   const chosenPet = loadPreferences(preferencesPath);
   (report.onboardingPet as Record<string, boolean>).persisted = chosenPet.petId === 'miso' && chosenPet.size === 96 && chosenPet.reducedMotion;
   report.onboardingNotifications = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('notifications-step').hidden, migration: !document.getElementById('migrate-option').hidden, text: document.getElementById('notification-check').textContent, overflow: document.documentElement.scrollWidth > innerWidth, footerFits: document.getElementById('continue').getBoundingClientRect().bottom <= innerHeight})`);
+  report.onboardingNotificationStyle = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    const before=(await window.pet.getState()).preferences;
+    const appearance=document.getElementById('notification-appearance');
+    const hiddenInitially=appearance.hidden;
+    const panel=document.getElementById('notifications-step');
+    panel.scrollTop=0; const scrollBefore=panel.scrollTop;
+    document.querySelector('input[value=migrate]').click();
+    await new Promise(resolve=>requestAnimationFrame(resolve));
+    const scrollStable=panel.scrollTop===scrollBefore;
+    const shownForPet=!appearance.hidden;
+    document.querySelector('input[name=notification-appearance][value=custom]').click();
+    document.querySelector('input[value=keep]').click();
+    const hiddenForKeep=appearance.hidden;
+    const draftOnly=JSON.stringify((await window.pet.getState()).preferences)===JSON.stringify(before);
+    return {hiddenInitially,shownForPet,hiddenForKeep,draftOnly,scrollStable};
+  })()`);
   report.onboardingProgressBack = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const controls = document.querySelectorAll('.steps button');
     const backEnabled = !controls[0].disabled && !controls[1].disabled && controls[2].disabled && controls[3].disabled;
@@ -917,7 +1189,7 @@ async function runSmokeTest(directory: string) {
   const beforeCancel = readFileSync(fixtureSettings, 'utf8');
   report.onboardingCancellation = await settingsWindow!.webContents.executeJavaScript(`(async () => {
     const before = (await window.pet.getState()).preferences;
-    const result = await window.pet.finishOnboarding('migrate');
+    const result = await window.pet.finishOnboarding('migrate', 'custom');
     const after = (await window.pet.getState()).preferences;
     return { cancelled: result.outcome === 'cancelled', unchanged: JSON.stringify(before) === JSON.stringify(after) };
   })()`);
@@ -930,14 +1202,29 @@ async function runSmokeTest(directory: string) {
   report.fixtureMigratedSettings = JSON.parse(readFileSync(fixtureSettings, 'utf8'));
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('retry').click()`);
   await wait(120);
-  await settingsWindow!.webContents.executeJavaScript(`document.querySelector('input[value=enable]').click(); document.getElementById('continue').click()`);
+  await settingsWindow!.webContents.executeJavaScript(`document.querySelector('input[value=enable]').click();document.querySelector('input[name=notification-appearance][value=custom]').click()`);
+  await wait(60);
+  writeFileSync(join(directory, 'onboarding-notification-style.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(150);
   report.onboardingFinish = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('finish-step').hidden, test: !document.getElementById('test-row').hidden, text: document.getElementById('finish-detail').textContent, overflow: document.documentElement.scrollWidth > innerWidth})`);
   (report.onboardingPet as Record<string, boolean>).finishPreview = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('preview-pet').dataset.pet === 'miso'`);
   report.onboardingProgressFinished = await settingsWindow!.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.steps button')).every(control => control.disabled)`);
   await captureOnboarding('finish');
+  (report.onboardingNotificationStyle as Record<string, boolean>).customPersisted = loadPreferences(preferencesPath).notificationStyle === 'custom';
+  (report.onboardingNotificationStyle as Record<string, boolean>).keepUnchanged = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    const before=(await window.pet.getState()).preferences;
+    await window.pet.finishOnboarding('keep','os');
+    return JSON.stringify((await window.pet.getState()).preferences)===JSON.stringify(before);
+  })()`);
+  (report.onboardingNotificationStyle as Record<string, boolean>).osPersisted = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    if (!(await window.pet.getState()).notificationsSupported) return true;
+    await window.pet.finishOnboarding('enable','os');
+    const saved=(await window.pet.getState()).preferences.notificationStyle==='os';
+    await window.pet.finishOnboarding('enable','custom');return saved;
+  })()`);
   if (process.argv.includes('--notification-smoke-test')) {
-    const notice = showNotification({ threadId: '', title: 'Test notification', body: 'Packaged T3 Pet notification check.', kind: 'test' }, true)!;
+    const notice = showNotification({ threadId: '', title: 'Test notification', body: 'Packaged T3 Pet notification check.', kind: 'test' }, true, 'os') as Notification;
     const shown = await new Promise<string>(resolve => {
       notice.once('show', () => resolve('shown'));
       notice.once('failed', (_event, message) => resolve(`failed: ${message}`));
@@ -1011,8 +1298,8 @@ else {
     if (process.platform === 'win32') tray.on('click', () => tray?.popUpContextMenu(menu()));
     if (process.platform === 'linux') tray.on('click', () => showSettings());
     tray.on('double-click', () => showSettings());
-    screen.on('display-removed', () => petWindow?.setBounds(fitPosition(preferences.position)));
-    screen.on('display-metrics-changed', () => petWindow?.setBounds(fitPosition(preferences.position)));
+    screen.on('display-removed', () => { petWindow?.setBounds(fitPosition(preferences.position)); customNotifications.position(); });
+    screen.on('display-metrics-changed', () => { petWindow?.setBounds(fitPosition(preferences.position)); customNotifications.position(); });
     if (process.platform === 'darwin') app.dock?.hide();
     await poll();
     traceSmoke('first poll finished');
@@ -1020,7 +1307,7 @@ else {
     if (smokeDirectory && fullscreenTest) await runFullscreenCheck(smokeDirectory, petWindow!, visibility);
     else if (smokeDirectory) await runSmokeTest(smokeDirectory);
   }).catch(error => {
-    traceSmoke(`startup error: ${error instanceof Error ? error.message : String(error)}`);
+    traceSmoke(`startup error: ${error instanceof Error ? error.stack : String(error)}`);
     if (smokeDirectory) { app.exit(1); return; }
     dialog.showErrorBox('T3 Pet could not start', error instanceof Error ? error.message : String(error));
     app.quit();
@@ -1035,7 +1322,7 @@ else {
     stopDrag();
     if (timer) clearTimeout(timer);
     if (previewTimer) clearTimeout(previewTimer);
-    for (const notification of activeNotifications) notification.close();
+    clearNotifications();
     tray?.destroy();
   });
 }

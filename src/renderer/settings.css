@@ -25,7 +25,8 @@
 .data-folder { border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); margin: 16px 0; }
 .chat-activity { list-style: none; margin: 12px 0; padding: 0; }
 .chat-activity li { border-bottom: 1px solid var(--divider); }
-.chat-activity button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 4px; border: 0; border-radius: 0; text-align: left; white-space: normal; }
+.chat-activity button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 4px; border: 0; border-radius: 0; text-align: left; white-space: normal; background: var(--surface); }
+.chat-activity button:hover:not(:disabled), .chat-activity button:active:not(:disabled) { background: var(--canvas); }
 .activity-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.9286rem; }
 .activity-project { display: block; color: var(--muted); font-size: 0.8571rem; margin-top: 2px; }
 .activity-status { flex-shrink: 0; color: var(--muted); font-size: 0.8571rem; }

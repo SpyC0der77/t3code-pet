@@ -51,6 +51,8 @@
     <section id="notifications-panel" class="tab-panel" role="tabpanel" aria-labelledby="notifications-tab" hidden>
       <h1 class="panel-title">Desktop notifications</h1><p class="panel-description">Get an alert when a chat needs you, finishes, or fails.</p>
       <label class="preference-row"><span>Notifications from T3 Pet<span class="help">Click an alert to open its chat.</span></span><input id="notifications" type="checkbox" aria-describedby="notification-status"></label>
+      <div class="field-group"><label for="notification-style">Notification style</label><select id="notification-style" aria-describedby="notification-style-help"><option value="custom">Custom</option><option value="os">OS notifications</option></select></div>
+      <p class="help" id="notification-style-help">Custom alerts use your T3 Code theme and appear beside the pet.</p>
       <label class="preference-row"><span>Play sounds<span class="help">Include sound with your alerts.</span></span><input id="notification-sound" type="checkbox"></label>
       <div class="notification-settings"><button id="notification-setup" type="button" hidden>Set up notifications…</button><button id="test-notification" type="button">Send a test</button></div>
       <p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>

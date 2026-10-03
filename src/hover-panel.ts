@@ -1,7 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
 import type { AppState } from './shared';
-import { unsettledChats } from './unsettled';
 
 export class HoverPanel {
   window: BrowserWindow | null = null;
@@ -33,7 +32,6 @@ export class HoverPanel {
 
   show() {
     if (!this.allowed()) return;
-    if (!this.state().snapshot.connected || !unsettledChats(this.state().snapshot.threads).length) { this.hide(); return; }
     this.requested = true;
     this.outsideSince = 0;
     if (this.window?.isVisible()) return;
@@ -46,9 +44,7 @@ export class HoverPanel {
   }
   resize(height: number) {
     if (height <= 0) {
-      // A newly loaded renderer reports zero before its first state arrives.
-      // Do not cancel a pending open when the live snapshot has rows.
-      if (!this.state().snapshot.connected || !unsettledChats(this.state().snapshot.threads).length) this.hide();
+      // The renderer can report zero before its first state arrives.
       return;
     }
     this.contentHeight = Math.max(1, Math.min(400, Math.ceil(height)));
