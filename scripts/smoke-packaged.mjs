@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { resolve, join, dirname } from 'node:path';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -37,7 +38,9 @@ if (process.platform !== 'win32') {
     } finally {
       if (fixture.exitCode === null) fixture.kill('SIGKILL');
       await exited;
-      rmSync(folder, { recursive: true, force: true });
+      // macOS helpers can still finish cache writes after the main fixture exits.
+      // Retry transient ENOTEMPTY/EBUSY errors while the process tree settles.
+      await rm(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   }
 }
