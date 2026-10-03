@@ -31,7 +31,7 @@ function keep(key: Buffer, value: Buffer | null, sequence: bigint, entries: Entr
   if (!themeKeys.includes(name as typeof themeKeys[number])) return;
   const origin = key.subarray(1, separator).toString('utf8');
   // T3 desktop uses a local web origin. Ignore unrelated origins in the profile.
-  if (origin !== 't3code://app' && !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(origin)) return;
+  if (origin !== 't3code://app' && origin !== 't3code-dev://app' && !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(origin)) return;
   entries.push({ origin, key: name, value: value === null ? null : text(value), sequence });
 }
 function batch(data: Buffer, entries: Entry[]) {
@@ -48,7 +48,12 @@ function batch(data: Buffer, entries: Entry[]) {
   entries.push(...pending);
 }
 export function readThemeLog(data: Buffer): Entry[] {
-  const entries: Entry[] = []; let fragments: Buffer[] = [];
+  const entries: Entry[] = [];
+  for (const record of logRecords(data)) batch(record, entries);
+  return entries;
+}
+function logRecords(data: Buffer): Buffer[] {
+  const records: Buffer[] = []; let fragments: Buffer[] = [];
   for (let block = 0; block < data.length; block += 32768) {
     const end = Math.min(block + 32768, data.length);
     for (let offset = block; offset + 7 <= end;) {
@@ -56,14 +61,49 @@ export function readThemeLog(data: Buffer): Entry[] {
       if (offset + length > end) break; // A live append can be incomplete.
       const payload = data.subarray(offset, offset + length); offset += length;
       if (type && maskedCrc32c(Buffer.concat([Buffer.from([type]), payload])) !== data.readUInt32LE(offset - length - 7)) throw new Error('Invalid log checksum');
-      if (type === 1) { fragments = []; batch(payload, entries); }
+      if (type === 1) { fragments = []; records.push(payload); }
       else if (type === 2) fragments = [payload];
       else if (type === 3 && fragments.length) fragments.push(payload);
-      else if (type === 4 && fragments.length) { fragments.push(payload); batch(Buffer.concat(fragments), entries); fragments = []; }
+      else if (type === 4 && fragments.length) { fragments.push(payload); records.push(Buffer.concat(fragments)); fragments = []; }
       else fragments = [];
     }
   }
-  return entries;
+  return records;
+}
+function liveFiles(directory: string): string[] {
+  const current = readFileSync(join(directory, 'CURRENT'), 'utf8');
+  if (!/^MANIFEST-\d+\n$/.test(current)) throw new Error('Invalid LevelDB CURRENT');
+  const manifestPath = join(directory, current.trim());
+  if (statSync(manifestPath).size > 64 * 1024 * 1024) throw new Error('Oversized manifest');
+  const tables = new Set<number>(); let logNumber: number | undefined, previousLogNumber = 0;
+  for (const record of logRecords(readFileSync(manifestPath))) {
+    const cursor = { offset: 0 }, removed: number[] = [], added: number[] = [];
+    const skipKey = () => { slice(record, cursor, varint(record, cursor)); };
+    while (cursor.offset < record.length) {
+      const tag = varint(record, cursor);
+      if (tag === 1) skipKey(); // Comparator name.
+      else if (tag === 2) logNumber = varint(record, cursor);
+      else if (tag === 9) previousLogNumber = varint(record, cursor);
+      else if (tag === 3 || tag === 4) varint(record, cursor); // Next file / last sequence.
+      else if (tag === 5) { varint(record, cursor); skipKey(); }
+      else if (tag === 6) { varint(record, cursor); removed.push(varint(record, cursor)); }
+      else if (tag === 7) {
+        varint(record, cursor); added.push(varint(record, cursor));
+        varint(record, cursor); skipKey(); skipKey();
+      } else throw new Error('Unsupported manifest tag');
+    }
+    for (const number of removed) tables.delete(number);
+    for (const number of added) tables.add(number);
+  }
+  if (logNumber === undefined) throw new Error('Manifest has no log number');
+  // LevelDB recovery includes newer logs that have not reached the manifest yet.
+  // Tables require explicit live membership; obsolete tables can outlive tombstones.
+  return readdirSync(directory).filter(name => {
+    const match = /^(\d+)\.(log|ldb|sst)$/.exec(name);
+    if (!match) return false;
+    const number = Number(match[1]);
+    return match[2] === 'log' ? number >= logNumber! || number === previousLogNumber : tables.has(number);
+  });
 }
 function blockEntries(data: Buffer): { key: Buffer; value: Buffer }[] {
   const entries = []; let previous = Buffer.alloc(0);
@@ -103,7 +143,7 @@ export function readThemeTable(data: Buffer): Entry[] {
 export class ThemeStorage {
   private cache = new Map<string, { signature: string; entries: Entry[] }>();
   read(directory: string): Record<string, string> {
-    const entries: Entry[] = [], files = readdirSync(directory).filter(name => /^\d+\.(log|ldb|sst)$/.test(name));
+    const entries: Entry[] = [], files = liveFiles(directory);
     for (const name of files) {
       const path = join(directory, name), stat = statSync(path), signature = `${stat.size}:${stat.mtimeMs}`;
       if (stat.size > 64 * 1024 * 1024) continue;

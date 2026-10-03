@@ -53,22 +53,27 @@ export function resolveUiTheme(values: Record<string, string>, systemDark: boole
     fontSize: typeof settings.fontSizeInterface === 'number' && settings.fontSizeInterface >= 10 && settings.fontSizeInterface <= 24 ? settings.fontSizeInterface : 14 };
 }
 
-export function t3ProfileDirectory(appData: string, dataDirectory: string) {
-  const dev = /(?:^|[\\/])dev[\\/]?$/.test(dataDirectory);
-  const legacy = join(appData, dev ? 'T3 Code (Dev)' : 'T3 Code (Alpha)');
-  return existsSync(legacy) ? legacy : join(appData, dev ? 't3code-dev' : 't3code');
+export function t3ProfileDirectory(appData: string) {
+  // The status-data folder is user-selectable and does not identify a desktop
+  // channel. Use T3's actual profile identities, honoring its legacy migration.
+  const stable = join(appData, 't3code');
+  for (const name of ['T3 Code (Alpha)', 't3code', 'T3 Code (Dev)', 't3code-dev']) {
+    const profile = join(appData, name);
+    if (existsSync(profile)) return profile;
+  }
+  return stable;
 }
 export class T3ThemeSync {
   private storage = new ThemeStorage();
   private watcher?: FSWatcher;
   private directory = '';
-  private timer: ReturnType<typeof setInterval>;
+  private timer?: ReturnType<typeof setInterval>;
   private debounce?: ReturnType<typeof setTimeout>;
   private previous = '';
-  constructor(private profile: () => string, private data: () => string, private systemDark: () => boolean, private changed: (theme: UiTheme) => void) {
+  constructor(private profile: () => string, private data: () => string, private systemDark: () => boolean, private changed: (theme: UiTheme) => void, refreshIntervalMs: number | null = 1000) {
     this.refresh();
     // Retry missing profiles and racing atomic replacements, and observe font settings.
-    this.timer = setInterval(() => this.refresh(), 1000);
+    if (refreshIntervalMs !== null) this.timer = setInterval(() => this.refresh(), refreshIntervalMs);
   }
   refresh = () => {
     const directory = join(this.profile(), 'Local Storage', 'leveldb');

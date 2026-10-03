@@ -8,6 +8,7 @@ import { readThemeLog, readThemeTable, ThemeStorage } from '../src/theme-storage
 import { resolveUiTheme, T3ThemeSync } from '../src/t3-theme';
 import { palettes } from '../src/t3-palettes';
 import { maskedCrc32c } from '../src/leveldb-checksum';
+import { writeThemeManifestFixture } from '../src/theme-fixture';
 
 function number(value: number): Buffer {
   const bytes = []; do { bytes.push((value & 127) | (value > 127 ? 128 : 0)); value = Math.floor(value / 128); } while (value);
@@ -39,7 +40,7 @@ function table(name: string, value: string, sequence: bigint, compressed: boolea
   footer.writeBigUInt64LE(0xdb4775248b80fb57n, 40);
   return Buffer.concat([dataBlock, indexBlock, footer]);
 }
-test('theme logs decode only appearance keys and preserve deletion sequences', () => {
+test('theme logs preserve allowlisted values and deletion sequences', () => {
   const entries = readThemeLog(log({ 't3code:theme': 'ember', 'credentials': 'must never decode', 't3code:theme-halves:v1': null }, 42n));
   assert.equal(entries.length, 2); assert.equal(entries[0].value, 'ember');
   assert.equal(entries[1].sequence, 44n); assert.equal(entries[1].value, null);
@@ -53,9 +54,35 @@ test('compressed and uncompressed tables resolve the same allowlisted value', ()
     assert.deepEqual(readThemeTable(table('message', 'private', 7n, compressed)), []);
   }
 });
+test('log and table parsers never decode non-allowlisted values', t => {
+  const privateValue = 'private-value-must-not-be-decoded', allowedValue = 'allowlisted-theme-value';
+  const privateBytes = Buffer.from(privateValue, 'latin1'), allowedBytes = Buffer.from(allowedValue, 'latin1');
+  const original = Buffer.prototype.toString;
+  let privateDecodes = 0, allowedDecodes = 0;
+  t.mock.method(Buffer.prototype, 'toString', function (this: Buffer, ...args: Parameters<Buffer['toString']>) {
+    if (this.includes(privateBytes)) privateDecodes++;
+    if (this.includes(allowedBytes)) allowedDecodes++;
+    return original.apply(this, args);
+  });
+  const parsers = [
+    () => readThemeLog(log({ 't3code:theme': allowedValue, credentials: privateValue })),
+    ...[false, true].map(compressed => () => {
+      const allowed = readThemeTable(table('t3code:theme', allowedValue, 7n, compressed));
+      assert.deepEqual(readThemeTable(table('credentials', privateValue, 8n, compressed)), []);
+      return allowed;
+    }),
+  ];
+  for (const parse of parsers) {
+    privateDecodes = 0; allowedDecodes = 0;
+    assert.equal(parse()[0].value, allowedValue);
+    assert.equal(allowedDecodes, 1, 'the value decoder must be observed for the allowed value');
+    assert.equal(privateDecodes, 0, 'credentials must never reach string decoding');
+  }
+});
 test('new logs supersede tables and cached files, including deleted preferences', t => {
   const directory = mkdtempSync(join(tmpdir(), 't3pet-theme-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
   writeFileSync(join(directory, '000005.ldb'), table('t3code:theme', 'grove', 4n, true));
+  writeThemeManifestFixture(directory, { logNumber: 3, tables: [5] });
   const storage = new ThemeStorage(); assert.equal(storage.read(directory)['t3code:theme'], 'grove');
   writeFileSync(join(directory, '000003.log'), log({ 't3code:theme': 'ember' }, 10n));
   assert.equal(storage.read(directory)['t3code:theme'], 'ember');
@@ -78,10 +105,12 @@ test('T3 palettes follow appearance modes, system changes, aliases, halves and c
   assert.equal(theme.fontFamily, 'Georgia'); assert.equal(theme.fontSize, 16);
 });
 test('the live watcher publishes a theme edit without status polling or restarting', async t => {
+  t.mock.method(globalThis, 'setInterval', () => { throw new Error('The watcher test must not start periodic refresh'); });
   const root = mkdtempSync(join(tmpdir(), 't3pet-theme-watch-')), directory = join(root, 'Local Storage', 'leveldb');
   mkdirSync(directory, { recursive: true }); writeFileSync(join(directory, '000001.log'), log({ 't3code:theme': 'ember' }));
+  writeThemeManifestFixture(directory, { logNumber: 1 });
   const changes: string[] = [];
-  const sync = new T3ThemeSync(() => root, () => root, () => false, theme => changes.push(theme.id));
+  const sync = new T3ThemeSync(() => root, () => root, () => false, theme => changes.push(theme.id), null);
   t.after(() => { sync.dispose(); rmSync(root, { recursive: true, force: true }); });
   writeFileSync(join(directory, '000002.log'), log({ 't3code:theme': 'iris' }, 100n));
   const deadline = Date.now() + 2000;

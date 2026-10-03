@@ -758,6 +758,17 @@ async function runSmokeTest(directory: string) {
   report.advancedCompact = await settingsWindow!.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth,footerFits:document.getElementById('save').getBoundingClientRect().bottom<=innerHeight,chatControlsVisible:document.getElementById('chat-search').getBoundingClientRect().bottom<document.getElementById('save').getBoundingClientRect().top})`);
   writeFileSync(join(directory, 'settings-filters-expanded-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('advanced-settings').open=false`);
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chats-tab').click();document.documentElement.style.setProperty('--ui-font-size','24px')`);
+  report.largeFontSettings = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const textFits = selector => [...document.querySelectorAll(selector)].every(node => {const style=getComputedStyle(node);return parseFloat(style.lineHeight)>=parseFloat(style.fontSize);});
+    const tabs=[...document.querySelectorAll('.settings-tabs button')];
+    return {lineHeights:textFits('.panel-title,.panel-description,#connection-detail,.notification-dialog h1,.help'),
+      tabsFit:tabs.every(node=>node.scrollWidth<=node.clientWidth),tabsReflow:tabs[0].getBoundingClientRect().top!==tabs[2].getBoundingClientRect().top,
+      overflow:document.documentElement.scrollWidth>innerWidth};
+  })()`);
+  writeFileSync(join(directory, 'settings-large-font.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  await settingsWindow!.webContents.executeJavaScript(`document.documentElement.style.setProperty('--ui-font-size','14px')`);
+  report.hoverTransparency = await hoverWindow.webContents.executeJavaScript(`getComputedStyle(document.documentElement).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)'`);
   await smokeTheme('light');
   settingsWindow!.setSize(768, 600);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chats-tab').click()`);
@@ -830,6 +841,15 @@ async function runSmokeTest(directory: string) {
   await onboardingReopened;
   await wait(150);
   report.onboardingConnect = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('connect-step').hidden, overflow: document.documentElement.scrollWidth > innerWidth, bridge: typeof window.pet.finishOnboarding === 'function'})`);
+  settingsWindow!.setSize(470, 500);
+  await settingsWindow!.webContents.executeJavaScript(`(() => {document.documentElement.style.setProperty('--ui-font-size','24px');const error=document.getElementById('setup-error');error.hidden=false;error.textContent='Could not connect. Check the selected folder and try again. This multi-line error must remain readable.';})()`);
+  report.largeFontOnboarding = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const readable = node => {const style=getComputedStyle(node);return parseFloat(style.lineHeight)>=parseFloat(style.fontSize);};
+    return {heading:readable(document.querySelector('#connect-step h1')),error:readable(document.getElementById('setup-error'))};
+  })()`);
+  writeFileSync(join(directory, 'onboarding-large-font.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  await settingsWindow!.webContents.executeJavaScript(`(() => {document.documentElement.style.setProperty('--ui-font-size','14px');const error=document.getElementById('setup-error');error.hidden=true;error.textContent='';})()`);
+  settingsWindow!.setSize(768, 600);
   const captureOnboarding = async (stage: string) => {
     for (const theme of ['light', 'dark'] as const) {
       await smokeTheme(theme);
@@ -954,7 +974,7 @@ else {
     preferencesPath = join(app.getPath('userData'), 'preferences.json');
     preferences = loadPreferences(preferencesPath);
     themeSync = new T3ThemeSync(
-      () => smokeDirectory ? join(smokeDirectory, 't3-profile') : t3ProfileDirectory(app.getPath('appData'), preferences.dataDirectory),
+      () => smokeDirectory ? join(smokeDirectory, 't3-profile') : t3ProfileDirectory(app.getPath('appData')),
       () => preferences.dataDirectory, () => nativeTheme.shouldUseDarkColors,
       theme => { uiTheme = theme; nativeTheme.themeSource = theme.source; publish(); });
     nativeTheme.on('updated', () => themeSync?.refresh());

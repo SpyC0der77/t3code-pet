@@ -64,6 +64,9 @@ assert.equal(report.themeSync.settings.appearance, 'dark');
 assert.ok(report.themeSync.draftRetained, 'A theme update discarded unsaved settings.');
 assert.equal(report.themeSync.hover.canvas, report.themeSync.settings.canvas);
 assert.equal(report.themeSync.hover.appearance, 'dark');
+assert.ok(report.hoverTransparency, 'The hover root background covered its transparent corners.');
+assert.ok(report.largeFontSettings.lineHeights && report.largeFontSettings.tabsFit && report.largeFontSettings.tabsReflow && !report.largeFontSettings.overflow, 'Large interface text overlaps or overflows the compact settings window.');
+assert.ok(report.largeFontOnboarding.heading && report.largeFontOnboarding.error, 'Large onboarding headings or multi-line errors overlap.');
 if (testNotification) assert.equal(report.nativeNotification.result, 'shown', 'The packaged native notification failed to show.');
 assert.equal(report.petCatalog.characters, 4, 'Not every bundled character passed the settings save/preview check.');
 // All six moods: LFG's original 261 frames plus three eight-frame pets, 48 cases each.

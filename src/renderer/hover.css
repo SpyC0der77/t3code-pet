@@ -1,6 +1,6 @@
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+*{box-sizing:border-box}:root,body{margin:0;height:100%;background:transparent;overflow:hidden}
 main{background:var(--overlay);border:1px solid var(--border);border-radius:8px;max-height:100vh;overflow:auto}ul{list-style:none;margin:0;padding:0}li+li{border-top:1px solid var(--divider)}
 button{display:flex;align-items:center;gap:12px;width:100%;border:0;padding:10px 12px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}button:hover{background:var(--selected)}button:active{background:var(--surface)}button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
-.title{flex:1;min-width:0;line-height:20px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{flex:none;white-space:nowrap;color:var(--muted);font-size: 0.8571rem;line-height:20px}[hidden]{display:none}
+.title{flex:1;min-width:0;line-height:1.4286;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{flex:none;white-space:nowrap;color:var(--muted);font-size: 0.8571rem;line-height:1.6667}[hidden]{display:none}
 
 

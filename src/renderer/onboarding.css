@@ -16,7 +16,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 .step-number svg { width: 16px; height: 16px; }
 #onboarding-form { display: flex; flex-direction: column; min-height: 0; padding: 20px 24px; background: var(--panel); border-top: 1px solid var(--border); flex: 1; }
 .step-panel { min-height: 0; overflow-y: auto; }
-h1 { font-size: 1.7143rem; line-height: 32px; font-weight: 600; letter-spacing: -.025em; margin: 0; }
+h1 { font-size: 1.7143rem; line-height: 1.3333; font-weight: 600; letter-spacing: -.025em; margin: 0; }
 h1:focus { outline: none; }
 .connection-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); }
 .row-icon { color: var(--muted); }
@@ -46,7 +46,7 @@ h1:focus { outline: none; }
 .instructions-list dd { margin: 0; color: var(--muted); }
 .wizard-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 24px; flex-shrink: 0; }
 .wizard-actions { display: flex; gap: 12px; margin-left: auto; }
-.setup-error { color: var(--error); font-size: 0.8571rem; line-height: 18px; margin-top: 12px; overflow-wrap: anywhere; flex-shrink: 0; }
+.setup-error { color: var(--error); font-size: 0.8571rem; line-height: 1.5; margin-top: 12px; overflow-wrap: anywhere; flex-shrink: 0; }
 @media (max-width: 540px) {
   .wizard-header { padding: 20px 16px 12px; }
   #onboarding-form { padding: 20px 16px; }
