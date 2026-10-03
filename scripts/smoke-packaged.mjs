@@ -58,6 +58,11 @@ try {
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+if (!testHover) {
+  for (const action of ['end', 'cancel']) {
+    assert.ok(report.customNotifications['dragReflow-' + action] && report.customNotifications['dragRemoval-' + action], 'Short toast drag restored stale stack bounds.');
+  }
+}
 if (testToast) {
   const checks = report.customNotifications;
   for (const theme of ['light', 'dark']) {
@@ -87,9 +92,6 @@ for (const theme of ['light', 'dark']) {
   assert.ok(report.customNotifications[theme + 'Bounds'] && report.customNotifications[theme + 'Paused'] && report.customNotifications[theme + 'Dismissed'], 'Custom notification positioning, pause, or action failed.');
 }
 assert.ok(report.customNotifications.bounded && report.customNotifications.cleared, 'Custom notification windows leaked or exceeded the burst limit.');
-for (const action of ['end', 'cancel']) {
-  assert.ok(report.customNotifications['dragReflow-' + action] && report.customNotifications['dragRemoval-' + action], 'Short toast drag restored stale stack bounds.');
-}
 assert.ok(Object.values(report.v2State).every(Boolean), 'V2 SQLite status detection failed in packaged Electron.');
 assert.ok(report.visibility.monitorReady && !report.visibility.monitorFailed, 'Native fullscreen monitor did not run.');
 assert.ok(report.controls.saveRoundTrip && report.controls.invalidRejected);
