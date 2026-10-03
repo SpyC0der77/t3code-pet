@@ -57,6 +57,7 @@ export interface PetStatus {
 }
 
 export interface AppState {
+  theme: import('./t3-theme').UiTheme;
   notificationsSupported: boolean;
   darkBackground: boolean;
   preferences: Preferences;

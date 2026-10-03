@@ -1,7 +1,6 @@
-@font-face{font-family:Pet Sans;src:url(font.woff2) format('woff2');font-weight:400 700;font-display:swap}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:transparent;color:#222;font:14px Pet Sans,sans-serif;overflow:hidden}
-main{background:#fff;border:1px solid #d4d4d4;border-radius:10px;max-height:100vh;overflow:auto}ul{list-style:none;margin:0;padding:0}li+li{border-top:1px solid #ededed}
-button{display:flex;align-items:center;gap:12px;width:100%;border:0;padding:10px 12px;background:#fff;color:inherit;font:inherit;text-align:left;cursor:pointer}button:hover{background:#f3f3f3}button:active{background:#e9e9e9}button:focus-visible{outline:2px solid #777;outline-offset:-3px}
-.title{flex:1;min-width:0;line-height:20px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{flex:none;white-space:nowrap;color:#656565;font-size:12px;line-height:20px}[hidden]{display:none}
+*{box-sizing:border-box}:root,body{margin:0;height:100%;background:transparent;overflow:hidden}
+main{background:var(--overlay);border:1px solid var(--border);border-radius:8px;max-height:100vh;overflow:auto}ul{list-style:none;margin:0;padding:0}li+li{border-top:1px solid var(--divider)}
+button{display:flex;align-items:center;gap:12px;width:100%;border:0;padding:10px 12px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}button:hover{background:var(--selected)}button:active{background:var(--surface)}button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.title{flex:1;min-width:0;line-height:1.4286;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{flex:none;white-space:nowrap;color:var(--muted);font-size: 0.8571rem;line-height:1.6667}[hidden]{display:none}
 
 

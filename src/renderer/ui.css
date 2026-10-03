@@ -1,14 +1,4 @@
-@font-face { font-family: Pet Sans; src: url(font.woff2) format('woff2'); font-weight: 400 700; font-display: swap; }
-:root {
-  color-scheme: light dark; font-family: Pet Sans, sans-serif; font-size: 14px; line-height: 1.5;
-  --canvas: #fff; --panel: #fcfcfc; --surface: #fafafa; --text: #27272a; --muted: #71717a;
-  --divider: #e4e4e7; --border: #e4e4e7; --input-border: #d4d4d8; --accent: #7652a8; --accent-hover: #654392;
-  --on-accent: #fff; --selected: #f3edf9; --error: #a52f46;
-  color: var(--text); background: var(--canvas);
-}
-@media (prefers-color-scheme: dark) {
-  :root { --canvas: #191919; --panel: #1e1e1e; --surface: #222; --text: #f5f5f5; --muted: #a3a3a3; --divider: #303030; --border: #303030; --input-border: #3b3b3b; --accent: #bb86fc; --accent-hover: #cba3ff; --on-accent: #211527; --selected: #302638; --error: #f29cad; }
-}
+@import url("theme.css");
 * { box-sizing: border-box; }
 body { margin: 0; }
 [hidden] { display: none !important; }
@@ -22,8 +12,8 @@ button.text-button { background: transparent; border-color: transparent; }
 button.text-button:hover:not(:disabled) { background: var(--surface); }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 p { margin: 0; }
-.help { color: var(--muted); font-size: 12px; line-height: 18px; margin-top: 4px; overflow-wrap: anywhere; }
-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.help { color: var(--muted); font-size: 0.8571rem; line-height: 1.5; margin-top: 4px; overflow-wrap: anywhere; }
+label { display: block; font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
 input[type=text], select { width: 100%; min-width: 0; height: 32px; padding: 5px 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--canvas); caret-color: var(--accent); }
 input[type=radio] { width: 16px; height: 16px; margin: 3px 0 0; flex-shrink: 0; accent-color: var(--accent); }
 .pet-gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 16px 0 12px; }
@@ -34,8 +24,8 @@ input[type=radio] { width: 16px; height: 16px; margin: 3px 0 0; flex-shrink: 0; 
 .pet-choice input { position: absolute; top: 8px; right: 8px; margin: 0; }
 .pet-choice canvas { width: 128px; height: 128px; image-rendering: auto; }
 .pet-choice canvas[data-character=lfg] { image-rendering: pixelated; }
-.pet-choice-name { font-size: 12px; font-weight: 500; line-height: 18px; text-align: center; overflow-wrap: anywhere; }
-.pet-preview-error { font-size: 11px; color: var(--error); text-align: center; }
+.pet-choice-name { font-size: 0.8571rem; font-weight: 500; line-height: 1.5; text-align: center; overflow-wrap: anywhere; }
+.pet-preview-error { font-size: 0.7857rem; color: var(--error); text-align: center; }
 ::selection { background: var(--accent); color: var(--on-accent); }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 3px; }
@@ -46,14 +36,14 @@ input::placeholder { color: var(--muted); opacity: 1; }
 input[type=checkbox] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; accent-color: var(--accent); }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.step-copy { margin: 10px 0 20px; color: var(--muted); line-height: 23px; }
-.notification-check { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
-.notification-check button { font-size: 12px; }
+.step-copy { margin: 10px 0 20px; color: var(--muted); line-height: 1.6429; }
+.notification-check { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 1rem; }
+.notification-check button { font-size: 0.8571rem; }
 fieldset { border: 0; padding: 0; margin: 20px 0 12px; min-width: 0; }
 .notification-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px; margin: 0 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); cursor: pointer; font-weight: 400; }
 .notification-option:last-child { margin-bottom: 0; }
 .notification-option:has(input:checked) { border-color: var(--accent); }
 .notification-option > span { display: grid; gap: 4px; }
 .notification-option strong { font-weight: 500; }
-.notification-option span span { color: var(--muted); font-size: 12px; line-height: 18px; }
+.notification-option span span { color: var(--muted); font-size: 0.8571rem; line-height: 1.5; }
 .notification-option:has(input:disabled) { cursor: default; }

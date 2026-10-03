@@ -22,6 +22,7 @@
     "@fontsource-variable/dm-sans": "^5.2.8",
     "@types/node": "^24.0.0",
     "@types/pngjs": "^6.0.5",
+    "@types/snappyjs": "^0.7.1",
     "electron": "44.5.0",
     "electron-builder": "26.15.3",
     "esbuild": "^0.28.2",
@@ -42,6 +43,7 @@
       "assets/icon.png",
       "assets/icon.ico",
       "assets/trayTemplate*.png",
+      "docs/T3-THEME-LICENSE.txt",
       "package.json",
       "!dist/native/**/*"
     ],
@@ -109,5 +111,8 @@
         }
       ]
     }
+  },
+  "dependencies": {
+    "snappyjs": "^0.7.0"
   }
 }

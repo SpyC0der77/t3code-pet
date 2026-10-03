@@ -13,6 +13,7 @@ A desktop pet that follows your [T3 Code](https://github.com/pingdotgg/t3code) a
 - Follows all local chats or a single chat you choose.
 - Lets you ignore projects so their chats and alerts stay out of the way.
 - Offers optional desktop notifications with sound, including a guided switch from T3 Code's alerts.
+- Follows T3 Code's saved theme automatically in settings, setup, and the chat list, including custom palettes and light/dark theme mixes.
 - Moves wherever you drag it, lets clicks through its transparent surroundings, and hides during fullscreen use on supported desktops.
 
 Choose a size, switch to still poses, or have your pet start when you sign in. Right-click the pet or use its tray icon to change settings, preview animations, hide it, or quit.

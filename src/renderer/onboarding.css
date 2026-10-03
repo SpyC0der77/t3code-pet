@@ -2,27 +2,27 @@
 svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .wizard { max-width: 768px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
 .wizard-header { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 12px; flex-shrink: 0; }
-.wizard-identity { display: flex; align-items: center; gap: 6px; min-height: 32px; color: var(--muted); font-size: 24px; font-weight: 500; letter-spacing: -.025em; }
+.wizard-identity { display: flex; align-items: center; gap: 6px; min-height: 32px; color: var(--muted); font-size: 1.7143rem; font-weight: 500; letter-spacing: -.025em; }
 .wizard-identity img { width: 24px; height: 24px; border-radius: 4px; }
 .steps { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .steps li { min-width: 0; }
 .steps button { width: 100%; min-width: 0; justify-content: flex-start; padding: 8px 10px; border-color: transparent; background: transparent; color: var(--muted); text-align: left; }
 .steps button:disabled { opacity: 1; }
 .steps button[aria-current=step] { background: var(--canvas); color: var(--text); border-color: var(--border); }
-.step-label { overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
-.step-number { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 1px solid var(--input-border); border-radius: 50%; background: var(--canvas); font-size: 14px; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.step-label { overflow: hidden; text-overflow: ellipsis; font-size: 1rem; }
+.step-number { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 1px solid var(--input-border); border-radius: 50%; background: var(--canvas); font-size: 1rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 [aria-current=step] .step-number { background: var(--selected); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, var(--canvas)); }
 .complete .step-number { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .step-number svg { width: 16px; height: 16px; }
 #onboarding-form { display: flex; flex-direction: column; min-height: 0; padding: 20px 24px; background: var(--panel); border-top: 1px solid var(--border); flex: 1; }
 .step-panel { min-height: 0; overflow-y: auto; }
-h1 { font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -.025em; margin: 0; }
+h1 { font-size: 1.7143rem; line-height: 1.3333; font-weight: 600; letter-spacing: -.025em; margin: 0; }
 h1:focus { outline: none; }
 .connection-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); }
 .row-icon { color: var(--muted); }
 .row-content { flex: 1; min-width: 0; }
-.row-content strong { font-size: 14px; font-weight: 500; }
-.connection-state { max-width: 180px; color: var(--muted); font-size: 12px; text-align: right; }
+.row-content strong { font-size: 1rem; font-weight: 500; }
+.connection-state { max-width: 180px; color: var(--muted); font-size: 0.8571rem; text-align: right; }
 .connection-settings { margin-top: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); }
 .connection-settings summary { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px; cursor: pointer; list-style: none; }
 .connection-settings summary::-webkit-details-marker { display: none; }
@@ -31,7 +31,7 @@ h1:focus { outline: none; }
 .connection-settings[open] .disclosure-icon { rotate: 90deg; }
 .folder-fields { padding: 0 12px 12px; }
 .folder-row { display: flex; gap: 8px; }
-.privacy-note { margin-top: 16px; font-size: 12px; color: var(--muted); }
+.privacy-note { margin-top: 16px; font-size: 0.8571rem; color: var(--muted); }
 .pet-preview { display: flex; align-items: center; gap: 24px; margin-bottom: 20px; }
 .pet-size { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
 .pet-size label { margin: 0; }
@@ -41,21 +41,21 @@ h1:focus { outline: none; }
 .pet-preview canvas { width: 96px; height: 96px; image-rendering: auto; flex-shrink: 0; }
 .pet-preview canvas[data-character=lfg] { image-rendering: pixelated; }
 .instructions-list { margin: 0; flex: 1; }
-.instructions-list div { display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 8px 0; font-size: 14px; }
+.instructions-list div { display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 8px 0; font-size: 1rem; }
 .instructions-list dt { font-weight: 500; }
 .instructions-list dd { margin: 0; color: var(--muted); }
 .wizard-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 24px; flex-shrink: 0; }
 .wizard-actions { display: flex; gap: 12px; margin-left: auto; }
-.setup-error { color: var(--error); font-size: 12px; line-height: 18px; margin-top: 12px; overflow-wrap: anywhere; flex-shrink: 0; }
+.setup-error { color: var(--error); font-size: 0.8571rem; line-height: 1.5; margin-top: 12px; overflow-wrap: anywhere; flex-shrink: 0; }
 @media (max-width: 540px) {
   .wizard-header { padding: 20px 16px 12px; }
   #onboarding-form { padding: 20px 16px; }
   .steps button { flex-direction: column; gap: 4px; padding: 6px 4px; }
-  .step-label { font-size: 12px; }
+  .step-label { font-size: 0.8571rem; }
   .pet-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .connection-row { flex-wrap: wrap; }
   .connection-state { max-width: none; width: 100%; margin-left: 28px; text-align: left; }
   .pet-preview { gap: 16px; }
   .pet-preview canvas { width: 64px; height: 64px; }
-  .instructions-list div { grid-template-columns: 1fr; gap: 2px; font-size: 13px; }
+  .instructions-list div { grid-template-columns: 1fr; gap: 2px; font-size: 0.9286rem; }
 }
