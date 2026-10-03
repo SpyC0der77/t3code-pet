@@ -6,13 +6,13 @@ import { execFileSync } from 'node:child_process';
 await mkdir('dist/renderer', { recursive: true });
 await mkdir('assets', { recursive: true });
 await build({ entryPoints: ['src/main.ts', 'src/preload.ts'], outdir: 'dist', bundle: true, platform: 'node', format: 'cjs', external: ['electron'], outExtension: { '.js': '.cjs' }, target: 'node24' });
-await build({ entryPoints: ['src/renderer/pet.ts', 'src/renderer/settings.ts', 'src/renderer/hover.ts', 'src/renderer/onboarding.ts'], outdir: 'dist/renderer', bundle: true, platform: 'browser', target: 'chrome140', format: 'iife' });
+await build({ entryPoints: ['src/renderer/pet.ts', 'src/renderer/settings.ts', 'src/renderer/hover.ts', 'src/renderer/onboarding.ts', 'src/renderer/notification.ts'], outdir: 'dist/renderer', bundle: true, platform: 'browser', target: 'chrome140', format: 'iife' });
 for (const name of await readdir('src/renderer')) if (/\.(html|css)$/.test(name)) await copyFile(`src/renderer/${name}`, `dist/renderer/${name}`);
 await copyFile('node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2', 'dist/renderer/font.woff2');
 await copyFile('node_modules/@fontsource-variable/dm-sans/LICENSE', 'dist/renderer/FONT-LICENSE.txt');
 
-// Preserve the original bundled LFG artwork.
-for (const pet of ['lfg']) {
+// Bundle each character independently, preserving the original LFG artwork.
+for (const pet of ['lfg', 'biscuit', 'miso', 'clover']) {
   await mkdir(`dist/renderer/${pet}`, { recursive: true });
   for (const name of await readdir(`assets/${pet}`)) await copyFile(`assets/${pet}/${name}`, `dist/renderer/${pet}/${name}`);
 }

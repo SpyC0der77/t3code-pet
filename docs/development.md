@@ -4,7 +4,7 @@
 
 ## Integration
 
-The local adapter opens `~/.t3/userdata/state.sqlite` with SQLite's read-only option and `query_only` enabled. It reads only metadata from the thread, project, session, and latest-turn projections. It never reads messages, tool payloads, provider credentials, or authentication tables. It does not write to T3 Code's database or call any model. It checks the local runtime file and listening port before reporting connected.
+The local adapter prefers `~/.t3/userdata/statev2.sqlite` when present, otherwise opens `state.sqlite`, with SQLite's read-only option and `query_only` enabled. V2 status comes from current run and pending runtime-request metadata, because its legacy projections are frozen after migration. Active runs take priority over queued runs. It reads only thread, project, session, run, and request status metadata. It never reads messages, tool payloads, provider credentials, or authentication tables. It does not write to T3 Code's database or call any model. It checks the local runtime file and listening port before reporting connected.
 
 The optional notification migration changes only `notificationMode` in the selected installation's `client-settings.json`. It preserves unrelated preferences, creates an original-file backup in Pet's own user-data folder, and rolls back if saving Pet preferences fails. Unknown notification formats prevent migration. Bundled helpers request normal closure using Windows `WM_CLOSE`, macOS `NSRunningApplication.terminate`, or Linux X11 `WM_DELETE_WINDOW`, then wait up to ten seconds for exit. They never force-kill T3 Code. If T3 Code has a quit confirmation, finish it before the timeout and retry if needed. The permission dialog lists the scope as all T3 Code windows. A restarted desktop or a still-running local server prevents settings changes.
 
@@ -42,6 +42,9 @@ macOS uses a monochrome template paw in the menu bar with a Retina variant. Logi
 
 - `src/main.ts`: windows, tray, settings, polling, and IPC.
 - `src/t3-local.ts`: replaceable read-only local adapter.
+- `src/t3-theme.ts` and `src/theme-storage.ts`: read-only appearance sync. Only allowlisted theme keys are decoded from T3 Code's Chromium profile. No database is opened or locked, and no credentials or messages are queried. File changes update open views; a one-second fallback retries profile creation and reads interface font settings. Chromium may delay writing a local-storage change to disk. Unsaved theme-editor previews are not persisted and cannot be observed by this reader.
+- `src/t3-palettes.ts`: built-in palette snapshot from T3 Code, under the license in `docs/T3-THEME-LICENSE.txt`.
+- Theme sync selects known desktop profile identities, honoring legacy profile directories. A stable profile takes precedence when both stable and development profiles exist; a custom status-data folder, including one named `dev`, does not change the desktop channel.
 - `src/pet-state.ts`: provider-independent state selection.
 - `src/animations.ts` and `src/renderer/sprite.ts`: source-accurate sprite timing and playback.
 - `native/ForegroundMonitor.cs`: Windows foreground fullscreen detection.
@@ -49,7 +52,8 @@ macOS uses a monochrome template paw in the menu bar with a Retina variant. Logi
 - `native/T3Close*`: normal application closure helpers for onboarding, with no forced termination.
 - `src/login-startup.ts`: per-user Linux startup registration and Desktop Entry argument escaping.
 - `assets/lfg/`: unmodified sprite sheets from the LFG Pet repository.
-- `src/pets.ts`: the bundled Lil' Finder Guy character with internal ID `lfg`. Retired selections fall back to it without resetting other settings.
+- `src/pets.ts`: the bundled Lil' Finder Guy, Biscuit, Miso, and Clover characters, with IDs `lfg`, `biscuit`, `miso`, and `clover`. Per-pet metadata preserves their separate geometry and timing. Retired selections fall back to LFG without resetting other settings.
+- `assets/biscuit/`, `assets/miso/`, and `assets/clover/`: generated dog, cat, and bunny artwork, packed into eight-frame sheets with source notes. See [pet-guidance.md](../pet-guidance.md) for creating more pets.
 - `assets/icon.svg`: pet-independent app icon source. The committed 1024px PNG and multi-size ICO exports are used directly by builds. To regenerate them with ImageMagick, run `magick -background none assets/icon.svg -resize 1024x1024 -set Source "T3 Pet authored paw mark; assets/icon.svg" PNG32:assets/icon.png`, then `magick assets/icon.png -define icon:auto-resize=256,128,64,48,32,24,16 assets/icon.ico`. `assets/trayTemplate.svg` is the monochrome macOS variant, exported at 22px and 44px to `trayTemplate.png` and `trayTemplate@2x.png`.
 - `src/renderer/`: pet and settings views.
 - `tests/`: transitions, database safety, and preferences.

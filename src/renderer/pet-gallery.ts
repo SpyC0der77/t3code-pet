@@ -12,7 +12,7 @@ export function createPetGallery(host: HTMLElement, panel: HTMLElement, choose: 
     const label = document.createElement('label'); label.className = 'pet-choice';
     const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'character'; radio.value = pet.id;
     radio.setAttribute('aria-label', pet.name);
-    const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; canvas.setAttribute('aria-hidden', 'true');
+    const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; canvas.setAttribute('aria-hidden', 'true');
     canvas.dataset.character = pet.id;
     const name = document.createElement('span'); name.className = 'pet-choice-name'; name.textContent = pet.name;
     const error = document.createElement('span'); error.className = 'pet-preview-error'; error.hidden = true; error.textContent = 'Preview unavailable';
@@ -34,8 +34,12 @@ export function createPetGallery(host: HTMLElement, panel: HTMLElement, choose: 
   for (const entry of entries) observer.observe(entry.label);
   function animate(now: number) {
     if (!document.hidden && !panel.hidden) for (const entry of entries) {
-      if (entry.visible && entry.error.hidden) entry.renderer.drawSprite(entry.canvas, moodAnimation[mood], now - started,
-        still || motion.matches || mood === 'offline', false, entry.pet.id);
+      if (entry.visible && entry.error.hidden) {
+        const resolution = Math.round(128 * window.devicePixelRatio);
+        if (entry.canvas.width !== resolution) entry.canvas.width = entry.canvas.height = resolution;
+        entry.renderer.drawSprite(entry.canvas, moodAnimation[mood], now - started,
+          still || motion.matches || mood === 'offline', false, entry.pet.id, true);
+      }
     }
     requestAnimationFrame(animate);
   }

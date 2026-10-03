@@ -1,0 +1,26 @@
+:root, body { margin: 0; height: 100%; background: transparent; }
+* { box-sizing: border-box; }
+body { padding: 8px; overflow: hidden; transition: opacity 150ms ease; }
+main { position: relative; display: flex; align-items: center; gap: 6px; padding: 12px 24px 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--overlay); color: var(--text); touch-action: none; cursor: grab; user-select: none; }
+main[data-dragging] { cursor: grabbing; }
+.message { display: flex; flex: 1; min-width: 0; align-items: flex-start; gap: 8px; }
+.content { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+svg { flex-shrink: 0; }
+#status-icon { width: 16px; height: 1.5rem; }
+main[data-kind="Chat failed"] #status-icon { color: var(--error); }
+p { margin: 0; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.5; }
+#title { font-weight: 500; }
+#title, #description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+#description { color: var(--muted); }
+#open-error { color: var(--error); }
+button { font: inherit; cursor: pointer; }
+#open { flex-shrink: 0; white-space: nowrap; height: 24px; padding: 0 7px; font-size: .8571rem; font-weight: 500; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent); color: var(--on-accent); }
+#open:hover { background: var(--accent-hover); }
+#dismiss { position: absolute; top: -6px; right: -6px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--overlay); color: var(--muted); }
+#dismiss svg { width: 12px; height: 12px; }
+#dismiss:hover { background: var(--selected); color: var(--text); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled { cursor: default; opacity: .5; }
+::selection { background: var(--selected); color: var(--text); }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { button, body { transition: none; } }

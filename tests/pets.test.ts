@@ -1,19 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pets, petAnimation } from '../src/pets';
 import { moodAnimation } from '../src/animations';
 import { defaults, loadPreferences, storePreferences, validatePreferences } from '../src/preferences';
 
-test('only the original pet remains and imports are absent from the build', () => {
-  assert.deepEqual(pets.map(pet => pet.id), ['lfg']);
+test('each selectable pet resolves to its own unchanged bundled assets', () => {
+  assert.deepEqual(pets.map(pet => pet.id), ['lfg', 'biscuit', 'miso', 'clover']);
   assert.equal(existsSync('assets/pets'), false);
   assert.equal(existsSync('dist/renderer/pets'), false);
-  for (const name of Object.values(moodAnimation)) {
-    assert.match(petAnimation('lfg', name).file, /^lfg\//);
+  for (const pet of pets) {
+    for (const name of Object.values(moodAnimation)) {
+      const animation = petAnimation(pet.id, name);
+      assert.ok(animation.file.startsWith(`${pet.id}/`));
+      assert.deepEqual(readFileSync(`dist/renderer/${animation.file}`), readFileSync(`assets/${animation.file}`));
+    }
   }
+  for (const name of Object.values(moodAnimation)) assert.deepEqual(petAnimation('../biscuit', name), petAnimation('lfg', name));
 });
 
 test('pet choice survives restart and partial updates; unknown asset paths are rejected', () => {

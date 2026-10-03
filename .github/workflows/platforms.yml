@@ -26,7 +26,7 @@ jobs:
           cache: npm
       - name: Install Linux build and desktop libraries
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y build-essential libx11-dev libxrandr-dev libxext-dev libgtk-3-0 libnss3 libasound2 libgbm1 libfuse2 xvfb openbox dbus-x11
+        run: sudo apt-get update && sudo apt-get install -y build-essential libx11-dev libxrandr-dev libxext-dev libgtk-3-0 libnss3 libasound2 libgbm1 libfuse2 xvfb openbox dbus-x11 dunst
       - run: npm ci
       - run: npm run check
       - name: Tests
@@ -43,6 +43,18 @@ jobs:
         run: |
           xvfb-run -a -s '-screen 0 1280x900x24' dbus-run-session -- sh -ec '
             openbox > /tmp/t3pet-openbox.log 2>&1 &
+            # The packaged test switches notification ownership, which requires
+            # a notification service on the same session bus as Electron.
+            dunst > /tmp/t3pet-dunst.log 2>&1 &
+            attempts=0
+            until dbus-send --session --print-reply --reply-timeout=1000 --dest=org.freedesktop.Notifications /org/freedesktop/Notifications org.freedesktop.Notifications.GetServerInformation; do
+              attempts=$((attempts + 1))
+              if [ "$attempts" -ge 10 ]; then
+                cat /tmp/t3pet-dunst.log
+                exit 1
+              fi
+              sleep 0.5
+            done
             npm test
             npm run package:linux
             npm run test:packaged

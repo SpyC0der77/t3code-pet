@@ -38,6 +38,7 @@ export interface Preferences {
   onboardingCompleted: boolean;
   notificationsEnabled: boolean;
   notificationSound: boolean;
+  notificationStyle: 'custom' | 'os';
   dataDirectory: string;
   followThreadId: string | null;
   size: number;
@@ -57,6 +58,7 @@ export interface PetStatus {
 }
 
 export interface AppState {
+  theme: import('./t3-theme').UiTheme;
   notificationsSupported: boolean;
   darkBackground: boolean;
   preferences: Preferences;
@@ -69,8 +71,8 @@ export interface AppState {
 
 export interface PetBridge {
   notificationSetup(): Promise<NotificationSetup>;
-  finishOnboarding(choice: 'keep' | 'enable' | 'migrate'): Promise<NotificationSetup>;
-  testNotification(): Promise<void>;
+  finishOnboarding(choice: 'keep' | 'enable' | 'migrate', style?: Preferences['notificationStyle']): Promise<NotificationSetup>;
+  testNotification(style?: Preferences['notificationStyle']): Promise<void>;
   showOnboarding(): void;
   openChat(threadId: string): Promise<void>;
   hover(): void;

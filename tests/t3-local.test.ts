@@ -6,6 +6,72 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readThreads, readLocalSnapshot, readProjects } from '../src/t3-local';
 import { defaults, validatePreferences, storePreferences, loadPreferences } from '../src/preferences';
+import { createServer } from 'node:net';
+import { PetStateMachine } from '../src/pet-state';
+
+function createV2Database(file: string) {
+  const db = new DatabaseSync(file);
+  db.exec(`
+    CREATE TABLE projection_projects(project_id TEXT PRIMARY KEY, title TEXT);
+    CREATE TABLE orchestration_v2_projection_threads(thread_id TEXT PRIMARY KEY, project_id TEXT, title TEXT,
+      default_provider TEXT, updated_at TEXT, archived_at TEXT, deleted_at TEXT, payload_json TEXT);
+    CREATE TABLE orchestration_v2_projection_runs(run_id TEXT PRIMARY KEY, thread_id TEXT, ordinal INTEGER,
+      status TEXT, completed_at TEXT);
+    CREATE TABLE orchestration_v2_projection_runtime_requests(runtime_request_id TEXT PRIMARY KEY,
+      thread_id TEXT, kind TEXT, status TEXT);
+    INSERT INTO projection_projects VALUES('p', 'Example');
+    INSERT INTO orchestration_v2_projection_threads VALUES('a','p','Active','future-provider',
+      '2026-10-03T14:00:00Z',NULL,NULL,'{}');
+    INSERT INTO orchestration_v2_projection_runs VALUES('r','a',1,'running',NULL);
+    INSERT INTO orchestration_v2_projection_runs VALUES('queued','a',2,'queued',NULL);
+  `);
+  return db;
+}
+
+test('v2 metadata follows active runs, requests, completion and failure without reading payloads', t => {
+  const folder = mkdtempSync(join(tmpdir(), 't3pet-v2-'));
+  const file = join(folder, 'statev2.sqlite');
+  const db = createV2Database(file);
+  t.after(() => { db.close(); rmSync(folder, { recursive: true, force: true }); });
+  const machine = new PetStateMachine();
+  const mood = () => machine.update({ connected: true, message: '', checkedAt: 0, threads: readThreads(file) }, null, Date.parse('2026-10-03T14:00:01Z')).mood;
+  assert.equal(mood(), 'working');
+  assert.equal(readThreads(file)[0].turnId, 'r', 'queued runs must not mask ongoing work');
+  db.exec("INSERT INTO orchestration_v2_projection_runtime_requests VALUES('q','a','permission','pending')");
+  assert.equal(mood(), 'waiting');
+  assert.equal(readThreads(file)[0].pendingApproval, 1);
+  db.exec("UPDATE orchestration_v2_projection_runtime_requests SET status='resolved'; UPDATE orchestration_v2_projection_runs SET status='waiting' WHERE run_id='r'");
+  assert.equal(mood(), 'working', 'background waiting is not a user input request');
+  db.exec("INSERT INTO orchestration_v2_projection_runtime_requests VALUES('i','a','user_input','pending')");
+  assert.equal(readThreads(file)[0].pendingInput, 1);
+  assert.equal(mood(), 'waiting');
+  db.exec("UPDATE orchestration_v2_projection_runtime_requests SET status='resolved'; UPDATE orchestration_v2_projection_runs SET status='completed',completed_at='2026-10-03T14:00:00Z' WHERE run_id='r'");
+  assert.equal(mood(), 'done');
+  db.exec("UPDATE orchestration_v2_projection_runs SET status='failed' WHERE run_id='r'");
+  assert.equal(mood(), 'error');
+  const before = readFileSync(file);
+  assert.equal(readThreads(file)[0].projectId, 'p');
+  assert.deepEqual(readFileSync(file), before);
+  db.exec(`UPDATE orchestration_v2_projection_threads SET payload_json='{"archivedAt":"2026-10-03T14:00:00Z"}'`);
+  assert.equal(readThreads(file).length, 0);
+});
+
+test('live snapshot prefers the v2 database over frozen legacy projections', async t => {
+  const folder = mkdtempSync(join(tmpdir(), 't3pet-v2-'));
+  t.after(() => rmSync(folder, { recursive: true, force: true }));
+  new DatabaseSync(join(folder, 'state.sqlite')).close();
+  const db = createV2Database(join(folder, 'statev2.sqlite')); db.close();
+  const server = createServer(socket => socket.end());
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const address = server.address() as { port: number };
+  writeFileSync(join(folder, 'server-runtime.json'), JSON.stringify({ host: '127.0.0.1', port: address.port, pid: process.pid }));
+  const before = readFileSync(join(folder, 'statev2.sqlite'));
+  const snapshot = await readLocalSnapshot(folder);
+  assert.equal(snapshot.connected, true);
+  assert.equal(snapshot.threads[0].turnState, 'running');
+  assert.deepEqual(readFileSync(join(folder, 'statev2.sqlite')), before);
+});
 
 test('local adapter reads metadata without changing database bytes', t => {
   const folder = mkdtempSync(join(tmpdir(), 't3pet-test-'));

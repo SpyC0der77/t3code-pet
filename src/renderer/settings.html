@@ -2,16 +2,11 @@
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
-<title>T3 Pet settings</title><link rel="stylesheet" href="settings.css"></head>
+<title>T3 Pet settings</title><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="settings.css"></head>
 <body>
-<!-- THESIS: Compact desktop settings and setup following the user's T3 Code reference.
-OWN-WORLD: DM Sans, white or charcoal system theme, existing lilac accent, flat tabs, 5px controls, neutral paw branding.
-STORY: Connect local status, choose followed chats and ignored projects, adjust the pet, and explicitly choose alerts.
-FIRST VIEWPORT: 580x600 desktop window, small app header, four tabs or three setup steps, one content region, fixed primary action at bottom right.
-FORM: User-pinned utility dialog; no random seed. Filters use searchable project and chat lists, and preserved drafts with Save/Discard.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+<!-- Shared visual styles with onboarding; settings retain tabs and Save/Discard. -->
 <main class="window-shell settings">
-  <header class="window-header"><img class="app-mark" src="../../assets/icon.png" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><span class="header-end" id="version"></span></header>
+  <header class="window-header"><img class="app-mark" src="../../assets/icon.png" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><div class="header-end"><span id="version"></span><button id="reopen-onboarding" type="button">Reopen onboarding</button></div></header>
   <nav class="settings-tabs" role="tablist" aria-label="Settings">
     <button id="chats-tab" type="button" role="tab" aria-selected="true" aria-controls="chats-panel">Chats</button>
     <button id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-panel" tabindex="-1">Filters</button>
@@ -23,7 +18,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       <h1 class="panel-title">Chat activity</h1>
       <p class="panel-description">Your pet follows your local agents.</p>
       <div class="connection-status"><div><strong id="connection">Looking for T3 Code...</strong><p id="connection-detail" role="status">Checking your local connection.</p></div><span id="chat-count">0 chats</span></div>
-      <details class="data-folder" id="data-folder"><summary>Connection settings</summary><div class="field-group"><label for="directory">T3 Code data folder</label><div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div><p class="help" id="folder-help">Choose the userdata folder containing state.sqlite.</p></div></details>
+      <input id="activity-search" type="search" aria-label="Search chat activity" placeholder="Search chats" autocomplete="off" spellcheck="false" aria-controls="chat-activity">
+      <p id="activity-error" class="help" role="status" hidden></p>
+      <ul id="chat-activity" class="chat-activity" aria-label="Chat activity"></ul>
+      <p id="activity-empty" class="filter-empty" role="status">Checking your local connection.</p>
+      <details class="data-folder" id="data-folder"><summary>Connection settings</summary><div class="field-group"><label for="directory">T3 Code data folder</label><div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div><p class="help" id="folder-help">Choose the userdata folder containing statev2.sqlite or state.sqlite.</p></div></details>
     </section>
     <section id="projects-panel" class="tab-panel projects-panel" role="tabpanel" aria-labelledby="projects-tab" hidden>
       <h1 class="panel-title">Filters</h1><p class="panel-description">Choose which activity your pet follows. Chats must pass both filters.</p>
@@ -41,21 +40,32 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </details>
     </section>
     <section id="pet-panel" class="tab-panel" role="tabpanel" aria-labelledby="pet-tab" hidden>
-      <div class="appearance-row field-group"><div><label for="preview">Preview state</label><select id="preview"><option value="idle">Resting</option><option value="working">Working</option><option value="waiting">Needs attention</option><option value="done">Finished</option><option value="error">Error</option><option value="offline">Offline</option></select></div><div><label for="size">Desktop size</label><select id="size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div></div>
+      <h1 class="panel-title">Choose your pet</h1>
       <input id="pet-id" type="hidden" value="lfg">
       <div id="pet-gallery" class="pet-gallery" role="group" aria-label="Choose a character" aria-describedby="pet-credit"></div>
       <p class="help pet-credit" id="pet-credit"></p>
+      <div class="appearance-row field-group"><div><label for="preview">Preview state</label><select id="preview"><option value="idle">Resting</option><option value="working">Working</option><option value="waiting">Needs attention</option><option value="done">Finished</option><option value="error">Error</option><option value="offline">Offline</option></select></div><div><label for="size">Desktop size</label><select id="size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div></div>
       <label class="preference-row"><span>Use still poses<span class="help">Keep the character visible without animation.</span></span><input id="reduced-motion" type="checkbox"></label>
       <label class="preference-row"><span>Start when I sign in<span class="help">Launch T3 Pet automatically.</span></span><input id="login" type="checkbox"></label>
     </section>
     <section id="notifications-panel" class="tab-panel" role="tabpanel" aria-labelledby="notifications-tab" hidden>
       <h1 class="panel-title">Desktop notifications</h1><p class="panel-description">Get an alert when a chat needs you, finishes, or fails.</p>
       <label class="preference-row"><span>Notifications from T3 Pet<span class="help">Click an alert to open its chat.</span></span><input id="notifications" type="checkbox" aria-describedby="notification-status"></label>
+      <div class="field-group"><label for="notification-style">Notification style</label><select id="notification-style" aria-describedby="notification-style-help"><option value="custom">Custom</option><option value="os">OS notifications</option></select></div>
+      <p class="help" id="notification-style-help">Custom alerts use your T3 Code theme and appear beside the pet.</p>
       <label class="preference-row"><span>Play sounds<span class="help">Include sound with your alerts.</span></span><input id="notification-sound" type="checkbox"></label>
-      <div class="notification-settings"><button id="notification-setup" type="button">Set up notifications…</button><button id="test-notification" type="button">Send a test</button></div>
+      <div class="notification-settings"><button id="notification-setup" type="button" hidden>Set up notifications…</button><button id="test-notification" type="button">Send a test</button></div>
       <p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>
     </section>
     <footer class="settings-actions"><span id="save-result" role="status">Changes apply after saving.</span><button class="text-button" id="discard" type="button" hidden>Discard</button><button class="primary" type="submit" id="save" disabled>Save changes</button></footer>
   </form>
 </main>
+<dialog id="notification-dialog" class="notification-dialog" aria-labelledby="notification-dialog-title">
+  <form id="notification-form">
+    <button id="notification-close" class="text-button modal-close" type="button" aria-label="Close notification setup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    <section id="notification-choices"></section>
+    <p id="notification-error" class="help modal-error" role="alert" hidden></p>
+    <footer class="modal-actions"><button id="notification-cancel" class="text-button" type="button">Cancel</button><button id="notification-apply" class="primary" type="submit"><span id="notification-action-label">Continue</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></footer>
+  </form>
+</dialog>
 <script src="settings.js"></script></body></html>

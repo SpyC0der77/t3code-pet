@@ -2,7 +2,7 @@
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
-<title>Set up T3 Pet</title><link rel="stylesheet" href="onboarding.css"></head>
+<title>Set up T3 Pet</title><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="onboarding.css"></head>
 <body>
 <!-- Layout adapted from pingdotgg/t3code WelcomeWizard.tsx and ui/wizard.tsx.
      See docs/onboarding-reference.md for the source revision. -->
@@ -11,8 +11,9 @@
     <div class="wizard-identity"><img src="../../assets/icon.png" alt=""><span>T3 Pet</span></div>
     <ol class="steps" aria-label="Setup progress">
       <li><button type="button" data-step="0" aria-current="step" aria-label="Connect, step 1" disabled><span class="step-number" aria-hidden="true">1</span><span class="step-label">Connect</span></button></li>
-      <li><button type="button" data-step="1" aria-label="Notifications, step 2" disabled><span class="step-number" aria-hidden="true">2</span><span class="step-label">Notifications</span></button></li>
-      <li><button type="button" data-step="2" aria-label="Finish, step 3" disabled><span class="step-number" aria-hidden="true">3</span><span class="step-label">Finish</span></button></li>
+      <li><button type="button" data-step="1" aria-label="Pet, step 2" disabled><span class="step-number" aria-hidden="true">2</span><span class="step-label">Pet</span></button></li>
+      <li><button type="button" data-step="2" aria-label="Notifications, step 3" disabled><span class="step-number" aria-hidden="true">3</span><span class="step-label">Notifications</span></button></li>
+      <li><button type="button" data-step="3" aria-label="Finish, step 4" disabled><span class="step-number" aria-hidden="true">4</span><span class="step-label">Finish</span></button></li>
     </ol>
   </header>
   <form id="onboarding-form">
@@ -29,16 +30,14 @@
       </details>
       <p class="privacy-note">Chat status is read locally. Your chats stay unchanged.</p>
     </section>
+    <section id="pet-step" class="step-panel" aria-label="Choose your pet" hidden>
+      <h1 tabindex="-1">Choose your pet</h1>
+      <div id="pet-gallery" class="pet-gallery" role="group" aria-label="Choose a character" aria-describedby="pet-credit"></div>
+      <p id="pet-credit" class="help"></p>
+      <div class="pet-size"><label for="pet-size">Desktop size</label><select id="pet-size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div>
+      <label class="pet-motion"><span>Use still poses</span><input id="pet-still" type="checkbox"></label>
+    </section>
     <section id="notifications-step" class="step-panel" aria-label="Choose notifications" hidden>
-      <h1 tabindex="-1">Choose your notifications</h1><p class="step-copy">Decide which app sends desktop alerts.</p>
-      <div class="notification-check"><span id="notification-check">Checking notifications…</span><button id="retry" class="text-button" type="button">Check again</button></div>
-      <p id="notification-detail" class="help" role="status"></p>
-      <fieldset><legend class="sr-only">Desktop alerts</legend>
-        <label class="notification-option" id="migrate-option"><input type="radio" name="notification-choice" value="migrate"><span><strong>Switch to T3 Pet</strong><span>With your permission, Pet closes T3 Code and switches its desktop alerts to Pet. Reopen T3 Code afterward.</span></span></label>
-        <label class="notification-option" id="enable-option" hidden><input type="radio" name="notification-choice" value="enable"><span><strong>Enable Pet notifications</strong><span>Get alerts for approval, input, completion, and errors.</span></span></label>
-        <label class="notification-option"><input type="radio" name="notification-choice" value="keep" checked><span><strong id="keep-label">Keep my current setup</strong><span id="keep-detail">Leave notification settings unchanged.</span></span></label>
-      </fieldset>
-      <p class="help">T3 Code's in-app and mobile notices stay unchanged. Alerts pause during fullscreen use where supported.</p>
     </section>
     <section id="finish-step" class="step-panel" aria-label="Setup complete" hidden>
       <h1 tabindex="-1">Your pet is ready</h1><p id="finish-detail" class="step-copy" role="status"></p>
@@ -50,4 +49,3 @@
   </form>
 </main>
 <script src="onboarding.js"></script></body></html>
-

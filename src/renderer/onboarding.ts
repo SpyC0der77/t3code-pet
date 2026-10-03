@@ -1,26 +1,45 @@
+import { applyUiTheme } from './theme';
+import { enhanceDropdowns, syncDropdowns, closeDropdowns } from './dropdown';
 import type { AppState, NotificationSetup } from '../shared';
 import { loadSprites, drawSprite } from './sprite';
 import { moodAnimation } from '../animations';
+import { createPetGallery } from './pet-gallery';
+import { pets } from '../pets';
+import { createNotificationChoices, notificationAction } from './notification-choices';
 
 const element = (id: string) => document.getElementById(id)!;
 const button = (id: string) => element(id) as HTMLButtonElement;
 const directory = element('directory') as HTMLInputElement;
+const notificationChoices = createNotificationChoices(element('notifications-step'));
+enhanceDropdowns();
 let step = 0;
 let busy = false;
 let initialized = false;
 let state: AppState;
 let setup: NotificationSetup | null = null;
 let checkGeneration = 0;
+const steps = ['connect-step', 'pet-step', 'notifications-step', 'finish-step'];
+let selectedPet = 'lfg';
+const petSize = element('pet-size') as HTMLSelectElement;
+const petStill = element('pet-still') as HTMLInputElement;
+const gallery = createPetGallery(element('pet-gallery'), element('pet-step'), id => {
+  selectedPet = id; updatePet();
+});
+function updatePet() {
+  gallery.select(selectedPet);
+  gallery.preview('idle', petStill.checked);
+  element('pet-credit').textContent = pets.find(pet => pet.id === selectedPet)!.credit;
+}
 const errorText = (error: unknown) => error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': Error: /, '') : 'Could not finish setup. Try again.';
 function showError(error: unknown) { element('setup-error').textContent = errorText(error); element('setup-error').hidden = false; }
 function clearError() { element('setup-error').hidden = true; }
 function actionLabel() {
-  const choice = document.querySelector<HTMLInputElement>('input[name=notification-choice]:checked')!.value;
-  element('action-label').textContent = busy ? step === 1 ? 'Applying…' : 'Checking…' : step === 2 ? 'Open settings' : step === 1 && choice === 'migrate' ? 'Switch notifications' : step === 1 && choice === 'enable' ? 'Enable notifications' : 'Continue';
+  const choice = notificationChoices.choice();
+  element('action-label').textContent = busy ? step === 2 ? 'Applying…' : step === 1 ? 'Saving…' : 'Checking…' : step === 3 ? 'Open settings' : step === 2 ? notificationAction(choice) : 'Continue';
 }
 function updateStepControls() {
   document.querySelectorAll<HTMLButtonElement>('.steps button').forEach((control, i) => {
-    control.disabled = busy || step === 2 || i >= step;
+    control.disabled = busy || step === 3 || i >= step;
   });
 }
 function setBusy(value: boolean) {
@@ -29,10 +48,12 @@ function setBusy(value: boolean) {
   actionLabel();
   renderSetup();
   updateStepControls();
+  syncDropdowns();
 }
 function showStep(value: number) {
+  closeDropdowns();
   step = value; clearError();
-  ['connect-step', 'notifications-step', 'finish-step'].forEach((id, i) => { element(id).hidden = i !== value; });
+  steps.forEach((id, i) => { element(id).hidden = i !== value; });
   document.querySelectorAll('.steps button').forEach((item, i) => {
     if (i === value) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
     item.classList.toggle('complete', i < value);
@@ -40,24 +61,15 @@ function showStep(value: number) {
     if (i < value) number.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 8 2.5 2.5L12 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     else number.textContent = String(i + 1);
   });
-  element('back').hidden = value !== 1;
-  element('skip').hidden = value === 2;
+  element('back').hidden = value === 0 || value === 3;
+  element('skip').hidden = value === 3;
   actionLabel();
   updateStepControls();
-  document.querySelector<HTMLElement>(['#connect-step h1', '#notifications-step h1', '#finish-step h1'][value])!.focus();
+  element(steps[value]).querySelector<HTMLElement>('h1')!.focus();
 }
 function renderSetup() {
   if (!setup) return;
-  element('notification-check').textContent = setup.status === 'enabled' ? 'T3 Code alerts are on' : setup.status === 'off' ? 'T3 Code alerts are off' : 'Notification settings unavailable';
-  element('notification-detail').textContent = setup.supported ? setup.message : 'Desktop notifications are unavailable on this system. You can still use your pet.';
-  element('migrate-option').hidden = setup.status !== 'enabled';
-  element('enable-option').hidden = setup.status === 'enabled';
-  const migrate = document.querySelector<HTMLInputElement>('input[value=migrate]')!;
-  const enable = document.querySelector<HTMLInputElement>('input[value=enable]')!;
-  migrate.disabled = busy || !setup.supported || setup.status !== 'enabled';
-  enable.disabled = busy || !setup.supported || setup.status !== 'off';
-  if ((migrate.checked && migrate.disabled && !busy) || (enable.checked && enable.disabled && !busy)) document.querySelector<HTMLInputElement>('input[value=keep]')!.checked = true;
-  element('keep-detail').textContent = state?.preferences.notificationsEnabled ? 'Keep your existing Pet and T3 Code notification preferences.' : 'Leave T3 Code as it is. Pet notifications will stay off.';
+  notificationChoices.render(setup, busy, state?.preferences.notificationsEnabled ?? false, state?.notificationsSupported ?? false);
   actionLabel();
 }
 async function checkSetup() {
@@ -67,8 +79,17 @@ async function checkSetup() {
   setup = result; renderSetup();
 }
 function render(value: AppState) {
+  applyUiTheme(value.theme);
   state = value;
-  if (!initialized) { directory.value = value.preferences.dataDirectory; initialized = true; }
+  if (!initialized) {
+    directory.value = value.preferences.dataDirectory;
+    selectedPet = value.preferences.petId;
+    petSize.value = String(value.preferences.size);
+    petStill.checked = value.preferences.reducedMotion;
+    notificationChoices.reset(value.preferences.notificationStyle);
+    updatePet(); initialized = true;
+    syncDropdowns();
+  }
   element('connection').textContent = value.snapshot.connected ? 'Connected to T3 Code' : 'T3 Code is not connected';
   element('connection-detail').textContent = value.snapshot.message;
 }
@@ -78,8 +99,15 @@ void loadSprites().then(() => {
   const start = performance.now();
   const canvases = ['preview-pet'].map(id => element(id) as HTMLCanvasElement);
   function animate(now: number) {
-    for (const canvas of canvases) drawSprite(canvas, moodAnimation[state?.pet.mood ?? 'idle'], now - start,
-      state?.preferences.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches, false, state?.preferences.petId);
+    for (const canvas of canvases) {
+      const size = canvas.getBoundingClientRect().width;
+      if (!size) continue;
+      const resolution = Math.round(size * devicePixelRatio);
+      if (canvas.width !== resolution) canvas.width = canvas.height = resolution;
+      canvas.dataset.character = state?.preferences.petId ?? 'lfg';
+      drawSprite(canvas, moodAnimation[state?.pet.mood ?? 'idle'], now - start,
+        state?.preferences.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches, false, state?.preferences.petId, true);
+    }
     requestAnimationFrame(animate);
   }
   requestAnimationFrame(animate);
@@ -87,7 +115,8 @@ void loadSprites().then(() => {
 button('browse').addEventListener('click', async () => {
   try { const path = await window.pet.chooseDirectory(); if (path) directory.value = path; } catch (error) { showError(error); }
 });
-button('back').addEventListener('click', () => showStep(0));
+button('back').addEventListener('click', () => showStep(step - 1));
+petStill.addEventListener('change', updatePet);
 document.querySelectorAll<HTMLButtonElement>('.steps button').forEach(control => {
   control.addEventListener('click', () => { if (!control.disabled) showStep(Number(control.dataset.step)); });
 });
@@ -111,8 +140,11 @@ element('onboarding-form').addEventListener('submit', async event => {
       render(await window.pet.savePreferences({ dataDirectory: directory.value.trim() }));
       await checkSetup(); showStep(1);
     } else if (step === 1) {
-      const choice = document.querySelector<HTMLInputElement>('input[name=notification-choice]:checked')!.value as 'keep' | 'enable' | 'migrate';
-      const result = await window.pet.finishOnboarding(choice);
+      render(await window.pet.savePreferences({ petId: selectedPet, size: Number(petSize.value), reducedMotion: petStill.checked }));
+      await checkSetup(); showStep(2);
+    } else if (step === 2) {
+      const choice = notificationChoices.choice();
+      const result = await window.pet.finishOnboarding(choice, notificationChoices.style());
       setup = result; renderSetup();
       if (result.outcome === 'cancelled') return;
       state = await window.pet.getState();
@@ -120,18 +152,18 @@ element('onboarding-form').addEventListener('submit', async event => {
         ? 'T3 Pet notifications are on. Your pet will alert you when a chat needs attention, finishes, or fails.'
         : 'Your pet is following local chat status. Your notification settings have not changed.';
       element('test-row').hidden = !state.preferences.notificationsEnabled;
-      showStep(2);
+      showStep(3);
     } else window.pet.showSettings();
   } catch (error) { showError(error); } finally {
     setBusy(false);
-    if (step !== previousStep) document.querySelector<HTMLElement>(['#connect-step h1', '#notifications-step h1', '#finish-step h1'][step])!.focus();
+    if (step !== previousStep) element(steps[step]).querySelector<HTMLElement>('h1')!.focus();
   }
 });
 button('test-notification').addEventListener('click', async () => {
   button('test-notification').disabled = true;
   try {
     await window.pet.testNotification();
-    element('test-result').textContent = 'Test requested. If no alert appears, allow T3 Pet in system notification settings.';
+    element('test-result').textContent = state.preferences.notificationStyle === 'custom' ? 'Test sent beside your pet.' : 'Test requested. If no alert appears, allow T3 Pet in system notification settings.';
   } catch (error) { element('test-result').textContent = errorText(error); }
   finally { button('test-notification').disabled = false; }
 });
