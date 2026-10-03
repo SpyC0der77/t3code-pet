@@ -97,6 +97,7 @@ export class ToastWindows {
     else {
       this.drags.delete(entry.id);
       win.setBounds(drag.bounds);
+      this.position();
       win.webContents.send('toast:drag-progress', { opacity: 1, animate: true });
     }
   }

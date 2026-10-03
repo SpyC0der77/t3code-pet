@@ -144,14 +144,14 @@ class Dropdown {
     if (key === 'Escape' && this.opened) { event.preventDefault(); event.stopPropagation(); this.close(); return; }
     if (['ArrowDown','ArrowUp','Home','End'].includes(key)) {
       event.preventDefault();
-      const wasOpen = this.opened;
-      if (!wasOpen) this.open();
+      if (!this.opened) this.open();
+      if (!this.opened) return;
       const enabled = this.enabled();
       if (!enabled.length) return;
       const index = enabled.indexOf(this.active);
       if (key === 'Home') this.highlight(enabled[0]!);
       else if (key === 'End') this.highlight(enabled.at(-1)!);
-      else if (wasOpen) this.highlight(enabled[(index + (key === 'ArrowDown' ? 1 : -1) + enabled.length) % enabled.length]!);
+      else this.highlight(enabled[(index + (key === 'ArrowDown' ? 1 : -1) + enabled.length) % enabled.length]!);
     } else if (key === 'Enter' || key === ' ') {
       event.preventDefault();
       if (this.opened) this.commit(this.active); else this.open();

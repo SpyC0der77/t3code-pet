@@ -357,7 +357,7 @@ function registerIpc() {
       notificationStyle: style, onboardingCompleted: true, notificationsEnabled: choice === 'enable' ? true : preferences.notificationsEnabled };
     storePreferences(preferencesPath, next);
     preferences = next;
-    notifications.reset(); clearNotifications();
+    if (choice !== 'keep') { notifications.reset(); clearNotifications(); }
     migrationMessage = '';
     publish();
     return { ...setupState(), outcome: 'complete' };
@@ -812,6 +812,14 @@ async function runSmokeTest(directory: string) {
     const keyboard = source.value !== initial && trigger.getAttribute('aria-expanded')==='false' && document.activeElement===trigger;
     document.getElementById('discard').click();
     const discarded = source.value === initial && trigger.textContent.includes(source.selectedOptions[0].textContent);
+    const closedArrows = ['ArrowDown', 'ArrowUp'].every(arrow => {
+      key(arrow);
+      const moved = document.getElementById(trigger.getAttribute('aria-activedescendant'))?.dataset.value !== initial && source.value === initial;
+      key('Enter');
+      const committed = source.value !== initial;
+      document.getElementById('discard').click();
+      return moved && committed;
+    });
     trigger.click(); key('Home'); key('Escape');
     const escaped = source.value === initial && trigger.getAttribute('aria-expanded')==='false';
     key('c');
@@ -823,8 +831,22 @@ async function runSmokeTest(directory: string) {
     source.disabled=true; await new Promise(resolve=>setTimeout(resolve,20));
     const disabled=trigger.disabled; source.disabled=false;
     await new Promise(resolve=>setTimeout(resolve,20));
-    return {allCustom, checked, fits, keyboard, discarded, escaped, typed, tabClosed, outside, disabled, restored:!trigger.disabled};
+    return {allCustom, checked, fits, keyboard, discarded, closedArrows, escaped, typed, tabClosed, outside, disabled, restored:!trigger.disabled};
   })()`);
+  report.notificationTestPending = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    const style = document.getElementById('notification-style');
+    const test = document.getElementById('test-notification');
+    style.value = 'custom'; style.dispatchEvent(new Event('change', {bubbles:true}));
+    test.click();
+    const initiallyDisabled = test.disabled;
+    document.getElementById('notification-sound').dispatchEvent(new Event('change', {bubbles:true}));
+    const disabledAfterChange = test.disabled;
+    document.getElementById('discard').click();
+    const disabledAfterDiscard = test.disabled;
+    for (let i=0;i<40 && test.disabled;i++) await new Promise(resolve=>setTimeout(resolve,25));
+    return {initiallyDisabled, disabledAfterChange, disabledAfterDiscard, restored:!test.disabled};
+  })()`);
+  customNotifications.clear();
   if (process.argv.includes('--hover-smoke-test')) {
     writeFileSync(join(directory, 'report.json'), JSON.stringify(report, null, 2));
     app.quit();
@@ -913,6 +935,22 @@ async function runSmokeTest(directory: string) {
   notificationChecks.dragCancelled = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x;
   await wait(150);
   notificationChecks.dragOpacityRestored = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity) === 1`);
+  for (const action of ['end', 'cancel'] as const) {
+    customNotifications.drag(draggedToast.webContents, 'start', 100, 100);
+    customNotifications.drag(draggedToast.webContents, 'move', 108, 100);
+    const sibling = customNotifications.show({threadId: 'drag-sibling', title: 'Turn finished', body: 'Arrived during drag', kind: 'Turn finished'});
+    await wait(100);
+    customNotifications.drag(draggedToast.webContents, action, 108, 100);
+    const returned = draggedToast.getBounds();
+    const siblingBounds = sibling.getBounds();
+    notificationChecks['dragReflow-' + action] = returned.y + returned.height + 8 === siblingBounds.y;
+    // Removing a sibling while dragging must also restore the current stack position.
+    customNotifications.drag(draggedToast.webContents, 'start', 100, 100);
+    customNotifications.drag(draggedToast.webContents, 'move', 108, 100);
+    customNotifications.dismiss(customNotifications.entryFor(sibling.webContents)!.id);
+    customNotifications.drag(draggedToast.webContents, action, 108, 100);
+    notificationChecks['dragRemoval-' + action] = draggedToast.getBounds().y === dragOrigin.y;
+  }
   await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',139,100)`);
   await wait(50);
   notificationChecks.dragBelowThreshold = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x + 39;
@@ -1030,8 +1068,17 @@ async function runSmokeTest(directory: string) {
   await wait(80);
   (report.notificationModal as Record<string, boolean>).compact = await settingsWindow!.webContents.executeJavaScript(`(() => { const modal=document.getElementById('notification-dialog'); const action=document.getElementById('notification-apply').getBoundingClientRect(); return modal.scrollWidth <= modal.clientWidth && action.bottom <= innerHeight && action.top >= 0; })()`);
   writeFileSync(join(directory, 'notification-modal-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  const keptToast = customNotifications.show({threadId: '', title: 'Keep active alert', body: 'Setup must leave this visible', kind: 'test'}, true);
+  notifications.reset();
+  const trackingSnapshot = { ...snapshot, connected: true, threads: [{ ...fixtureThread, pendingApproval: 0, pendingInput: 0, turnState: 'running' }] };
+  notifications.update(trackingSnapshot, true, null, false);
+  const waitingSnapshot = { ...trackingSnapshot, threads: [{ ...trackingSnapshot.threads[0]!, pendingApproval: 1 }] };
+  notifications.update(waitingSnapshot, true, null, true);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-apply').click()`);
   await wait(150);
+  (report.notificationModal as Record<string, boolean>).keptActive = !keptToast.isDestroyed();
+  (report.notificationModal as Record<string, boolean>).keptTracking = notifications.update(waitingSnapshot, true, null, false).some(notice => notice.kind === 'Approval needed');
+  customNotifications.clear(); notifications.reset();
   (report.notificationModal as Record<string, boolean>).applied = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('notification-dialog').open && document.title === 'T3 Pet settings' && document.getElementById('notification-setup').hidden`);
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);

@@ -77,6 +77,7 @@ if (testHover) {
 }
 assert.ok(Object.values(report.notificationChoice).every(Boolean), 'Notification choice did not save or discard correctly.');
 assert.ok(Object.values(report.settingsDropdowns).every(Boolean), 'Custom settings dropdown accessibility, keyboard, bounds, or draft behavior failed.');
+assert.ok(Object.values(report.notificationTestPending).every(Boolean), 'A settings update re-enabled a pending test notification.');
 assert.ok(Object.values(report.onboardingDropdowns).every(Boolean), 'Custom onboarding dropdown selection or bounds failed.');
 assert.ok(Object.values(report.onboardingNotificationStyle).every(Boolean), 'Conditional onboarding style choice, keep behavior, or persistence failed.');
 for (const theme of ['light', 'dark']) {
@@ -85,6 +86,9 @@ for (const theme of ['light', 'dark']) {
   assert.ok(report.customNotifications[theme + 'Bounds'] && report.customNotifications[theme + 'Paused'] && report.customNotifications[theme + 'Dismissed'], 'Custom notification positioning, pause, or action failed.');
 }
 assert.ok(report.customNotifications.bounded && report.customNotifications.cleared, 'Custom notification windows leaked or exceeded the burst limit.');
+for (const action of ['end', 'cancel']) {
+  assert.ok(report.customNotifications['dragReflow-' + action] && report.customNotifications['dragRemoval-' + action], 'Short toast drag restored stale stack bounds.');
+}
 assert.ok(Object.values(report.v2State).every(Boolean), 'V2 SQLite status detection failed in packaged Electron.');
 assert.ok(report.visibility.monitorReady && !report.visibility.monitorFailed, 'Native fullscreen monitor did not run.');
 assert.ok(report.controls.saveRoundTrip && report.controls.invalidRejected);

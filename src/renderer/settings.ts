@@ -23,6 +23,7 @@ function updatePreview() { gallery.preview(select('preview').value as PetMood, i
 let current: AppState;
 let saved: Preferences | undefined;
 let saving = false;
+let testingNotification = false;
 let activitySignature = '';
 function renderActivity() {
   const snapshot = current.snapshot;
@@ -108,7 +109,7 @@ function updateNotificationControls() {
   input('notifications').disabled = saving || !supported;
   input('notification-sound').disabled = saving || !supported || !input('notifications').checked;
   select('notification-style').disabled = saving;
-  button('test-notification').disabled = saving || !supported;
+  button('test-notification').disabled = saving || testingNotification || !supported;
   text('notification-style-help', select('notification-style').value === 'custom' ? 'Custom alerts use your T3 Code theme and appear beside the pet.' : supported ? 'OS alerts use your system notification settings and notification center.' : 'OS notifications are unavailable on this system. Choose Custom to receive alerts.');
   syncDropdowns();
 }
@@ -230,10 +231,11 @@ enhanceDropdowns();
 button('notification-setup').addEventListener('click', () => { if (!dirty()) void notificationModal.open(); });
 button('reopen-onboarding').addEventListener('click', () => { if (!saving && !dirty()) window.pet.showOnboarding(); });
 button('test-notification').addEventListener('click', async () => {
-  button('test-notification').disabled = true;
+  if (testingNotification) return;
+  testingNotification = true; updateNotificationControls();
   try { await window.pet.testNotification(select('notification-style').value as Preferences['notificationStyle']); text('notification-status', select('notification-style').value === 'custom' ? 'Test sent beside your pet.' : 'Test sent. If no alert appears, allow T3 Pet in system notification settings.'); }
   catch (error) { text('notification-status', errorText(error)); }
-  finally { updateControls(); }
+  finally { testingNotification = false; updateControls(); }
 });
 element('settings-form').addEventListener('submit', async event => {
   event.preventDefault(); if (saving || !dirty()) return;
