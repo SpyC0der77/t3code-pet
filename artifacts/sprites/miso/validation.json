@@ -1,0 +1,635 @@
+{
+  "processing": "4 x 2 source grid; one fixed nearest-neighbor transform per sequence; first-pose head width 70px, head center x64, baseline y112 in 128 x 128 cells; no per-frame centering",
+  "animations": [
+    {
+      "name": "ready",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.2147239263803681,
+        "headWidth": 326,
+        "headCenter": 238.5,
+        "baseline": 398
+      },
+      "file": "assets/miso/ready.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1820,
+      "sha256": "c19546019a4aced85c043ae467c06476e9fe784e127c6db88e1a8514b09506f5",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 700,
+          "bounds": {
+            "left": 28,
+            "top": 40,
+            "right": 101,
+            "bottom": 113,
+            "visible": 3846,
+            "transparent": 12538
+          },
+          "pixelHash": "616e6ee2b86d7095f9d769341544dd78d04077bb3082c750826887a7d0838a3a"
+        },
+        {
+          "frame": 1,
+          "duration": 160,
+          "bounds": {
+            "left": 28,
+            "top": 40,
+            "right": 104,
+            "bottom": 113,
+            "visible": 3951,
+            "transparent": 12433
+          },
+          "pixelHash": "31d19121abd51f5c58470b97e194bd7f9decc7256f448e2e2e22120876f789d5"
+        },
+        {
+          "frame": 2,
+          "duration": 160,
+          "bounds": {
+            "left": 20,
+            "top": 34,
+            "right": 103,
+            "bottom": 112,
+            "visible": 3957,
+            "transparent": 12427
+          },
+          "pixelHash": "c36b546fb01d3cc4d3ca63a4b0a24e66eff0fb49c90f4acb05819a2d87e09a56"
+        },
+        {
+          "frame": 3,
+          "duration": 90,
+          "bounds": {
+            "left": 29,
+            "top": 40,
+            "right": 100,
+            "bottom": 113,
+            "visible": 3881,
+            "transparent": 12503
+          },
+          "pixelHash": "6be8457ccadcbd1ace875bc2d0a8f98359b415488dc64e5b528fa8f8636d2096"
+        },
+        {
+          "frame": 4,
+          "duration": 90,
+          "bounds": {
+            "left": 27,
+            "top": 29,
+            "right": 106,
+            "bottom": 113,
+            "visible": 3883,
+            "transparent": 12501
+          },
+          "pixelHash": "907991cf61e9350396e9221f34af7bd69ff1addf707d92fe1ad3fdf34ce4304e"
+        },
+        {
+          "frame": 5,
+          "duration": 160,
+          "bounds": {
+            "left": 28,
+            "top": 30,
+            "right": 100,
+            "bottom": 113,
+            "visible": 3840,
+            "transparent": 12544
+          },
+          "pixelHash": "bc1497266a29b39f997de05e506ef9e61d32bb32f12f5ee793ce2f6abb31e753"
+        },
+        {
+          "frame": 6,
+          "duration": 160,
+          "bounds": {
+            "left": 26,
+            "top": 35,
+            "right": 102,
+            "bottom": 113,
+            "visible": 3930,
+            "transparent": 12454
+          },
+          "pixelHash": "ed8d6ff312b1cd6bb78856bfd82cc154bc9b13eeb6f77db281a4326456b7da9c"
+        },
+        {
+          "frame": 7,
+          "duration": 300,
+          "bounds": {
+            "left": 28,
+            "top": 39,
+            "right": 101,
+            "bottom": 113,
+            "visible": 3862,
+            "transparent": 12522
+          },
+          "pixelHash": "d5ea92aed8ff750a53e7644aa27aa5e1831a81d195016380cb702e921a8ad915"
+        }
+      ]
+    },
+    {
+      "name": "typing",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.21212121212121213,
+        "headWidth": 330,
+        "headCenter": 244.5,
+        "baseline": 405
+      },
+      "file": "assets/miso/typing.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 880,
+      "sha256": "ce66d367b98780a410c930fc2f5228282386205cb94688b1dd86ec2e4435129a",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 110,
+          "bounds": {
+            "left": 24,
+            "top": 39,
+            "right": 100,
+            "bottom": 112,
+            "visible": 4232,
+            "transparent": 12152
+          },
+          "pixelHash": "0633698e39ebe761a8a5a2d1e2b4227b7b34efaea10bf1a680a3b34a2a641c90"
+        },
+        {
+          "frame": 1,
+          "duration": 110,
+          "bounds": {
+            "left": 24,
+            "top": 39,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4332,
+            "transparent": 12052
+          },
+          "pixelHash": "a28036799e0e8af7f6a9b1fa2d9620056b17a242b23c6b339f5bc053038daa51"
+        },
+        {
+          "frame": 2,
+          "duration": 110,
+          "bounds": {
+            "left": 25,
+            "top": 39,
+            "right": 100,
+            "bottom": 112,
+            "visible": 4281,
+            "transparent": 12103
+          },
+          "pixelHash": "a4e49e78f23c5c34109c6fdfa6ba655de7ccdaa3126fcdaf23cea989e62e0e4c"
+        },
+        {
+          "frame": 3,
+          "duration": 110,
+          "bounds": {
+            "left": 24,
+            "top": 39,
+            "right": 100,
+            "bottom": 112,
+            "visible": 4266,
+            "transparent": 12118
+          },
+          "pixelHash": "c0bb2af5e0d3b912d8ebb5be219b72bebb7ce430d447ffa10de8e0482dc24f9e"
+        },
+        {
+          "frame": 4,
+          "duration": 110,
+          "bounds": {
+            "left": 24,
+            "top": 37,
+            "right": 100,
+            "bottom": 112,
+            "visible": 4423,
+            "transparent": 11961
+          },
+          "pixelHash": "78b2c0bc5c05604aa52c8039f7e2a5bf65877f684e4d61d49070411dee0d09b4"
+        },
+        {
+          "frame": 5,
+          "duration": 110,
+          "bounds": {
+            "left": 13,
+            "top": 34,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4360,
+            "transparent": 12024
+          },
+          "pixelHash": "243b902ea2c426ff3ce91cecb961bcdb43ec1a2e16a06c4b90db0c9b6451ab3d"
+        },
+        {
+          "frame": 6,
+          "duration": 110,
+          "bounds": {
+            "left": 24,
+            "top": 37,
+            "right": 100,
+            "bottom": 112,
+            "visible": 4419,
+            "transparent": 11965
+          },
+          "pixelHash": "472e131a453d5f45464e79dc78b488debc2b75c6996826a1a5e9b202a36ae559"
+        },
+        {
+          "frame": 7,
+          "duration": 110,
+          "bounds": {
+            "left": 24,
+            "top": 37,
+            "right": 101,
+            "bottom": 113,
+            "visible": 4429,
+            "transparent": 11955
+          },
+          "pixelHash": "bbb7a5053293a01e43e1e40f37c0eb086c21bfef63a9cc4bc54639d09a2d4463"
+        }
+      ]
+    },
+    {
+      "name": "waiting",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.19718309859154928,
+        "headWidth": 355,
+        "headCenter": 246,
+        "baseline": 417
+      },
+      "file": "assets/miso/needs-input.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1780,
+      "sha256": "ebe92df0654d9a0992f730f90bc0fa408248a53d40c61dc618a78c7c25b7ab98",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 500,
+          "bounds": {
+            "left": 28,
+            "top": 40,
+            "right": 101,
+            "bottom": 112,
+            "visible": 3841,
+            "transparent": 12543
+          },
+          "pixelHash": "48145b13f354e48b31b99f2561e3f742bb509b2a4b70b726d0f61a8bd9b8610b"
+        },
+        {
+          "frame": 1,
+          "duration": 160,
+          "bounds": {
+            "left": 21,
+            "top": 34,
+            "right": 102,
+            "bottom": 112,
+            "visible": 3894,
+            "transparent": 12490
+          },
+          "pixelHash": "3b5ad38160b58f0b9155c0e1b7ca95e5b3c6f362f546adf71792728a96159051"
+        },
+        {
+          "frame": 2,
+          "duration": 160,
+          "bounds": {
+            "left": 28,
+            "top": 40,
+            "right": 101,
+            "bottom": 112,
+            "visible": 3870,
+            "transparent": 12514
+          },
+          "pixelHash": "fe0f29f2efed7e629a1507fc63daab9c2486c1bdf950adb21b2056f5809e9815"
+        },
+        {
+          "frame": 3,
+          "duration": 160,
+          "bounds": {
+            "left": 21,
+            "top": 38,
+            "right": 99,
+            "bottom": 111,
+            "visible": 3932,
+            "transparent": 12452
+          },
+          "pixelHash": "3bcdc4c72379e2b9dbadafd2d00cb20b6a37f3d9e1a9c08afe5c78b3cf159bc2"
+        },
+        {
+          "frame": 4,
+          "duration": 160,
+          "bounds": {
+            "left": 28,
+            "top": 36,
+            "right": 101,
+            "bottom": 113,
+            "visible": 4035,
+            "transparent": 12349
+          },
+          "pixelHash": "641581a280aa7494f3645805a2ea2c5febe8d45493d1a495e2f7d2ae07799046"
+        },
+        {
+          "frame": 5,
+          "duration": 160,
+          "bounds": {
+            "left": 30,
+            "top": 36,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4056,
+            "transparent": 12328
+          },
+          "pixelHash": "7adcf8ccfd614074a5acd7bb892cf7275c930e7d08e7c491b7cc2edd25762893"
+        },
+        {
+          "frame": 6,
+          "duration": 160,
+          "bounds": {
+            "left": 28,
+            "top": 41,
+            "right": 101,
+            "bottom": 113,
+            "visible": 3866,
+            "transparent": 12518
+          },
+          "pixelHash": "58adce55969ca2699b41094876aab8285a9a4ed71b37869d10d90355db8e1822"
+        },
+        {
+          "frame": 7,
+          "duration": 320,
+          "bounds": {
+            "left": 28,
+            "top": 41,
+            "right": 102,
+            "bottom": 113,
+            "visible": 3888,
+            "transparent": 12496
+          },
+          "pixelHash": "7fbb88d85c34f358356cd549522b27dbda6a6608262c9acc68c9788e8cbcdcbc"
+        }
+      ]
+    },
+    {
+      "name": "broken",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.20348837209302326,
+        "headWidth": 344,
+        "headCenter": 248.5,
+        "baseline": 420
+      },
+      "file": "assets/miso/broken.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1940,
+      "sha256": "e9bc9d63ebb72e0512d5dfa127915d7f23d35d68d0760a9286c7d742ad785090",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 700,
+          "bounds": {
+            "left": 24,
+            "top": 45,
+            "right": 101,
+            "bottom": 111,
+            "visible": 3891,
+            "transparent": 12493
+          },
+          "pixelHash": "3d2488a3788c916893cfcbeae21267018b0879d9f7c28d7f885e475f3ed029cf"
+        },
+        {
+          "frame": 1,
+          "duration": 150,
+          "bounds": {
+            "left": 15,
+            "top": 41,
+            "right": 100,
+            "bottom": 111,
+            "visible": 3731,
+            "transparent": 12653
+          },
+          "pixelHash": "18070c64bd2eaaf72c0826aa3c854fe0cf6bfe04d9a426d7cc4b6d1b12bdbabc"
+        },
+        {
+          "frame": 2,
+          "duration": 150,
+          "bounds": {
+            "left": 22,
+            "top": 34,
+            "right": 100,
+            "bottom": 111,
+            "visible": 3736,
+            "transparent": 12648
+          },
+          "pixelHash": "d7dfc6682117e4525a3efd9b41cd6f5df1889256d743e0c1de2ed1bdded6da20"
+        },
+        {
+          "frame": 3,
+          "duration": 150,
+          "bounds": {
+            "left": 14,
+            "top": 32,
+            "right": 99,
+            "bottom": 111,
+            "visible": 3697,
+            "transparent": 12687
+          },
+          "pixelHash": "93bf3867fa982a719fb35ab17b6e480d500c5a22e7fa153ddaa464099d0c54a0"
+        },
+        {
+          "frame": 4,
+          "duration": 150,
+          "bounds": {
+            "left": 23,
+            "top": 41,
+            "right": 101,
+            "bottom": 106,
+            "visible": 3758,
+            "transparent": 12626
+          },
+          "pixelHash": "aad9d5c13ca7c70e0ee5380990eaeeb5e9b8185f917817b063dd6af72bd54151"
+        },
+        {
+          "frame": 5,
+          "duration": 150,
+          "bounds": {
+            "left": 23,
+            "top": 41,
+            "right": 103,
+            "bottom": 106,
+            "visible": 3617,
+            "transparent": 12767
+          },
+          "pixelHash": "48e655cb6ac81a034b30f8d1d9f90393d89743a67edd1fd6fbd1a327e60a03db"
+        },
+        {
+          "frame": 6,
+          "duration": 150,
+          "bounds": {
+            "left": 24,
+            "top": 40,
+            "right": 101,
+            "bottom": 106,
+            "visible": 3762,
+            "transparent": 12622
+          },
+          "pixelHash": "ff81a9d06026d58578e8ec0ba8691dd6ddeae035969f174026043f2533b1cee0"
+        },
+        {
+          "frame": 7,
+          "duration": 340,
+          "bounds": {
+            "left": 15,
+            "top": 39,
+            "right": 100,
+            "bottom": 106,
+            "visible": 3783,
+            "transparent": 12601
+          },
+          "pixelHash": "5684f0b03d082437dbe0ea8cbc4064aee32c973e271c9de72f19fbfbc716b7ff"
+        }
+      ]
+    },
+    {
+      "name": "jumping",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.23972602739726026,
+        "headWidth": 292,
+        "headCenter": 249.5,
+        "baseline": 425
+      },
+      "file": "assets/miso/jumping.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1380,
+      "sha256": "072cc640378d5026a51e9cdaf45fd45b261acd5d885bb3a0a865e38424a8bf4c",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 320,
+          "bounds": {
+            "left": 18,
+            "top": 19,
+            "right": 110,
+            "bottom": 114,
+            "visible": 4027,
+            "transparent": 12357
+          },
+          "pixelHash": "c49271d25292a7823ed5f78be6f6de5d9421b330465588b10ebe61864958fff8"
+        },
+        {
+          "frame": 1,
+          "duration": 120,
+          "bounds": {
+            "left": 25,
+            "top": 15,
+            "right": 108,
+            "bottom": 114,
+            "visible": 3838,
+            "transparent": 12546
+          },
+          "pixelHash": "745243882f48d95994fca90a4406f0863282fa6d51d7f5d5b854897ad4ba9039"
+        },
+        {
+          "frame": 2,
+          "duration": 120,
+          "bounds": {
+            "left": 20,
+            "top": 38,
+            "right": 103,
+            "bottom": 115,
+            "visible": 4130,
+            "transparent": 12254
+          },
+          "pixelHash": "e00dbe82c1fcdda09c9bb0e291a1b9e0f43083d63b1a8c24abc7a926eae094fa"
+        },
+        {
+          "frame": 3,
+          "duration": 120,
+          "bounds": {
+            "left": 16,
+            "top": 22,
+            "right": 98,
+            "bottom": 112,
+            "visible": 3873,
+            "transparent": 12511
+          },
+          "pixelHash": "5574a5210261e7b9489c48b515298a53223dfd1d3f368e7557e8829bc31c632e"
+        },
+        {
+          "frame": 4,
+          "duration": 180,
+          "bounds": {
+            "left": 28,
+            "top": 13,
+            "right": 108,
+            "bottom": 107,
+            "visible": 3962,
+            "transparent": 12422
+          },
+          "pixelHash": "1f4eedf4ad4457735861396097b2d2d3a4f5cbf68f66ea67d0124f5464bb7565"
+        },
+        {
+          "frame": 5,
+          "duration": 120,
+          "bounds": {
+            "left": 4,
+            "top": 26,
+            "right": 109,
+            "bottom": 102,
+            "visible": 4073,
+            "transparent": 12311
+          },
+          "pixelHash": "7f05119c0e426fd04e78c905f1851992a190f7a3e9185a23b1a045bcdf53112e"
+        },
+        {
+          "frame": 6,
+          "duration": 120,
+          "bounds": {
+            "left": 14,
+            "top": 22,
+            "right": 103,
+            "bottom": 108,
+            "visible": 3823,
+            "transparent": 12561
+          },
+          "pixelHash": "1ffc8276424d385d750eb0dfa738c853c253b9eda8446376c9a4d55a0fbc2766"
+        },
+        {
+          "frame": 7,
+          "duration": 280,
+          "bounds": {
+            "left": 6,
+            "top": 18,
+            "right": 98,
+            "bottom": 107,
+            "visible": 4242,
+            "transparent": 12142
+          },
+          "pixelHash": "6168658c87fbe0c82e0a4704ad68f90b2af07852559be2f2e5bd1eefe76f641c"
+        }
+      ]
+    }
+  ]
+}

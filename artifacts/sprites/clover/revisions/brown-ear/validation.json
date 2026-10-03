@@ -1,0 +1,1180 @@
+{
+  "processing": "4 x 2 source grid; one fixed nearest-neighbor transform per sequence; first-pose eye spacing at most 22px and full height at most 88px, eye midpoint x64, baseline y112 in 128 x 128 cells; no per-frame centering",
+  "animations": [
+    {
+      "name": "ready",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.2146341463414634,
+        "eyes": [
+          {
+            "x": 141,
+            "y": 256.5,
+            "pixels": 1062
+          },
+          {
+            "x": 242.5,
+            "y": 261,
+            "pixels": 1494
+          }
+        ],
+        "eyeSpacing": 101.5,
+        "bodyHeight": 410,
+        "headCenter": 191.75,
+        "baseline": 429
+      },
+      "file": "assets/clover/ready.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1700,
+      "sha256": "1dd24a13124615fdc993dd81a62264c7e892b2a706472cb425153b6c3167287f",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 600,
+          "sourceBounds": {
+            "left": 90,
+            "top": 20,
+            "right": 385,
+            "bottom": 429,
+            "projected": {
+              "left": 42.16097560975609,
+              "right": 105.4780487804878,
+              "top": 24.214634146341467,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 34,
+            "top": 24,
+            "right": 113,
+            "bottom": 113,
+            "visible": 4177,
+            "transparent": 12207
+          },
+          "pixelHash": "d6cd25fa0d230d8482b5e9a838c0a8e07dd51c01961dd1c90f3d0d544737de15"
+        },
+        {
+          "frame": 1,
+          "duration": 140,
+          "sourceBounds": {
+            "left": 89.5,
+            "top": 20,
+            "right": 384.5,
+            "bottom": 429,
+            "projected": {
+              "left": 42.05365853658537,
+              "right": 105.37073170731708,
+              "top": 24.214634146341467,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 28,
+            "top": 23,
+            "right": 111,
+            "bottom": 113,
+            "visible": 4179,
+            "transparent": 12205
+          },
+          "pixelHash": "017aeae22c8f8cb3a570e1d736fab8eb9d2b950dff24750b84c8b1aa7a561937"
+        },
+        {
+          "frame": 2,
+          "duration": 160,
+          "sourceBounds": {
+            "left": 90,
+            "top": 20,
+            "right": 385,
+            "bottom": 429,
+            "projected": {
+              "left": 42.16097560975609,
+              "right": 105.4780487804878,
+              "top": 24.214634146341467,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 24,
+            "top": 23,
+            "right": 105,
+            "bottom": 113,
+            "visible": 4138,
+            "transparent": 12246
+          },
+          "pixelHash": "0ec2d1d13fcc5e929b3831caf581dc520da992a46eeaae9b082a98765d22c91b"
+        },
+        {
+          "frame": 3,
+          "duration": 90,
+          "sourceBounds": {
+            "left": 89.5,
+            "top": 20,
+            "right": 384.5,
+            "bottom": 429,
+            "projected": {
+              "left": 42.05365853658537,
+              "right": 105.37073170731708,
+              "top": 24.214634146341467,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 37,
+            "top": 23,
+            "right": 106,
+            "bottom": 113,
+            "visible": 4172,
+            "transparent": 12212
+          },
+          "pixelHash": "cbd7428363e9505960f57a1b5221ef31c218d8c3ffc0dde5d76c62de050010d6"
+        },
+        {
+          "frame": 4,
+          "duration": 90,
+          "sourceBounds": {
+            "left": 90,
+            "top": 19.5,
+            "right": 385,
+            "bottom": 428.5,
+            "projected": {
+              "left": 42.16097560975609,
+              "right": 105.4780487804878,
+              "top": 24.107317073170734,
+              "bottom": 111.89268292682927
+            }
+          },
+          "bounds": {
+            "left": 35,
+            "top": 23,
+            "right": 105,
+            "bottom": 112,
+            "visible": 4182,
+            "transparent": 12202
+          },
+          "pixelHash": "35a9afa0eabc553d14aee8608e239bf80b7f82ddbb09b6e61dc0e6b8a8b2d208"
+        },
+        {
+          "frame": 5,
+          "duration": 140,
+          "sourceBounds": {
+            "left": 89.5,
+            "top": 19.5,
+            "right": 385.5,
+            "bottom": 428.5,
+            "projected": {
+              "left": 42.05365853658537,
+              "right": 105.58536585365854,
+              "top": 24.107317073170734,
+              "bottom": 111.89268292682927
+            }
+          },
+          "bounds": {
+            "left": 24,
+            "top": 23,
+            "right": 106,
+            "bottom": 112,
+            "visible": 4227,
+            "transparent": 12157
+          },
+          "pixelHash": "652f56aa5c18b1aeb9507ba4b137b20bd49154ad172d6316081b6985313436fd"
+        },
+        {
+          "frame": 6,
+          "duration": 180,
+          "sourceBounds": {
+            "left": 90,
+            "top": 19.5,
+            "right": 385,
+            "bottom": 428.5,
+            "projected": {
+              "left": 42.16097560975609,
+              "right": 105.4780487804878,
+              "top": 24.107317073170734,
+              "bottom": 111.89268292682927
+            }
+          },
+          "bounds": {
+            "left": 24,
+            "top": 23,
+            "right": 111,
+            "bottom": 114,
+            "visible": 4241,
+            "transparent": 12143
+          },
+          "pixelHash": "ab7aaf4c77a69a5611765f5e2b06d5d67a833db68d4cdcebc5f80bf0ece16677"
+        },
+        {
+          "frame": 7,
+          "duration": 300,
+          "sourceBounds": {
+            "left": 89.5,
+            "top": 19.5,
+            "right": 384.5,
+            "bottom": 428.5,
+            "projected": {
+              "left": 42.05365853658537,
+              "right": 105.37073170731708,
+              "top": 24.107317073170734,
+              "bottom": 111.89268292682927
+            }
+          },
+          "bounds": {
+            "left": 41,
+            "top": 23,
+            "right": 111,
+            "bottom": 112,
+            "visible": 4240,
+            "transparent": 12144
+          },
+          "pixelHash": "628c6eac3da20fbdfd4eab65a99e0f88f8fa37810980896688044b058162759e"
+        }
+      ]
+    },
+    {
+      "name": "typing",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.20276497695852536,
+        "eyes": [
+          {
+            "x": 165.5,
+            "y": 251.5,
+            "pixels": 1164
+          },
+          {
+            "x": 274,
+            "y": 255.5,
+            "pixels": 1518
+          }
+        ],
+        "eyeSpacing": 108.5,
+        "bodyHeight": 387,
+        "headCenter": 219.75,
+        "baseline": 410
+      },
+      "file": "assets/clover/typing.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 800,
+      "sha256": "ef1f73dd618b46295e2f601a558e042a5aeee0418b830e02144ad60596d8cd27",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40,
+            "top": 24,
+            "right": 409,
+            "bottom": 410,
+            "projected": {
+              "left": 27.552995391705068,
+              "right": 102.37327188940093,
+              "top": 33.73271889400921,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 26,
+            "top": 32,
+            "right": 103,
+            "bottom": 113,
+            "visible": 4056,
+            "transparent": 12328
+          },
+          "pixelHash": "7b320829f971da775e04494a438acd03335bc501feb62de6b9bb92c9c54da9ac"
+        },
+        {
+          "frame": 1,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40.5,
+            "top": 23,
+            "right": 408.5,
+            "bottom": 410,
+            "projected": {
+              "left": 27.654377880184327,
+              "right": 102.27188940092165,
+              "top": 33.52995391705069,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 20,
+            "top": 32,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4072,
+            "transparent": 12312
+          },
+          "pixelHash": "52c23769e3f3019c399887371f672dabcd05b2cdca8eb73ca16cf9e102025a34"
+        },
+        {
+          "frame": 2,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40,
+            "top": 24,
+            "right": 409,
+            "bottom": 410,
+            "projected": {
+              "left": 27.552995391705068,
+              "right": 102.37327188940093,
+              "top": 33.73271889400921,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 26,
+            "top": 33,
+            "right": 103,
+            "bottom": 113,
+            "visible": 4057,
+            "transparent": 12327
+          },
+          "pixelHash": "37012bb9e11b1d5aa553856f253263fc5546eaa0765d1dccf75fb627d432eb81"
+        },
+        {
+          "frame": 3,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40.5,
+            "top": 23,
+            "right": 408.5,
+            "bottom": 410,
+            "projected": {
+              "left": 27.654377880184327,
+              "right": 102.27188940092165,
+              "top": 33.52995391705069,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 27,
+            "top": 32,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4103,
+            "transparent": 12281
+          },
+          "pixelHash": "2495dad53b9ba344109cf0eb4bcc968b669096e8bdf7c92eeb01507c07c9d476"
+        },
+        {
+          "frame": 4,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40,
+            "top": 23.5,
+            "right": 409,
+            "bottom": 410.5,
+            "projected": {
+              "left": 27.552995391705068,
+              "right": 102.37327188940093,
+              "top": 33.63133640552995,
+              "bottom": 112.10138248847926
+            }
+          },
+          "bounds": {
+            "left": 26,
+            "top": 33,
+            "right": 103,
+            "bottom": 112,
+            "visible": 4117,
+            "transparent": 12267
+          },
+          "pixelHash": "8fdfa7a48199e9ef0ca8db24f12586eba57b62b375c9df9f783e4c208f9d745c"
+        },
+        {
+          "frame": 5,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40.5,
+            "top": 23.5,
+            "right": 408.5,
+            "bottom": 410.5,
+            "projected": {
+              "left": 27.654377880184327,
+              "right": 102.27188940092165,
+              "top": 33.63133640552995,
+              "bottom": 112.10138248847926
+            }
+          },
+          "bounds": {
+            "left": 27,
+            "top": 33,
+            "right": 102,
+            "bottom": 112,
+            "visible": 4115,
+            "transparent": 12269
+          },
+          "pixelHash": "f48d347570c8ee04985e65ce8565f7f007b7efd026a64bc7bc331e56075ac336"
+        },
+        {
+          "frame": 6,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40,
+            "top": 23.5,
+            "right": 409,
+            "bottom": 410.5,
+            "projected": {
+              "left": 27.552995391705068,
+              "right": 102.37327188940093,
+              "top": 33.63133640552995,
+              "bottom": 112.10138248847926
+            }
+          },
+          "bounds": {
+            "left": 22,
+            "top": 33,
+            "right": 103,
+            "bottom": 112,
+            "visible": 4108,
+            "transparent": 12276
+          },
+          "pixelHash": "87c77a1ff542d8458333ff5ae706357cf0fb22052f1c3ff2fa6e9caa8a7573df"
+        },
+        {
+          "frame": 7,
+          "duration": 100,
+          "sourceBounds": {
+            "left": 40.5,
+            "top": 23.5,
+            "right": 408.5,
+            "bottom": 410.5,
+            "projected": {
+              "left": 27.654377880184327,
+              "right": 102.27188940092165,
+              "top": 33.63133640552995,
+              "bottom": 112.10138248847926
+            }
+          },
+          "bounds": {
+            "left": 27,
+            "top": 33,
+            "right": 102,
+            "bottom": 112,
+            "visible": 4090,
+            "transparent": 12294
+          },
+          "pixelHash": "02aad7a13c50b444420be669cb5abc9a31551a101e712c5d45f076fe896af478"
+        }
+      ]
+    },
+    {
+      "name": "waiting",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.21515892420537897,
+        "eyes": [
+          {
+            "x": 155,
+            "y": 242.5,
+            "pixels": 1035
+          },
+          {
+            "x": 255.5,
+            "y": 258.5,
+            "pixels": 1441
+          }
+        ],
+        "eyeSpacing": 100.5,
+        "bodyHeight": 409,
+        "headCenter": 205.25,
+        "baseline": 431
+      },
+      "file": "assets/clover/needs-input.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1740,
+      "sha256": "117cf28f7529588f62454df4f420254389e329ebfbaad37704595c67a474728d",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 450,
+          "sourceBounds": {
+            "left": 100,
+            "top": 23,
+            "right": 389,
+            "bottom": 431,
+            "projected": {
+              "left": 41.354523227383865,
+              "right": 103.5354523227384,
+              "top": 24.215158924205383,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 40,
+            "top": 24,
+            "right": 112,
+            "bottom": 113,
+            "visible": 4249,
+            "transparent": 12135
+          },
+          "pixelHash": "bfcd7afc1edb2ac353f96e5884f321610bdcdd59827f9958801722355984cb89"
+        },
+        {
+          "frame": 1,
+          "duration": 150,
+          "sourceBounds": {
+            "left": 74.5,
+            "top": 23,
+            "right": 369.5,
+            "bottom": 431,
+            "projected": {
+              "left": 35.867970660146696,
+              "right": 99.3398533007335,
+              "top": 24.215158924205383,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 35,
+            "top": 23,
+            "right": 113,
+            "bottom": 113,
+            "visible": 4236,
+            "transparent": 12148
+          },
+          "pixelHash": "f0ee0bb882e4080e56a348669f55dcd145f528a7c8395861811b4e63e0a6fd27"
+        },
+        {
+          "frame": 2,
+          "duration": 150,
+          "sourceBounds": {
+            "left": 70,
+            "top": 23,
+            "right": 366,
+            "bottom": 431,
+            "projected": {
+              "left": 34.899755501222494,
+              "right": 98.58679706601467,
+              "top": 24.215158924205383,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 20,
+            "top": 23,
+            "right": 113,
+            "bottom": 112,
+            "visible": 4279,
+            "transparent": 12105
+          },
+          "pixelHash": "f99d937b1a3905c8cd6ddf6fb65734527ee75ba531f2035916d58c06eefd98c5"
+        },
+        {
+          "frame": 3,
+          "duration": 180,
+          "sourceBounds": {
+            "left": 43.5,
+            "top": 22,
+            "right": 382.5,
+            "bottom": 431,
+            "projected": {
+              "left": 29.198044009779956,
+              "right": 102.13691931540342,
+              "top": 24,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 20,
+            "top": 23,
+            "right": 104,
+            "bottom": 112,
+            "visible": 4289,
+            "transparent": 12095
+          },
+          "pixelHash": "1030669c0d05b58b65308ff36018481934deaafbfbbe182f901ccac119691541"
+        },
+        {
+          "frame": 4,
+          "duration": 180,
+          "sourceBounds": {
+            "left": 97,
+            "top": 14.5,
+            "right": 410,
+            "bottom": 420.5,
+            "projected": {
+              "left": 40.70904645476773,
+              "right": 108.05378973105135,
+              "top": 22.386308068459655,
+              "bottom": 109.74083129584352
+            }
+          },
+          "bounds": {
+            "left": 40,
+            "top": 22,
+            "right": 109,
+            "bottom": 110,
+            "visible": 4156,
+            "transparent": 12228
+          },
+          "pixelHash": "4a4a9415107f676d3ddfb6152e972478324836c2871d4053e816569ab6492c12"
+        },
+        {
+          "frame": 5,
+          "duration": 150,
+          "sourceBounds": {
+            "left": 80.5,
+            "top": 14.5,
+            "right": 370.5,
+            "bottom": 421.5,
+            "projected": {
+              "left": 37.15892420537897,
+              "right": 99.55501222493888,
+              "top": 22.386308068459655,
+              "bottom": 109.9559902200489
+            }
+          },
+          "bounds": {
+            "left": 36,
+            "top": 22,
+            "right": 101,
+            "bottom": 110,
+            "visible": 4231,
+            "transparent": 12153
+          },
+          "pixelHash": "3be55b95d26a35ab4f6d6ad2ea3df39b7dc633bd3172a5d5430f5706bb95b9d9"
+        },
+        {
+          "frame": 6,
+          "duration": 150,
+          "sourceBounds": {
+            "left": 83,
+            "top": 14.5,
+            "right": 369,
+            "bottom": 421.5,
+            "projected": {
+              "left": 37.696821515892424,
+              "right": 99.2322738386308,
+              "top": 22.386308068459655,
+              "bottom": 109.9559902200489
+            }
+          },
+          "bounds": {
+            "left": 37,
+            "top": 22,
+            "right": 99,
+            "bottom": 110,
+            "visible": 4294,
+            "transparent": 12090
+          },
+          "pixelHash": "aad32e8a7a652d611efaadb1425ded8eab9f9e93d12b2028c59be526d2008c0f"
+        },
+        {
+          "frame": 7,
+          "duration": 330,
+          "sourceBounds": {
+            "left": 73.5,
+            "top": 14.5,
+            "right": 363.5,
+            "bottom": 421.5,
+            "projected": {
+              "left": 35.65281173594132,
+              "right": 98.04889975550122,
+              "top": 22.386308068459655,
+              "bottom": 109.9559902200489
+            }
+          },
+          "bounds": {
+            "left": 35,
+            "top": 22,
+            "right": 98,
+            "bottom": 110,
+            "visible": 4347,
+            "transparent": 12037
+          },
+          "pixelHash": "3395774b0e90de2da3bc473f3763a08fe3b44bb495d121f3d845aec944fd8b28"
+        }
+      ]
+    },
+    {
+      "name": "broken",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.21052631578947367,
+        "eyes": [
+          {
+            "x": 145,
+            "y": 237,
+            "pixels": 1287
+          },
+          {
+            "x": 249.5,
+            "y": 241,
+            "pixels": 1629
+          }
+        ],
+        "eyeSpacing": 104.5,
+        "bodyHeight": 308,
+        "headCenter": 197.25,
+        "baseline": 418
+      },
+      "file": "assets/clover/broken.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1860,
+      "sha256": "c1e372488d6c4103633771997a0f287351185999dda92a27cf8aff8d579dd8a6",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 600,
+          "sourceBounds": {
+            "left": 37,
+            "top": 111,
+            "right": 407,
+            "bottom": 418,
+            "projected": {
+              "left": 30.263157894736842,
+              "right": 108.15789473684211,
+              "top": 47.36842105263159,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 29,
+            "top": 37,
+            "right": 109,
+            "bottom": 112,
+            "visible": 4132,
+            "transparent": 12252
+          },
+          "pixelHash": "8ad26fb7751cc818bde625de5e7e46bbe36b9dbb2065988cab386d4ff4310ee0"
+        },
+        {
+          "frame": 1,
+          "duration": 160,
+          "sourceBounds": {
+            "left": 36.5,
+            "top": 126,
+            "right": 407.5,
+            "bottom": 418,
+            "projected": {
+              "left": 30.15789473684211,
+              "right": 108.26315789473685,
+              "top": 50.526315789473685,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 22,
+            "top": 37,
+            "right": 114,
+            "bottom": 115,
+            "visible": 3950,
+            "transparent": 12434
+          },
+          "pixelHash": "e76cb39aa9a3115a9177ee7bd12016930fc9f1b1c3e475925000b9757953bb71"
+        },
+        {
+          "frame": 2,
+          "duration": 160,
+          "sourceBounds": {
+            "left": 35,
+            "top": 126,
+            "right": 407,
+            "bottom": 418,
+            "projected": {
+              "left": 29.842105263157897,
+              "right": 108.15789473684211,
+              "top": 50.526315789473685,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 24,
+            "top": 36,
+            "right": 115,
+            "bottom": 112,
+            "visible": 3975,
+            "transparent": 12409
+          },
+          "pixelHash": "d4be4ca82027db364eb49ea926d53b8b408b08f49dd859a9d1a5d2f77440fdbe"
+        },
+        {
+          "frame": 3,
+          "duration": 140,
+          "sourceBounds": {
+            "left": 35.5,
+            "top": 123,
+            "right": 407.5,
+            "bottom": 418,
+            "projected": {
+              "left": 29.94736842105263,
+              "right": 108.26315789473685,
+              "top": 49.89473684210527,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 22,
+            "top": 39,
+            "right": 108,
+            "bottom": 116,
+            "visible": 3960,
+            "transparent": 12424
+          },
+          "pixelHash": "914ef1278efcdeb026edf5b732a310667fce0d7b3957af6696532c134d6ecdd9"
+        },
+        {
+          "frame": 4,
+          "duration": 140,
+          "sourceBounds": {
+            "left": 37,
+            "top": 111.5,
+            "right": 408,
+            "bottom": 417.5,
+            "projected": {
+              "left": 30.263157894736842,
+              "right": 108.36842105263158,
+              "top": 47.473684210526315,
+              "bottom": 111.89473684210526
+            }
+          },
+          "bounds": {
+            "left": 29,
+            "top": 42,
+            "right": 110,
+            "bottom": 113,
+            "visible": 4197,
+            "transparent": 12187
+          },
+          "pixelHash": "17f47f846de633f8e4074eb411ad7adfc4dd33ba531ca0fe4ab7fb1ff7f09bca"
+        },
+        {
+          "frame": 5,
+          "duration": 160,
+          "sourceBounds": {
+            "left": 40.5,
+            "top": 119.5,
+            "right": 407.5,
+            "bottom": 417.5,
+            "projected": {
+              "left": 31,
+              "right": 108.26315789473685,
+              "top": 49.15789473684211,
+              "bottom": 111.89473684210526
+            }
+          },
+          "bounds": {
+            "left": 22,
+            "top": 26,
+            "right": 114,
+            "bottom": 113,
+            "visible": 4070,
+            "transparent": 12314
+          },
+          "pixelHash": "6aea3e8602d4feedcb442d25201f6a5cc0cac4c2c18cb3f813c2f1ba7caa52a3"
+        },
+        {
+          "frame": 6,
+          "duration": 160,
+          "sourceBounds": {
+            "left": 37,
+            "top": 111.5,
+            "right": 407,
+            "bottom": 417.5,
+            "projected": {
+              "left": 30.263157894736842,
+              "right": 108.15789473684211,
+              "top": 47.473684210526315,
+              "bottom": 111.89473684210526
+            }
+          },
+          "bounds": {
+            "left": 24,
+            "top": 26,
+            "right": 114,
+            "bottom": 113,
+            "visible": 4245,
+            "transparent": 12139
+          },
+          "pixelHash": "e412e4f74dedce0dbe399a38a5cc64db94fe10c206703673e16e5194e1c07c39"
+        },
+        {
+          "frame": 7,
+          "duration": 340,
+          "sourceBounds": {
+            "left": 36.5,
+            "top": 111.5,
+            "right": 407.5,
+            "bottom": 417.5,
+            "projected": {
+              "left": 30.15789473684211,
+              "right": 108.26315789473685,
+              "top": 47.473684210526315,
+              "bottom": 111.89473684210526
+            }
+          },
+          "bounds": {
+            "left": 24,
+            "top": 37,
+            "right": 109,
+            "bottom": 113,
+            "visible": 4258,
+            "transparent": 12126
+          },
+          "pixelHash": "6a7a9538af929fd204f23d846608aea641a6cdac4b4e5f4a5989db2e7a5d8db0"
+        }
+      ]
+    },
+    {
+      "name": "jumping",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.22797927461139897,
+        "eyes": [
+          {
+            "x": 145.5,
+            "y": 298.5,
+            "pixels": 940
+          },
+          {
+            "x": 242,
+            "y": 303,
+            "pixels": 1274
+          }
+        ],
+        "eyeSpacing": 96.5,
+        "bodyHeight": 349,
+        "headCenter": 193.75,
+        "baseline": 436
+      },
+      "file": "assets/clover/jumping.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1220,
+      "sha256": "a53b2e692591a0dc39ec3bf97d781ed8707ae7ad3692cad3777a06d99ab35908",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 260,
+          "sourceBounds": {
+            "left": 96,
+            "top": 88,
+            "right": 384,
+            "bottom": 436,
+            "projected": {
+              "left": 41.71502590673575,
+              "right": 107.37305699481865,
+              "top": 32.66321243523316,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 35,
+            "top": 16,
+            "right": 119,
+            "bottom": 113,
+            "visible": 4018,
+            "transparent": 12366
+          },
+          "pixelHash": "ace61f5619bdf32bed4cb60902dfeffa7f60b142dd86419c4e5b70184473dd20"
+        },
+        {
+          "frame": 1,
+          "duration": 110,
+          "sourceBounds": {
+            "left": 94.5,
+            "top": 158,
+            "right": 382.5,
+            "bottom": 436,
+            "projected": {
+              "left": 41.373056994818654,
+              "right": 107.03108808290156,
+              "top": 48.62176165803108,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 20,
+            "top": 28,
+            "right": 119,
+            "bottom": 113,
+            "visible": 3473,
+            "transparent": 12911
+          },
+          "pixelHash": "4ca3525376419a7eb4b9e5e6228632d385f6aa5756081bc0b708940d49cfea8a"
+        },
+        {
+          "frame": 2,
+          "duration": 110,
+          "sourceBounds": {
+            "left": 89,
+            "top": 46,
+            "right": 378,
+            "bottom": 436,
+            "projected": {
+              "left": 40.11917098445596,
+              "right": 106.00518134715026,
+              "top": 23.0880829015544,
+              "bottom": 112
+            }
+          },
+          "bounds": {
+            "left": 39,
+            "top": 23,
+            "right": 113,
+            "bottom": 113,
+            "visible": 4213,
+            "transparent": 12171
+          },
+          "pixelHash": "e9cea5d1597d06ae9aeeb4f0c2349b9425d17be50a51ff703bb23eda4106ce20"
+        },
+        {
+          "frame": 3,
+          "duration": 110,
+          "sourceBounds": {
+            "left": 72.5,
+            "top": 17,
+            "right": 350.5,
+            "bottom": 394,
+            "projected": {
+              "left": 36.35751295336787,
+              "right": 99.7357512953368,
+              "top": 16.476683937823836,
+              "bottom": 102.42487046632124
+            }
+          },
+          "bounds": {
+            "left": 27,
+            "top": 16,
+            "right": 101,
+            "bottom": 106,
+            "visible": 4140,
+            "transparent": 12244
+          },
+          "pixelHash": "b28a6f1eb158647aee5c2518007ae9462a26976c170375b65640c64b8ad8d860"
+        },
+        {
+          "frame": 4,
+          "duration": 160,
+          "sourceBounds": {
+            "left": 86,
+            "top": 12.5,
+            "right": 373,
+            "bottom": 362.5,
+            "projected": {
+              "left": 39.43523316062176,
+              "right": 104.86528497409327,
+              "top": 15.45077720207253,
+              "bottom": 95.24352331606218
+            }
+          },
+          "bounds": {
+            "left": 38,
+            "top": 13,
+            "right": 120,
+            "bottom": 104,
+            "visible": 3892,
+            "transparent": 12492
+          },
+          "pixelHash": "afe78a16a22b85b6db16e99dc5736c1c404a7c154b31812627cab13965805bf0"
+        },
+        {
+          "frame": 5,
+          "duration": 110,
+          "sourceBounds": {
+            "left": 90.5,
+            "top": 40.5,
+            "right": 396.5,
+            "bottom": 396.5,
+            "projected": {
+              "left": 40.461139896373055,
+              "right": 110.22279792746114,
+              "top": 21.83419689119171,
+              "bottom": 102.99481865284974
+            }
+          },
+          "bounds": {
+            "left": 20,
+            "top": 13,
+            "right": 109,
+            "bottom": 104,
+            "visible": 4003,
+            "transparent": 12381
+          },
+          "pixelHash": "8d0c4edd2b19f6c705f63894209d0b90d35b9e5ccf64bd2e07f1f134dd51e237"
+        },
+        {
+          "frame": 6,
+          "duration": 110,
+          "sourceBounds": {
+            "left": 89,
+            "top": 140.5,
+            "right": 380,
+            "bottom": 414.5,
+            "projected": {
+              "left": 40.11917098445596,
+              "right": 106.46113989637306,
+              "top": 44.6321243523316,
+              "bottom": 107.09844559585493
+            }
+          },
+          "bounds": {
+            "left": 31,
+            "top": 23,
+            "right": 117,
+            "bottom": 109,
+            "visible": 3559,
+            "transparent": 12825
+          },
+          "pixelHash": "9ef15f843271bfb98c542b906edb8f2ca54bd5b573e25cc8b3aecd1aaac0ef61"
+        },
+        {
+          "frame": 7,
+          "duration": 250,
+          "sourceBounds": {
+            "left": 90.5,
+            "top": 68.5,
+            "right": 380.5,
+            "bottom": 414.5,
+            "projected": {
+              "left": 40.461139896373055,
+              "right": 106.57512953367876,
+              "top": 28.217616580310874,
+              "bottom": 107.09844559585493
+            }
+          },
+          "bounds": {
+            "left": 22,
+            "top": 22,
+            "right": 109,
+            "bottom": 108,
+            "visible": 4157,
+            "transparent": 12227
+          },
+          "pixelHash": "17d0571c3849ed9cc11ba992b49d9a870eb2c35c04d60bc652298cb7e3f09e9e"
+        }
+      ]
+    }
+  ]
+}

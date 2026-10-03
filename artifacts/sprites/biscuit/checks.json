@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-02",
+  "platform": "Windows x64",
+  "checks": {
+    "typescript": "npm run check passed",
+    "tests": {
+      "command": "npm test",
+      "passed": 66,
+      "skipped": 2,
+      "failed": 0
+    },
+    "packaged": "npm run test:packaged passed after npm run package:win",
+    "spriteBytes": "Five sheets decoded; all 40 frames contain artwork and transparency; final hashes recorded in validation.json",
+    "electron": "Both pets selected and saved; all 309 mood-frame cases decoded; still poses and saved selection verified",
+    "visual": "Reviewed light/dark backgrounds, desktop outline, gallery 80px and desktop 96/128/160px, all five loops and frame-zero poses"
+  },
+  "generationMode": "Built-in imagegen with transparent output",
+  "evidence": {
+    "motion": "biscuit.gif",
+    "recording": "review.mp4",
+    "sizeReview": "review.png",
+    "selector": "selector.png",
+    "desktopOutline": "desktop-outline.png",
+    "prompts": "prompts.json",
+    "spriteValidation": "validation.json"
+  },
+  "crossPlatform": "macOS and Linux were not tested in this run"
+}

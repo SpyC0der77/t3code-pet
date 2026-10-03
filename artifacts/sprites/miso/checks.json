@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-02",
+  "platform": "Windows x64",
+  "generationMode": "Built-in imagegen with transparent output",
+  "checks": {
+    "typescript": "npm run check passed",
+    "tests": {
+      "command": "npm test",
+      "passed": 66,
+      "skipped": 2,
+      "failed": 0
+    },
+    "packaged": "npm run package:win and npm run test:packaged passed",
+    "spriteBytes": "Five 512x256 sheets decoded; 40 cat frames contain artwork and transparency; hashes and built bytes verified",
+    "electron": "All three pets selected and saved; 357 mood-frame cases decoded; still poses and persisted selection verified",
+    "visual": "Reviewed light/dark backgrounds, desktop outline, gallery80px and desktop96/128/160px, chronological pose contact sheet and looping browser playback"
+  },
+  "evidence": {
+    "motion": "miso.gif",
+    "recording": "review.mp4",
+    "sizeReview": "review.png",
+    "selector": "selector.png",
+    "desktopOutline": "desktop-outline.png",
+    "prompts": "prompts.json",
+    "spriteValidation": "validation.json",
+    "packagedReport": "../../../release/smoke-win32-1790980086951/report.json"
+  },
+  "crossPlatform": "macOS and Linux were not tested in this run"
+}
