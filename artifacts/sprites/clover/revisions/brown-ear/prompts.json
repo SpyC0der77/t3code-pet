@@ -1,0 +1,93 @@
+{
+  "brief": {
+    "id": "clover",
+    "name": "Clover",
+    "character": "Cream bunny with long pink ears and a taupe ear tip",
+    "layout": "Eight chronological poses, four columns and two rows",
+    "runtimeCell": [
+      128,
+      128
+    ],
+    "timing": [
+      {
+        "name": "ready",
+        "file": "ready.png",
+        "durations": [
+          600,
+          140,
+          160,
+          90,
+          90,
+          140,
+          180,
+          300
+        ]
+      },
+      {
+        "name": "typing",
+        "file": "typing.png",
+        "durations": [
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100
+        ]
+      },
+      {
+        "name": "waiting",
+        "file": "needs-input.png",
+        "durations": [
+          450,
+          150,
+          150,
+          180,
+          180,
+          150,
+          150,
+          330
+        ]
+      },
+      {
+        "name": "broken",
+        "file": "broken.png",
+        "durations": [
+          600,
+          160,
+          160,
+          140,
+          140,
+          160,
+          160,
+          340
+        ]
+      },
+      {
+        "name": "jumping",
+        "file": "jumping.png",
+        "durations": [
+          260,
+          110,
+          110,
+          110,
+          160,
+          110,
+          110,
+          250
+        ]
+      }
+    ]
+  },
+  "mode": "Built-in imagegen with transparent output",
+  "reference": "reference.png",
+  "prompts": {
+    "ready": "Use case: stylized-concept. Asset: actual transparent PNG sprite sheet for a tiny desktop bunny named Clover. Create exactly EIGHT chronological poses in FOUR columns and TWO rows of equal square cells, no gutters, canvas1536 x768 target. Clover is a compact cream-colored rabbit with two long upright ears with muted pink inner ears, a small warm taupe patch over its right ear tip, big dark chocolate eyes, tiny pink triangular nose, cream round cheeks, short squat body, chunky little front paws, broad hind feet and a small round fluffy tail on its right. No clothing, collar or props. Crisp pixel-art game sprite, deliberate blocky pixels, limited cream/taupe/pink palette, strong warm dark-brown outline, simple flat shading, three-quarter front view. Same identity and proportions throughout. Full bunny including ear tips and tail visible in every cell with ample clear alpha space; fixed scale and camera, facial center near50% cellwidth, resting feet at82% cellheight, whole bunny about60% cellheight. Keep its two ears long but within the same cell. Idle animation:1 complete neutral seated bunny eyesopen;2 tiny nose twitch,3 gentle breathing and one ear tip bends slightly,4 halfclosedeyes,5 closedeye blink,6 eyesreopen,7 earsreturn,8 return to neutral frame1. Paws and body baseline stay fixed; subtle motion only. Ordered left-to-right then top-to-bottom. Background and gaps between ears and limbs must be genuine alpha transparency. No text, cell labels, gridlines, ground shadows, effects, sparkle, glow, checkerboard, scene, extra limbs, clipped ears or shifting scale. This sheet establishes the canonical bunny reference.",
+    "typing": "Use case: stylized-concept. Create an actual transparent PNG animation sprite sheet for T3 Pet. Image1 is the canonical bunny identity reference, not an edit target. Match Clover's cream fur, mutedpink inner ears, taupe patch on right ear tip, long ears, darkchocolate eyes, tiny pinknose, round cream cheeks, squat body, short frontpaws, broad hindfeet and round tail on its right. Preserve crisp blocky pixel-art style, warm brown outline, simple palette/shading and three-quarter front view. No clothing/accessories. Exactly EIGHT chronological poses in FOUR columns and TWO rows of equal square cells, no gutters, targetcanvas1536x768. Full bunny in every cell including both long ears and tail, substantial transparent margin, no clipping. Consistent head size and fixed camera. Facial center near50%cellwidth, restingfeet at84%cellheight, whole neutral bunny about68%cellheight includingears, generous headroom. Keep same scale across the sequence, stationarybody baseline and props stay fixed unless hopping. Order left-to-right then top-to-bottom. Actual alpha transparency around the eight separate bunnies, inside ear gap, and between limbs. Frame0 is a complete readable stillpose. No text, labels, gridlines, effects, glow, star, sparkle, groundshadow, checkerboard, scenery, extra limbs or sizechanges. Action: seated bunny typing at a simple low warm-gray laptop with brownoutline. Laptop stays at exactly the same bottom-center position and dimensions in all8frames, plain lid without logo/text. Keep bunny face, ears and tailvisible.1 neutral paws on keyboard,2 leftpawpress,3 leftpawreturns/rightpawlifts,4 rightpawpress,5 neutral blink,6 leftpawpress,7 rightpawpress,8 neutral paws resting. Tiny ear-tip bounce is okay, laptop and face location fixed.",
+    "waiting": "Use case: stylized-concept. Create an actual transparent PNG animation sprite sheet for T3 Pet. Image1 is the canonical bunny identity reference, not an edit target. Match Clover's cream fur, mutedpink inner ears, taupe patch on right ear tip, long ears, darkchocolate eyes, tiny pinknose, round cream cheeks, squat body, short frontpaws, broad hindfeet and round tail on its right. Preserve crisp blocky pixel-art style, warm brown outline, simple palette/shading and three-quarter front view. No clothing/accessories. Exactly EIGHT chronological poses in FOUR columns and TWO rows of equal square cells, no gutters, targetcanvas1536x768. Full bunny in every cell including both long ears and tail, substantial transparent margin, no clipping. Consistent head size and fixed camera. Facial center near50%cellwidth, restingfeet at84%cellheight, whole neutral bunny about68%cellheight includingears, generous headroom. Keep same scale across the sequence, stationarybody baseline and props stay fixed unless hopping. Order left-to-right then top-to-bottom. Actual alpha transparency around the eight separate bunnies, inside ear gap, and between limbs. Frame0 is a complete readable stillpose. No text, labels, gridlines, effects, glow, star, sparkle, groundshadow, checkerboard, scenery, extra limbs or sizechanges. Action: asking for input with a raised frontpaw and curious ear tilt.1 alert seated bunny with frontpaw slightlylifted,2 liftpaw,3 pawnearcheek,4 gentle smallpawwave outward with the taupe-tipped ear slightlybent,5 waveinward,6 earreturn,7 lowerpaw,8 sameposeasframe1. Otherfrontpaw planted, hindfeet baseline fixed. No questionmarks or props.",
+    "broken": "Use case: stylized-concept. Create an actual transparent PNG animation sprite sheet for T3 Pet. Image1 is the canonical bunny identity reference, not an edit target. Match Clover's cream fur, mutedpink inner ears, taupe patch on right ear tip, long ears, darkchocolate eyes, tiny pinknose, round cream cheeks, squat body, short frontpaws, broad hindfeet and round tail on its right. Preserve crisp blocky pixel-art style, warm brown outline, simple palette/shading and three-quarter front view. No clothing/accessories. Exactly EIGHT chronological poses in FOUR columns and TWO rows of equal square cells, no gutters, targetcanvas1536x768. Full bunny in every cell including both long ears and tail, substantial transparent margin, no clipping. Consistent head size and fixed camera. Facial center near50%cellwidth, restingfeet at84%cellheight, whole neutral bunny about68%cellheight includingears, generous headroom. Keep same scale across the sequence, stationarybody baseline and props stay fixed unless hopping. Order left-to-right then top-to-bottom. Actual alpha transparency around the eight separate bunnies, inside ear gap, and between limbs. Frame0 is a complete readable stillpose. No text, labels, gridlines, effects, glow, star, sparkle, groundshadow, checkerboard, scenery, extra limbs or sizechanges. Action: sad error pose, worried eyes and both ears sag gently outward.1 seated worried bunny small frowningmouth and droopingears,2 tiny head dip,3 eyeshalfclosed,4 sadclosedeyes,5 eyesreopen,6 taildroops slightly,7 headreturns,8 same sad restingposeasframe1. Same head size and plantedfeet; ear action must preserve length. No tears, effects, symbols or props.",
+    "jumping": "Use case: stylized-concept. Create an actual transparent PNG animation sprite sheet for T3 Pet. Image1 is the canonical bunny identity reference, not an edit target. Match Clover's cream fur, mutedpink inner ears, taupe patch on right ear tip, long ears, darkchocolate eyes, tiny pinknose, round cream cheeks, squat body, short frontpaws, broad hindfeet and round tail on its right. Preserve crisp blocky pixel-art style, warm brown outline, simple palette/shading and three-quarter front view. No clothing/accessories. Exactly EIGHT chronological poses in FOUR columns and TWO rows of equal square cells, no gutters, targetcanvas1536x768. Full bunny in every cell including both long ears and tail, substantial transparent margin, no clipping. Consistent head size and fixed camera. Facial center near50%cellwidth, restingfeet at84%cellheight, whole neutral bunny about68%cellheight includingears, generous headroom. Keep same scale across the sequence, stationarybody baseline and props stay fixed unless hopping. Order left-to-right then top-to-bottom. Actual alpha transparency around the eight separate bunnies, inside ear gap, and between limbs. Frame0 is a complete readable stillpose. No text, labels, gridlines, effects, glow, star, sparkle, groundshadow, checkerboard, scenery, extra limbs or sizechanges. Action: one happy small celebratory hop.1 neutral seated bunny on baseline,2 squatanticipation with slightlyfoldedear tips,3 takeoff bunny rises,4 higher airborne with tuckedpaws,5 apex about8%cellheight abovebaseline,6 descending pawsextend,7 landing squat at originalbaseline,8 recoverexactly to seatedframe1. Ear tips bounce naturally, same bunny size in all8frames. Full ears andfeet inside each cell, leave plenty of clearalphaheadroom. No effects, shadows or camera movement."
+  }
+}

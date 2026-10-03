@@ -1,0 +1,206 @@
+{
+  "date": "2026-10-03",
+  "change": "Brown ear fill replaced with cream fur",
+  "frames": [
+    {
+      "animation": "ready",
+      "frame": 0,
+      "opaqueSilhouetteOverlap": 0.9774594257912118
+    },
+    {
+      "animation": "ready",
+      "frame": 1,
+      "opaqueSilhouetteOverlap": 0.9788120629987993
+    },
+    {
+      "animation": "ready",
+      "frame": 2,
+      "opaqueSilhouetteOverlap": 0.976432953129493
+    },
+    {
+      "animation": "ready",
+      "frame": 3,
+      "opaqueSilhouetteOverlap": 0.9777602672060968
+    },
+    {
+      "animation": "ready",
+      "frame": 4,
+      "opaqueSilhouetteOverlap": 0.9800014149942221
+    },
+    {
+      "animation": "ready",
+      "frame": 5,
+      "opaqueSilhouetteOverlap": 0.9814296676701494
+    },
+    {
+      "animation": "ready",
+      "frame": 6,
+      "opaqueSilhouetteOverlap": 0.9800778026641518
+    },
+    {
+      "animation": "ready",
+      "frame": 7,
+      "opaqueSilhouetteOverlap": 0.9804722068176187
+    },
+    {
+      "animation": "typing",
+      "frame": 0,
+      "opaqueSilhouetteOverlap": 0.9844149480143174
+    },
+    {
+      "animation": "typing",
+      "frame": 1,
+      "opaqueSilhouetteOverlap": 0.983924066869041
+    },
+    {
+      "animation": "typing",
+      "frame": 2,
+      "opaqueSilhouetteOverlap": 0.9836610386834794
+    },
+    {
+      "animation": "typing",
+      "frame": 3,
+      "opaqueSilhouetteOverlap": 0.98319839353998
+    },
+    {
+      "animation": "typing",
+      "frame": 4,
+      "opaqueSilhouetteOverlap": 0.9831768554314116
+    },
+    {
+      "animation": "typing",
+      "frame": 5,
+      "opaqueSilhouetteOverlap": 0.9824150557779102
+    },
+    {
+      "animation": "typing",
+      "frame": 6,
+      "opaqueSilhouetteOverlap": 0.9835227454280145
+    },
+    {
+      "animation": "typing",
+      "frame": 7,
+      "opaqueSilhouetteOverlap": 0.9821749917476814
+    },
+    {
+      "animation": "waiting",
+      "frame": 0,
+      "opaqueSilhouetteOverlap": 0.982774199527362
+    },
+    {
+      "animation": "waiting",
+      "frame": 1,
+      "opaqueSilhouetteOverlap": 0.9836768149882904
+    },
+    {
+      "animation": "waiting",
+      "frame": 2,
+      "opaqueSilhouetteOverlap": 0.9866458550121401
+    },
+    {
+      "animation": "waiting",
+      "frame": 3,
+      "opaqueSilhouetteOverlap": 0.9768672740990076
+    },
+    {
+      "animation": "waiting",
+      "frame": 4,
+      "opaqueSilhouetteOverlap": 0.9706763209487497
+    },
+    {
+      "animation": "waiting",
+      "frame": 5,
+      "opaqueSilhouetteOverlap": 0.9868538849361542
+    },
+    {
+      "animation": "waiting",
+      "frame": 6,
+      "opaqueSilhouetteOverlap": 0.9869998016127715
+    },
+    {
+      "animation": "waiting",
+      "frame": 7,
+      "opaqueSilhouetteOverlap": 0.9856740824811516
+    },
+    {
+      "animation": "broken",
+      "frame": 0,
+      "opaqueSilhouetteOverlap": 0.984187863243841
+    },
+    {
+      "animation": "broken",
+      "frame": 1,
+      "opaqueSilhouetteOverlap": 0.987289603960396
+    },
+    {
+      "animation": "broken",
+      "frame": 2,
+      "opaqueSilhouetteOverlap": 0.9858145512060102
+    },
+    {
+      "animation": "broken",
+      "frame": 3,
+      "opaqueSilhouetteOverlap": 0.9849699275049092
+    },
+    {
+      "animation": "broken",
+      "frame": 4,
+      "opaqueSilhouetteOverlap": 0.9851720886374352
+    },
+    {
+      "animation": "broken",
+      "frame": 5,
+      "opaqueSilhouetteOverlap": 0.9855015092285615
+    },
+    {
+      "animation": "broken",
+      "frame": 6,
+      "opaqueSilhouetteOverlap": 0.9855619960569965
+    },
+    {
+      "animation": "broken",
+      "frame": 7,
+      "opaqueSilhouetteOverlap": 0.9853417117478916
+    },
+    {
+      "animation": "jumping",
+      "frame": 0,
+      "opaqueSilhouetteOverlap": 0.9754161260167706
+    },
+    {
+      "animation": "jumping",
+      "frame": 1,
+      "opaqueSilhouetteOverlap": 0.9790924248863896
+    },
+    {
+      "animation": "jumping",
+      "frame": 2,
+      "opaqueSilhouetteOverlap": 0.9810510050557761
+    },
+    {
+      "animation": "jumping",
+      "frame": 3,
+      "opaqueSilhouetteOverlap": 0.9789823162515454
+    },
+    {
+      "animation": "jumping",
+      "frame": 4,
+      "opaqueSilhouetteOverlap": 0.9788957642064987
+    },
+    {
+      "animation": "jumping",
+      "frame": 5,
+      "opaqueSilhouetteOverlap": 0.9810455825717078
+    },
+    {
+      "animation": "jumping",
+      "frame": 6,
+      "opaqueSilhouetteOverlap": 0.9812292493319297
+    },
+    {
+      "animation": "jumping",
+      "frame": 7,
+      "opaqueSilhouetteOverlap": 0.9809612034399801
+    }
+  ]
+}

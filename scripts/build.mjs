@@ -11,8 +11,8 @@ for (const name of await readdir('src/renderer')) if (/\.(html|css)$/.test(name)
 await copyFile('node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2', 'dist/renderer/font.woff2');
 await copyFile('node_modules/@fontsource-variable/dm-sans/LICENSE', 'dist/renderer/FONT-LICENSE.txt');
 
-// Preserve the original bundled LFG artwork.
-for (const pet of ['lfg']) {
+// Bundle each character independently, preserving the original LFG artwork.
+for (const pet of ['lfg', 'biscuit', 'miso', 'clover']) {
   await mkdir(`dist/renderer/${pet}`, { recursive: true });
   for (const name of await readdir(`assets/${pet}`)) await copyFile(`assets/${pet}/${name}`, `dist/renderer/${pet}/${name}`);
 }

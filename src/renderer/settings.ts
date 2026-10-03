@@ -1,6 +1,9 @@
 import type { AppState, PetMood, Preferences, SelectionFilter } from '../shared';
 import { createPetGallery } from './pet-gallery';
 import { pets } from '../pets';
+import { unsettledChats } from '../unsettled';
+import { allowedThreads } from '../project-filter';
+import { createNotificationModal } from './notification-modal';
 const element = (id: string) => document.getElementById(id)!;
 const input = (id: string) => element(id) as HTMLInputElement;
 const select = (id: string) => element(id) as HTMLSelectElement;
@@ -18,6 +21,45 @@ function updatePreview() { gallery.preview(select('preview').value as PetMood, i
 let current: AppState;
 let saved: Preferences | undefined;
 let saving = false;
+let activitySignature = '';
+function renderActivity() {
+  const snapshot = current.snapshot;
+  const query = input('activity-search').value.trim().toLocaleLowerCase();
+  const active = new Map(unsettledChats(snapshot.threads).map(chat => [chat.thread.id, chat]));
+  const followed = new Set(allowedThreads(snapshot.threads, current.preferences).map(thread => thread.id));
+  const chats = snapshot.connected ? snapshot.threads.filter(thread =>
+    (thread.title + ' ' + thread.project).toLocaleLowerCase().includes(query)
+  ).map(thread => ({ thread, status: active.get(thread.id)?.status ??
+    (thread.turnState === 'completed' ? 'Completed' : ['stopped', 'interrupted'].includes(thread.sessionStatus ?? '') ? 'Stopped' : 'Ready'),
+    priority: active.get(thread.id)?.priority ?? 5
+  })).sort((a, b) => a.priority - b.priority || b.thread.updatedAt.localeCompare(a.thread.updatedAt) || a.thread.id.localeCompare(b.thread.id)) : [];
+  const signature = JSON.stringify([snapshot.connected, query, chats.map(({ thread, status }) =>
+    [thread.id, thread.title, thread.project, status, followed.has(thread.id)])]);
+  element('activity-empty').hidden = chats.length > 0;
+  text('activity-empty', !snapshot.connected ? snapshot.message : query ? 'No chats match your search.' : 'No chats yet. Start a chat in T3 Code.');
+  if (signature === activitySignature) return;
+  activitySignature = signature;
+  const focusedId = (document.activeElement as HTMLElement)?.dataset.activityId;
+  element('chat-activity').replaceChildren(...chats.map(({ thread, status }) => {
+    const row = document.createElement('li');
+    const open = document.createElement('button'); open.type = 'button'; open.dataset.activityId = thread.id;
+    open.title = 'Open chat in T3 Code in your browser';
+    const name = document.createElement('span'); name.className = 'activity-name'; name.textContent = thread.title || 'Untitled chat';
+    const project = document.createElement('span'); project.className = 'activity-project';
+    project.textContent = (thread.project || 'No project') + (followed.has(thread.id) ? '' : ' · Excluded by filters');
+    name.append(project);
+    const detail = document.createElement('span'); detail.className = 'activity-status'; detail.textContent = status;
+    open.append(name, detail); row.append(open);
+    open.addEventListener('click', async () => {
+      open.disabled = true; element('activity-error').hidden = true;
+      try { await window.pet.openChat(thread.id); }
+      catch (error) { text('activity-error', errorText(error)); element('activity-error').hidden = false; }
+      finally { open.disabled = false; }
+    });
+    return row;
+  }));
+  if (focusedId) [...element('chat-activity').querySelectorAll<HTMLButtonElement>('button')].find(button => button.dataset.activityId === focusedId)?.focus({ preventScroll: true });
+}
 type Kind = 'project' | 'chat';
 const selections: Record<Kind, SelectionFilter['selected']> = { project: [], chat: [] };
 const signatures: Record<Kind, string> = { project: '', chat: '' };
@@ -52,6 +94,8 @@ function updateControls(message?: string) {
   button('save').disabled = saving || !changed; button('discard').hidden = !changed; button('discard').disabled = saving;
   button('notification-setup').disabled = saving || changed;
   button('notification-setup').title = changed ? 'Save or discard your changes before opening setup.' : '';
+  button('reopen-onboarding').disabled = saving || changed;
+  button('reopen-onboarding').title = changed ? 'Save or discard your changes before reopening onboarding.' : '';
   input('notification-sound').disabled = !current?.notificationsSupported || !input('notifications').checked;
   if (message) text('save-result', message);
   else { element('save-result').classList.remove('error'); text('save-result', changed ? 'Unsaved changes' : 'Changes apply after saving.'); }
@@ -131,10 +175,12 @@ tabs.forEach((tab, index) => {
 });
 function render(state: AppState) {
   const changed = dirty(); current = state;
+  button('notification-setup').hidden = state.preferences.onboardingCompleted;
   if (!saved || (!changed && JSON.stringify(saved) !== JSON.stringify(state.preferences))) hydrate(state.preferences);
   renderSelectors();
+  renderActivity();
   text('connection', state.snapshot.connected ? 'Connected to T3 Code' : 'Not connected');
-  text('connection-detail', state.snapshot.connected ? 'Reading local agent status.' : state.snapshot.message);
+  text('connection-detail', state.snapshot.connected ? 'Agent status updates automatically.' : state.snapshot.message);
   text('version', `v${state.version}`); text('chat-count', `${state.snapshot.threads.length} ${state.snapshot.threads.length === 1 ? 'chat' : 'chats'}`);
   input('login').disabled = saving || !state.supportsLoginStartup; input('notifications').disabled = saving || !state.notificationsSupported;
   button('test-notification').disabled = !state.notificationsSupported;
@@ -142,6 +188,7 @@ function render(state: AppState) {
   input('notification-sound').disabled = saving || !state.notificationsSupported || !input('notifications').checked;
 }
 window.pet.onState(render); void window.pet.getState().then(render);
+input('activity-search').addEventListener('input', () => { if (current) renderActivity(); });
 element('settings-form').addEventListener('change', event => { if ((event.target as HTMLElement).id !== 'preview') updateControls(); });
 input('directory').addEventListener('input', () => updateControls());
 element('advanced-settings').addEventListener('toggle', () => {
@@ -164,7 +211,9 @@ button('browse').addEventListener('click', async () => {
 });
 select('preview').addEventListener('change', updatePreview);
 input('reduced-motion').addEventListener('change', updatePreview);
-button('notification-setup').addEventListener('click', () => { if (!dirty()) window.pet.showOnboarding(); });
+const notificationModal = createNotificationModal(() => current.preferences.notificationsEnabled, render);
+button('notification-setup').addEventListener('click', () => { if (!dirty()) void notificationModal.open(); });
+button('reopen-onboarding').addEventListener('click', () => { if (!saving && !dirty()) window.pet.showOnboarding(); });
 button('test-notification').addEventListener('click', async () => {
   button('test-notification').disabled = true;
   try { await window.pet.testNotification(); text('notification-status', 'Test sent. If no alert appears, allow T3 Pet in system notification settings.'); }
@@ -182,6 +231,7 @@ element('settings-form').addEventListener('submit', async event => {
   finally {
     controls.forEach((control, index) => { control.disabled = disabled[index]; });
     saving = false; button('save').disabled = !dirty(); button('discard').disabled = false; button('notification-setup').disabled = dirty();
+    button('reopen-onboarding').disabled = dirty();
     input('notification-sound').disabled = !current.notificationsSupported || !input('notifications').checked;
     renderSelectors();
   }

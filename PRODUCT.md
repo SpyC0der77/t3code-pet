@@ -28,6 +28,6 @@ The user runs T3 Code Nightly on Windows and requires macOS and Linux support. B
 - Pet notifications cover approval, input, completion, and failure; they respect the followed-chat filter and fullscreen suppression.
 - Filters independently apply a blocklist or whitelist to projects and chats. A chat must pass both filters to affect pet activity, notifications, or the hover list. Empty blocklists allow all; empty whitelists allow none. Selections use stable IDs, so names and titles remain display metadata. Existing project exclusions and single-chat selections migrate without changing their effect.
 - User-provided AGENTS instructions govern the UI: simple controls, dark muted colors, no decorative dashboard scaffolding.
-- Only nonhuman characters belong in the pet catalogue. The approved choices are Lil' Finder Guy, Jadebyte, Lunari, and Kerno. Bella, the Aether characters, Calian, Scarlet, and Airi are excluded.
+- Only nonhuman characters belong in the pet catalogue. Lil' Finder Guy, the dog Biscuit, the cat Miso, and the bunny Clover are bundled. Jadebyte, Lunari, and Kerno remain retired selections. Bella, the Aether characters, Calian, Scarlet, and Airi are excluded.
 - The user selected their own LFG Pet artwork from SpyC0der77/lfg-codex-pet. Preserve its source animations.
 - T3 Pet is a versatile pet companion. App branding and menu, tray, settings, and notification icons must be independent of the selected character. Use the neutral paw mark for app identity.

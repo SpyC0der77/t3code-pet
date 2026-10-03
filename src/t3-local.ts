@@ -9,6 +9,7 @@ export function readThreads(databasePath: string): ThreadStatus[] {
   const db = new DatabaseSync(databasePath, { readOnly: true });
   try {
     db.exec('PRAGMA query_only = ON; PRAGMA busy_timeout = 300;');
+    if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'orchestration_v2_projection_threads'").get()) return readV2Threads(db);
     const columns = new Set((db.prepare('PRAGMA table_info(projection_threads)').all() as { name: string }[]).map(c => c.name));
     for (const required of ['thread_id', 'latest_turn_id', 'pending_approval_count', 'pending_user_input_count']) {
       if (!columns.has(required)) throw new Error('Unsupported T3 Code database schema. Update T3 Pet to match your T3 Code version.');
@@ -33,6 +34,43 @@ export function readThreads(databasePath: string): ThreadStatus[] {
   } finally {
     db.close();
   }
+}
+
+function readV2Threads(db: DatabaseSync): ThreadStatus[] {
+  // V2 retains frozen legacy projections. Read current run and request metadata
+  // instead; never load messages, request payloads or provider session secrets.
+  const rows = db.prepare(`
+    SELECT t.thread_id AS id, t.title, t.project_id AS projectId, COALESCE(p.title, '') AS project,
+      COALESCE(t.default_provider, '') AS provider, r.run_id AS turnId,
+      r.status AS runStatus, r.completed_at AS completedAt, t.updated_at AS updatedAt,
+      json_extract(t.payload_json, '$.settledOverride') AS settledOverride,
+      json_extract(t.payload_json, '$.snoozedUntil') AS snoozedUntil,
+      (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q
+        WHERE q.thread_id = t.thread_id AND q.status = 'pending'
+          AND q.kind IN ('command', 'file-read', 'file-change', 'permission')) AS pendingApproval,
+      (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q
+        WHERE q.thread_id = t.thread_id AND q.status = 'pending'
+          AND q.kind IN ('user_input', 'mcp-elicitation', 'auth_refresh')) AS pendingInput
+    FROM orchestration_v2_projection_threads t
+    LEFT JOIN projection_projects p ON p.project_id = t.project_id
+    LEFT JOIN orchestration_v2_projection_runs r ON r.run_id = (
+      SELECT candidate.run_id FROM orchestration_v2_projection_runs candidate
+      WHERE candidate.thread_id = t.thread_id AND candidate.status NOT IN ('queued', 'rolled_back')
+      ORDER BY CASE WHEN candidate.status IN ('preparing', 'starting', 'running', 'waiting') THEN 0 ELSE 1 END,
+        candidate.ordinal DESC, candidate.run_id DESC LIMIT 1
+    )
+    WHERE t.deleted_at IS NULL AND t.archived_at IS NULL
+      AND json_extract(t.payload_json, '$.archivedAt') IS NULL
+    ORDER BY t.updated_at DESC
+  `).all() as unknown as (Omit<ThreadStatus, 'sessionStatus' | 'turnState'> & { runStatus: string | null })[];
+  return rows.map(({ runStatus, ...thread }) => {
+    const active = ['preparing', 'starting', 'running', 'waiting'].includes(runStatus ?? '');
+    return { ...thread,
+      sessionStatus: active ? runStatus === 'preparing' || runStatus === 'starting' ? 'starting' : 'running' :
+        runStatus === 'interrupted' || runStatus === 'cancelled' ? 'stopped' : 'ready',
+      turnState: active ? 'running' : runStatus === 'failed' ? 'error' : runStatus === 'cancelled' ? 'interrupted' : runStatus,
+    };
+  });
 }
 
 export function readProjects(databasePath: string): { id: string; name: string }[] {
@@ -64,7 +102,8 @@ function portIsOpen(host: string, port: number): Promise<boolean> {
 
 export async function readLocalSnapshot(dataDirectory: string): Promise<Snapshot> {
   const base = { threads: [], checkedAt: Date.now() };
-  const databasePath = join(dataDirectory, 'state.sqlite');
+  const v2Path = join(dataDirectory, 'statev2.sqlite');
+  const databasePath = existsSync(v2Path) ? v2Path : join(dataDirectory, 'state.sqlite');
   if (!existsSync(databasePath)) return { ...base, connected: false, message: 'T3 Code data not found. Choose its userdata folder in settings.' };
   try {
     if (!statSync(databasePath).isFile()) throw new Error('The selected folder does not contain a database file.');

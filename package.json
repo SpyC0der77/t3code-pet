@@ -51,6 +51,10 @@
       "signAndEditExecutable": true,
       "extraResources": [
         {
+          "from": "assets/icon.ico",
+          "to": "icon.ico"
+        },
+        {
           "from": "dist/native/t3-close.exe",
           "to": "native/t3-close.exe"
         },
@@ -61,6 +65,7 @@
       ]
     },
     "nsis": {
+      "include": "native/installer.nsh",
       "oneClick": true,
       "perMachine": false,
       "createDesktopShortcut": true,

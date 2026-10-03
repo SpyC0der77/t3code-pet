@@ -1,0 +1,635 @@
+{
+  "processing": "4 x 2 source grid; one fixed nearest-neighbor transform per sequence; first-pose head width 70px, head center x64, baseline y112 in 128 x 128 cells; no per-frame centering",
+  "animations": [
+    {
+      "name": "ready",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.26717557251908397,
+        "headWidth": 262,
+        "headCenter": 231.5,
+        "baseline": 413
+      },
+      "file": "assets/biscuit/ready.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1440,
+      "sha256": "bc46f3e025b00a1dcdcb50ff489560f5c5322e6d36b71676880bf16a14f080e0",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 500,
+          "bounds": {
+            "left": 17,
+            "top": 20,
+            "right": 118,
+            "bottom": 113,
+            "visible": 5050,
+            "transparent": 11334
+          },
+          "pixelHash": "8983b3d5b3cbef15b089e89aee114c77ccfa81f6682bcb73408db2593377e4c4"
+        },
+        {
+          "frame": 1,
+          "duration": 140,
+          "bounds": {
+            "left": 2,
+            "top": 25,
+            "right": 119,
+            "bottom": 113,
+            "visible": 5159,
+            "transparent": 11225
+          },
+          "pixelHash": "196084d321a7c443251c206f7f79cfbf11dcce85f1b973d209dbf28ac1f089a5"
+        },
+        {
+          "frame": 2,
+          "duration": 140,
+          "bounds": {
+            "left": 3,
+            "top": 10,
+            "right": 120,
+            "bottom": 113,
+            "visible": 5189,
+            "transparent": 11195
+          },
+          "pixelHash": "b936746debaa3752ce2380491ad5ac66f85cddddecdf6637b2d0b1bcaf580911"
+        },
+        {
+          "frame": 3,
+          "duration": 80,
+          "bounds": {
+            "left": 2,
+            "top": 8,
+            "right": 99,
+            "bottom": 114,
+            "visible": 5189,
+            "transparent": 11195
+          },
+          "pixelHash": "f859964305d7f976872023d865d1daaea5e7ca25b2870221057797a6b95b8397"
+        },
+        {
+          "frame": 4,
+          "duration": 80,
+          "bounds": {
+            "left": 27,
+            "top": 16,
+            "right": 116,
+            "bottom": 114,
+            "visible": 5025,
+            "transparent": 11359
+          },
+          "pixelHash": "716982c09363f48395ee24b2bc24ee6c6d6d29fec72d0292efecf2c4e8f697b5"
+        },
+        {
+          "frame": 5,
+          "duration": 140,
+          "bounds": {
+            "left": 6,
+            "top": 11,
+            "right": 120,
+            "bottom": 114,
+            "visible": 5119,
+            "transparent": 11265
+          },
+          "pixelHash": "006829fbb5b8f1143661d15755fdc521aca30b9dc74294702617366343a0cce1"
+        },
+        {
+          "frame": 6,
+          "duration": 140,
+          "bounds": {
+            "left": 2,
+            "top": 9,
+            "right": 119,
+            "bottom": 114,
+            "visible": 5152,
+            "transparent": 11232
+          },
+          "pixelHash": "2e1d98e73e1bfc20ac21842c0ecb437ffd28c9f25010248c18f2f5af0bdd0414"
+        },
+        {
+          "frame": 7,
+          "duration": 220,
+          "bounds": {
+            "left": 7,
+            "top": 14,
+            "right": 99,
+            "bottom": 114,
+            "visible": 5035,
+            "transparent": 11349
+          },
+          "pixelHash": "2316e5947d6d1a513d56bcebb75e135f0c5be289b416094256980ef92628dfcb"
+        }
+      ]
+    },
+    {
+      "name": "typing",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.21739130434782608,
+        "headWidth": 322,
+        "headCenter": 220.5,
+        "baseline": 431
+      },
+      "file": "assets/biscuit/typing.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 800,
+      "sha256": "6913713334177ac9ae7242495de9b52dcdf532e7c964dd8073938ea09d47231a",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 100,
+          "bounds": {
+            "left": 26,
+            "top": 30,
+            "right": 107,
+            "bottom": 112,
+            "visible": 4991,
+            "transparent": 11393
+          },
+          "pixelHash": "e38e20bbcfd0fe33e798d716c32231daee2727a606f1d10a6da765f6b3b6c763"
+        },
+        {
+          "frame": 1,
+          "duration": 100,
+          "bounds": {
+            "left": 27,
+            "top": 32,
+            "right": 108,
+            "bottom": 113,
+            "visible": 4980,
+            "transparent": 11404
+          },
+          "pixelHash": "bfd85789565f2ea779f50fa46989fe72982192a56c90e322ec57bc7088ae52ae"
+        },
+        {
+          "frame": 2,
+          "duration": 100,
+          "bounds": {
+            "left": 18,
+            "top": 26,
+            "right": 106,
+            "bottom": 112,
+            "visible": 4969,
+            "transparent": 11415
+          },
+          "pixelHash": "d3cb1f2dff5d4b19bd35d944dc7b331abd63bfdc66678ea58b3e77fb49106f58"
+        },
+        {
+          "frame": 3,
+          "duration": 100,
+          "bounds": {
+            "left": 16,
+            "top": 27,
+            "right": 108,
+            "bottom": 112,
+            "visible": 4972,
+            "transparent": 11412
+          },
+          "pixelHash": "92085bb11f1a369273bbd520d15559d3d2986afdf7dd3f27356822ce2487ab67"
+        },
+        {
+          "frame": 4,
+          "duration": 100,
+          "bounds": {
+            "left": 26,
+            "top": 31,
+            "right": 107,
+            "bottom": 114,
+            "visible": 4968,
+            "transparent": 11416
+          },
+          "pixelHash": "5aeec22c2023fcebc3e8d6266e16f12d1fd08502075b0f04f81adc7847adf6ee"
+        },
+        {
+          "frame": 5,
+          "duration": 100,
+          "bounds": {
+            "left": 16,
+            "top": 30,
+            "right": 108,
+            "bottom": 114,
+            "visible": 4973,
+            "transparent": 11411
+          },
+          "pixelHash": "e937c1c0f43954c1e3313c59c802d4898acf2306ea6b87f89c697e4cc19ff341"
+        },
+        {
+          "frame": 6,
+          "duration": 100,
+          "bounds": {
+            "left": 26,
+            "top": 31,
+            "right": 107,
+            "bottom": 114,
+            "visible": 4972,
+            "transparent": 11412
+          },
+          "pixelHash": "d62fd568ca28caaed6c6b432604ab53281495f2e927debf95ba033b95279865a"
+        },
+        {
+          "frame": 7,
+          "duration": 100,
+          "bounds": {
+            "left": 19,
+            "top": 31,
+            "right": 108,
+            "bottom": 114,
+            "visible": 4987,
+            "transparent": 11397
+          },
+          "pixelHash": "1c198cb6b2e7a89ae6ef05b7edb7fecccd31567606bb2241563fb3107ebe476c"
+        }
+      ]
+    },
+    {
+      "name": "waiting",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.2147239263803681,
+        "headWidth": 326,
+        "headCenter": 235.5,
+        "baseline": 441
+      },
+      "file": "assets/biscuit/needs-input.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1660,
+      "sha256": "73dd4d7e57cfd8ebae4641f58019611b2eb1b13ecb56290ca336d6fefb5f9854",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 400,
+          "bounds": {
+            "left": 26,
+            "top": 27,
+            "right": 99,
+            "bottom": 112,
+            "visible": 4750,
+            "transparent": 11634
+          },
+          "pixelHash": "26d7b338b7d8d648b541a091a1d4f9885ffca684b957065cac794ac94231006e"
+        },
+        {
+          "frame": 1,
+          "duration": 160,
+          "bounds": {
+            "left": 25,
+            "top": 27,
+            "right": 102,
+            "bottom": 112,
+            "visible": 4823,
+            "transparent": 11561
+          },
+          "pixelHash": "952561014ff63996e7c8896e5b6105b53f66dbed1833fa804111f6b49ff8d670"
+        },
+        {
+          "frame": 2,
+          "duration": 160,
+          "bounds": {
+            "left": 26,
+            "top": 27,
+            "right": 99,
+            "bottom": 112,
+            "visible": 4906,
+            "transparent": 11478
+          },
+          "pixelHash": "773a73cfe91a932441c00c24b17d2dc5d93d90778369f3b09972b2725b363047"
+        },
+        {
+          "frame": 3,
+          "duration": 160,
+          "bounds": {
+            "left": 25,
+            "top": 27,
+            "right": 101,
+            "bottom": 112,
+            "visible": 4775,
+            "transparent": 11609
+          },
+          "pixelHash": "361c5657f323125b6acef604080d1e12c76c3baf5a3ef8e94b6c26a3b2e2cfdf"
+        },
+        {
+          "frame": 4,
+          "duration": 160,
+          "bounds": {
+            "left": 26,
+            "top": 17,
+            "right": 102,
+            "bottom": 112,
+            "visible": 5106,
+            "transparent": 11278
+          },
+          "pixelHash": "77bac22f8b0170947550ad81b6376cc12b3ed7e0165573d9faedcfa1ce04e5f7"
+        },
+        {
+          "frame": 5,
+          "duration": 160,
+          "bounds": {
+            "left": 25,
+            "top": 17,
+            "right": 108,
+            "bottom": 112,
+            "visible": 4890,
+            "transparent": 11494
+          },
+          "pixelHash": "a67dc730c9d7a3ad91d0d184613ede727a61d5431a0d299a9f318fc8b3948388"
+        },
+        {
+          "frame": 6,
+          "duration": 160,
+          "bounds": {
+            "left": 25,
+            "top": 17,
+            "right": 99,
+            "bottom": 112,
+            "visible": 4882,
+            "transparent": 11502
+          },
+          "pixelHash": "87647aa7d7498dcd99381859bae8f56a5d0c03db0bde17d045e9629cf6eb94cf"
+        },
+        {
+          "frame": 7,
+          "duration": 300,
+          "bounds": {
+            "left": 25,
+            "top": 17,
+            "right": 101,
+            "bottom": 112,
+            "visible": 4907,
+            "transparent": 11477
+          },
+          "pixelHash": "6c205fd795449f25880f1b61ceb8f5c4c1b6bb1b35df984030b934730be283e5"
+        }
+      ]
+    },
+    {
+      "name": "broken",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.20958083832335328,
+        "headWidth": 334,
+        "headCenter": 221.5,
+        "baseline": 434
+      },
+      "file": "assets/biscuit/broken.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1640,
+      "sha256": "063d9e70bd114be0dd114cc3024a52651a052eba16ff501e7f979d156e2ba71b",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 500,
+          "bounds": {
+            "left": 27,
+            "top": 25,
+            "right": 109,
+            "bottom": 112,
+            "visible": 4301,
+            "transparent": 12083
+          },
+          "pixelHash": "4d3033d8ea9bbcd42d3ee3669e12ebd06abcd45a98a4bc267fcac28145514c09"
+        },
+        {
+          "frame": 1,
+          "duration": 140,
+          "bounds": {
+            "left": 18,
+            "top": 37,
+            "right": 109,
+            "bottom": 112,
+            "visible": 4428,
+            "transparent": 11956
+          },
+          "pixelHash": "e47136ac7fdf7d158b1e4c1727325d3e0a5d5061dc25286ac94b9fe7628a71f8"
+        },
+        {
+          "frame": 2,
+          "duration": 140,
+          "bounds": {
+            "left": 19,
+            "top": 28,
+            "right": 110,
+            "bottom": 112,
+            "visible": 4427,
+            "transparent": 11957
+          },
+          "pixelHash": "349bb1e371f713e19eca10a36fefab4aaebeaa4d53afbd66e3ce59a7bb6a12a8"
+        },
+        {
+          "frame": 3,
+          "duration": 140,
+          "bounds": {
+            "left": 18,
+            "top": 25,
+            "right": 103,
+            "bottom": 112,
+            "visible": 4388,
+            "transparent": 11996
+          },
+          "pixelHash": "4956eaf5b46fd3122e739c4a6b67d1fb02c60ab8c0761c2241270e58cbaa1954"
+        },
+        {
+          "frame": 4,
+          "duration": 140,
+          "bounds": {
+            "left": 27,
+            "top": 36,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4390,
+            "transparent": 11994
+          },
+          "pixelHash": "3f0b6d606750bafa18c5d5a0f4dc574e79ccb0e6ce4c59aa17aef050b12c9539"
+        },
+        {
+          "frame": 5,
+          "duration": 140,
+          "bounds": {
+            "left": 19,
+            "top": 36,
+            "right": 103,
+            "bottom": 113,
+            "visible": 4390,
+            "transparent": 11994
+          },
+          "pixelHash": "4f89ba577ea5ec2463795f7dbcef9b22a39b7cd1e8b46380dbaf891338b9a0ae"
+        },
+        {
+          "frame": 6,
+          "duration": 140,
+          "bounds": {
+            "left": 22,
+            "top": 33,
+            "right": 101,
+            "bottom": 113,
+            "visible": 4389,
+            "transparent": 11995
+          },
+          "pixelHash": "40e390b71688c77b136f3bf7c4ea7572b62e567d4718e713c09d5b5b07818f40"
+        },
+        {
+          "frame": 7,
+          "duration": 300,
+          "bounds": {
+            "left": 28,
+            "top": 31,
+            "right": 102,
+            "bottom": 113,
+            "visible": 4369,
+            "transparent": 12015
+          },
+          "pixelHash": "2396dba91a13fcb3b909707d04ddbc69e4f13f1a413c75827505cf59077cc5b8"
+        }
+      ]
+    },
+    {
+      "name": "jumping",
+      "sourceSize": [
+        1774,
+        887
+      ],
+      "registration": {
+        "scale": 0.21739130434782608,
+        "headWidth": 322,
+        "headCenter": 250.5,
+        "baseline": 442
+      },
+      "file": "assets/biscuit/jumping.png",
+      "size": [
+        512,
+        256
+      ],
+      "loopMilliseconds": 1120,
+      "sha256": "bb5a4cf95e2d2fd4b74ca17ef60e711ccf1b770f1b5b2ed4fc1c5343d947e731",
+      "frames": [
+        {
+          "frame": 0,
+          "duration": 240,
+          "bounds": {
+            "left": 26,
+            "top": 31,
+            "right": 100,
+            "bottom": 111,
+            "visible": 4439,
+            "transparent": 11945
+          },
+          "pixelHash": "4b66c0f11a99e50c71e859865fd1ddc93087bf7c8207c5cb7559119825b1814a"
+        },
+        {
+          "frame": 1,
+          "duration": 100,
+          "bounds": {
+            "left": 21,
+            "top": 40,
+            "right": 105,
+            "bottom": 111,
+            "visible": 4285,
+            "transparent": 12099
+          },
+          "pixelHash": "54f2029fef5de58cf949e1e4c4e9c7810ce831c1baf7100134004205637df83c"
+        },
+        {
+          "frame": 2,
+          "duration": 100,
+          "bounds": {
+            "left": 11,
+            "top": 23,
+            "right": 99,
+            "bottom": 109,
+            "visible": 4538,
+            "transparent": 11846
+          },
+          "pixelHash": "6b5a8735b8dacffda3697d7cde7b4252640d2de147c9ffefd95e43b0f4429c96"
+        },
+        {
+          "frame": 3,
+          "duration": 100,
+          "bounds": {
+            "left": 10,
+            "top": 20,
+            "right": 95,
+            "bottom": 109,
+            "visible": 4470,
+            "transparent": 11914
+          },
+          "pixelHash": "b1aa0490eb5aedf86e133c9a635ec86332aecac2b0a2f4fe35bea91c11b0ff9d"
+        },
+        {
+          "frame": 4,
+          "duration": 140,
+          "bounds": {
+            "left": 18,
+            "top": 16,
+            "right": 101,
+            "bottom": 97,
+            "visible": 4346,
+            "transparent": 12038
+          },
+          "pixelHash": "79a13e99c16fbaa3efb78d4e745e1112ad26f7a819d905881a02ebcdb8da9705"
+        },
+        {
+          "frame": 5,
+          "duration": 100,
+          "bounds": {
+            "left": 22,
+            "top": 16,
+            "right": 104,
+            "bottom": 97,
+            "visible": 4196,
+            "transparent": 12188
+          },
+          "pixelHash": "18245cd9c7313831177d907562e3a036c58b6bc22a4996f97fb3d49ed1e9766e"
+        },
+        {
+          "frame": 6,
+          "duration": 100,
+          "bounds": {
+            "left": 19,
+            "top": 22,
+            "right": 103,
+            "bottom": 111,
+            "visible": 4562,
+            "transparent": 11822
+          },
+          "pixelHash": "90a1c298d3c7fd1090c057681984253d165ef488a37325f8a654b3700bafcbe3"
+        },
+        {
+          "frame": 7,
+          "duration": 240,
+          "bounds": {
+            "left": 22,
+            "top": 31,
+            "right": 95,
+            "bottom": 111,
+            "visible": 4541,
+            "transparent": 11843
+          },
+          "pixelHash": "1fa6edabe961fa3a0d301df769aff872dc7cc8b8e809f4ab503dc298a3403d10"
+        }
+      ]
+    }
+  ]
+}
