@@ -1,3 +1,4 @@
+import { applyUiTheme } from './theme';
 import { unsettledChats } from '../unsettled';
 import type { AppState } from '../shared';
 const list = document.getElementById('chats')!;
@@ -6,6 +7,7 @@ function fitHeight() { window.pet.hoverSize(panel.hidden ? 0 : Math.ceil(list.ge
 new ResizeObserver(fitHeight).observe(list);
 let signature = '';
 function render(state: AppState) {
+  applyUiTheme(state.theme);
   const chats = state.snapshot.connected ? unsettledChats(state.snapshot.threads) : [];
   const next = JSON.stringify([state.snapshot.connected, chats.map(c => [c.thread.id, c.thread.title, c.status])]);
   if (next === signature) return;

@@ -42,6 +42,8 @@ macOS uses a monochrome template paw in the menu bar with a Retina variant. Logi
 
 - `src/main.ts`: windows, tray, settings, polling, and IPC.
 - `src/t3-local.ts`: replaceable read-only local adapter.
+- `src/t3-theme.ts` and `src/theme-storage.ts`: read-only appearance sync. Only allowlisted theme keys are decoded from T3 Code's Chromium profile. No database is opened or locked, and no credentials or messages are queried. File changes update open views; a one-second fallback retries profile creation and reads interface font settings. Chromium may delay writing a local-storage change to disk. Unsaved theme-editor previews are not persisted and cannot be observed by this reader.
+- `src/t3-palettes.ts`: built-in palette snapshot from T3 Code, under the license in `docs/T3-THEME-LICENSE.txt`.
 - `src/pet-state.ts`: provider-independent state selection.
 - `src/animations.ts` and `src/renderer/sprite.ts`: source-accurate sprite timing and playback.
 - `native/ForegroundMonitor.cs`: Windows foreground fullscreen detection.

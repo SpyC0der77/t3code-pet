@@ -17,6 +17,8 @@ import { linuxStartupCommand, setLinuxLoginStartup } from './login-startup';
 import type { AppState, NotificationSetup, PetMood, Preferences, Snapshot } from './shared';
 import { pets, petAnimation } from './pets';
 import { moodAnimation } from './animations';
+import { T3ThemeSync, t3ProfileDirectory, resolveUiTheme } from './t3-theme';
+import { writeThemeFixture } from './theme-fixture';
 
 const fullscreenTest = process.argv.includes('--fullscreen-test');
 // Wayland prevents desktop pets from positioning themselves. XWayland gives
@@ -56,6 +58,8 @@ const activeNotifications = new Set<Notification>();
 let tray: Tray | null = null;
 let preferences: Preferences;
 let preferencesPath: string;
+let uiTheme = resolveUiTheme({}, false);
+let themeSync: T3ThemeSync | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
 let dragTimer: ReturnType<typeof setInterval> | undefined;
@@ -76,7 +80,7 @@ const moods: PetMood[] = ['idle', 'working', 'waiting', 'done', 'error', 'offlin
 const labels: Record<PetMood, string> = { idle: 'Resting', working: 'Working', waiting: 'Approval needed', done: 'Turn finished', error: 'A chat hit an error', offline: 'T3 Code offline' };
 
 function state(): AppState {
-  return { notificationsSupported: Notification.isSupported(), darkBackground, preferences, snapshot, pet: previewMood ? { ...pet, mood: previewMood, label: `${labels[previewMood]} · preview`, threadTitle: null } : pet,
+  return { theme: uiTheme, notificationsSupported: Notification.isSupported(), darkBackground, preferences, snapshot, pet: previewMood ? { ...pet, mood: previewMood, label: `${labels[previewMood]} · preview`, threadTitle: null } : pet,
     preview: previewMood !== null, version: app.getVersion(), supportsLoginStartup: ['win32', 'darwin', 'linux'].includes(process.platform) };
 }
 
@@ -179,7 +183,7 @@ function showSettings(onboarding = false) {
   onboardingView = onboarding;
   settingsWindow = new BrowserWindow({
     width, height, minWidth: 470, minHeight: 500, title: onboarding ? 'Set up T3 Pet' : 'T3 Pet settings',
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#191919' : '#ffffff', autoHideMenuBar: true, show: false,
+    backgroundColor: uiTheme.appearance === 'dark' ? '#0a0a0a' : '#fafafa', autoHideMenuBar: true, show: false,
     icon: join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
@@ -207,7 +211,8 @@ function showNotification(notice: ChatNotification, test = false) {
   if (!Notification.isSupported()) throw new Error('Desktop notifications are unavailable on this system.');
   if (smokeDirectory && !process.argv.includes('--notification-smoke-test')) { traceSmoke(`notification ${notice.title}`); return null; }
   const notification = new Notification({ title: `T3 Pet · ${notice.title}`, body: notice.body,
-    silent: !preferences.notificationSound, icon: join(__dirname, '..', 'assets', 'icon.png') });
+    silent: !preferences.notificationSound,
+    ...(process.platform === 'win32' ? {} : { icon: join(__dirname, '..', 'assets', 'icon.png') }) });
   activeNotifications.add(notification);
   notification.on('close', () => activeNotifications.delete(notification));
   notification.on('failed', (_event, error) => {
@@ -714,9 +719,25 @@ async function runSmokeTest(directory: string) {
     await wait(50);
     writeFileSync(join(directory, `settings-${tab}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
   }
-  const originalTheme = nativeTheme.themeSource;
+  let themeSequence = 1000n;
+  const smokeTheme = async (appearance: 'light' | 'dark', id = 'ember') => {
+    writeThemeFixture(join(directory, 't3-profile'), { 't3code:theme': id, 't3code:theme-appearance-mode': appearance }, themeSequence);
+    themeSequence += 100n;
+    const deadline = Date.now() + 2500;
+    while ((uiTheme.id !== id || uiTheme.appearance !== appearance) && Date.now() < deadline) await wait(20);
+    await wait(50);
+  };
+  const themeDraft = await settingsWindow!.webContents.executeJavaScript(`(() => {const control=document.getElementById('size');control.value=control.value==='96'?'160':'96';control.dispatchEvent(new Event('change',{bubbles:true}));return control.value;})()`);
+  const beforeThemePet = JSON.stringify(pet);
+  await smokeTheme('dark', 'iris');
+  const settingsTheme = await settingsWindow!.webContents.executeJavaScript(`({id:document.documentElement.dataset.theme,appearance:document.documentElement.style.colorScheme,canvas:document.documentElement.style.getPropertyValue('--canvas'),draft:document.getElementById('size').value,font:getComputedStyle(document.body).fontFamily})`);
+  hoverWindow.webContents.send('pet:state', { ...fixtureState, theme: uiTheme, snapshot: { ...snapshot, connected: true, threads: [fixtureThread] } });
+  await wait(50);
+  const hoverTheme = await hoverWindow.webContents.executeJavaScript(`({id:document.documentElement.dataset.theme,appearance:document.documentElement.style.colorScheme,canvas:document.documentElement.style.getPropertyValue('--canvas')})`);
+  report.themeSync = { settings: settingsTheme, hover: hoverTheme, draftRetained: settingsTheme.draft === themeDraft, petUnchanged: beforeThemePet === JSON.stringify(pet), liveWatcher: uiTheme.id === 'iris' && uiTheme.appearance === 'dark' };
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('discard').click()`);
   for (const theme of ['light', 'dark'] as const) {
-    nativeTheme.themeSource = theme;
+    await smokeTheme(theme);
     await settingsWindow!.webContents.executeJavaScript(`document.getElementById('pet-tab').click()`);
     await wait(100);
     writeFileSync(join(directory, `settings-pet-${theme}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
@@ -737,7 +758,7 @@ async function runSmokeTest(directory: string) {
   report.advancedCompact = await settingsWindow!.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth,footerFits:document.getElementById('save').getBoundingClientRect().bottom<=innerHeight,chatControlsVisible:document.getElementById('chat-search').getBoundingClientRect().bottom<document.getElementById('save').getBoundingClientRect().top})`);
   writeFileSync(join(directory, 'settings-filters-expanded-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('advanced-settings').open=false`);
-  nativeTheme.themeSource = originalTheme;
+  await smokeTheme('light');
   settingsWindow!.setSize(768, 600);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chats-tab').click()`);
   snapshot = liveSnapshot;
@@ -811,11 +832,11 @@ async function runSmokeTest(directory: string) {
   report.onboardingConnect = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('connect-step').hidden, overflow: document.documentElement.scrollWidth > innerWidth, bridge: typeof window.pet.finishOnboarding === 'function'})`);
   const captureOnboarding = async (stage: string) => {
     for (const theme of ['light', 'dark'] as const) {
-      nativeTheme.themeSource = theme;
+      await smokeTheme(theme);
       await wait(80);
       writeFileSync(join(directory, `onboarding-${stage}-${theme}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
     }
-    nativeTheme.themeSource = originalTheme;
+    await smokeTheme('light');
     settingsWindow!.setSize(470, 500);
     await wait(80);
     const layout = await settingsWindow!.webContents.executeJavaScript(`({
@@ -932,6 +953,11 @@ else {
     traceSmoke('app ready');
     preferencesPath = join(app.getPath('userData'), 'preferences.json');
     preferences = loadPreferences(preferencesPath);
+    themeSync = new T3ThemeSync(
+      () => smokeDirectory ? join(smokeDirectory, 't3-profile') : t3ProfileDirectory(app.getPath('appData'), preferences.dataDirectory),
+      () => preferences.dataDirectory, () => nativeTheme.shouldUseDarkColors,
+      theme => { uiTheme = theme; nativeTheme.themeSource = theme.source; publish(); });
+    nativeTheme.on('updated', () => themeSync?.refresh());
     if (process.platform === 'linux' && preferences.launchAtLogin && !smokeDirectory) {
       setLinuxLoginStartup(true, linuxStartupCommand(process.execPath, app.getAppPath(), app.isPackaged, process.env.APPIMAGE));
     }
@@ -983,6 +1009,7 @@ else {
   app.on('window-all-closed', () => { /* The pet is a tray app. */ });
   app.on('before-quit', () => {
     quitting = true;
+    themeSync?.dispose();
     hoverPanel.dispose();
     stopFullscreenWatch?.();
     stopDrag();

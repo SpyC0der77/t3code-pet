@@ -1,3 +1,4 @@
+import { applyUiTheme } from './theme';
 import type { AppState, NotificationSetup } from '../shared';
 import { loadSprites, drawSprite } from './sprite';
 import { moodAnimation } from '../animations';
@@ -74,6 +75,7 @@ async function checkSetup() {
   setup = result; renderSetup();
 }
 function render(value: AppState) {
+  applyUiTheme(value.theme);
   state = value;
   if (!initialized) {
     directory.value = value.preferences.dataDirectory;

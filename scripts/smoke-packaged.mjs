@@ -47,7 +47,8 @@ if (process.platform !== 'win32') {
 const directory = resolve('release', `smoke-${process.platform}-${Date.now()}`);
 const scale = process.env.T3PET_SMOKE_SCALE;
 assert.ok(!scale || ['1', '1.25', '1.5', '2', '3'].includes(scale), 'Invalid smoke display scale.');
-const child = spawn(executable, ['--smoke-test', directory, ...(scale ? [`--force-device-scale-factor=${scale}`] : [])], { stdio: 'inherit', windowsHide: true, env: runtimeEnvironment });
+const testNotification = process.env.T3PET_SMOKE_NOTIFICATION === '1';
+const child = spawn(executable, ['--smoke-test', directory, ...(testNotification ? ['--notification-smoke-test'] : []), ...(scale ? [`--force-device-scale-factor=${scale}`] : [])], { stdio: 'inherit', windowsHide: true, env: runtimeEnvironment });
 const timeout = setTimeout(() => child.kill(), 60_000);
 try {
   const exit = await new Promise((resolveExit, reject) => { child.once('exit', resolveExit); child.once('error', reject); });
@@ -57,6 +58,13 @@ const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
 assert.ok(Object.values(report.v2State).every(Boolean), 'V2 SQLite status detection failed in packaged Electron.');
 assert.ok(report.visibility.monitorReady && !report.visibility.monitorFailed, 'Native fullscreen monitor did not run.');
 assert.ok(report.controls.saveRoundTrip && report.controls.invalidRejected);
+assert.ok(report.themeSync.liveWatcher && report.themeSync.petUnchanged, 'Theme updates required a restart or changed the pet state.');
+assert.equal(report.themeSync.settings.id, 'iris');
+assert.equal(report.themeSync.settings.appearance, 'dark');
+assert.ok(report.themeSync.draftRetained, 'A theme update discarded unsaved settings.');
+assert.equal(report.themeSync.hover.canvas, report.themeSync.settings.canvas);
+assert.equal(report.themeSync.hover.appearance, 'dark');
+if (testNotification) assert.equal(report.nativeNotification.result, 'shown', 'The packaged native notification failed to show.');
 assert.equal(report.petCatalog.characters, 4, 'Not every bundled character passed the settings save/preview check.');
 // All six moods: LFG's original 261 frames plus three eight-frame pets, 48 cases each.
 assert.ok(report.petCatalog.frames === 405 && report.petCatalog.draftRetained && report.petCatalog.discarded && report.petChoicePersisted, 'Pet frame decoding, selection persistence, or draft handling failed.');
