@@ -33,11 +33,22 @@ test('unsettled stopped and old error chats remain visible', () => {
     thread({}), thread({sessionStatus:'stopped',turnState:'running'}),
     thread({sessionStatus:'interrupted',turnState:'running'}),
     thread({turnState:'error',completedAt:new Date(now-600_000).toISOString()}),
-  ], now).map(r=>r.status), ['Error','Completed','Stopped','Stopped']);
+  ], now).map(r=>r.status), ['Completed','Stopped','Stopped','Error']);
 });
 test('startup, active turns and recent errors remain visible', () => {
   assert.deepEqual(unsettledChats([
     thread({id:'start',sessionStatus:'starting'}), thread({id:'run',turnState:'running'}),
     thread({id:'error',turnState:'error'}),
   ], now).map(r=>r.status), ['Error','Starting','Working']);
+});
+
+test('old errors remain visible without outranking active work', () => {
+  const old = new Date(now - 300_000).toISOString();
+  const rows = unsettledChats([
+    thread({id:'old-turn',turnState:'error',completedAt:old,updatedAt:old}),
+    thread({id:'old-session',sessionStatus:'error',completedAt:null,updatedAt:old}),
+    thread({id:'work',sessionStatus:'running'}),
+    thread({id:'recent-error',turnState:'error'}),
+  ], now);
+  assert.deepEqual(rows.map(row => [row.thread.id, row.priority]), [['recent-error',1],['work',3],['old-turn',4],['old-session',4]]);
 });

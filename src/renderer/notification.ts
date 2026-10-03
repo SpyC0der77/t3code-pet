@@ -26,7 +26,7 @@ function render(view: ToastView) {
   open.textContent = view.test ? 'Open settings' : 'Open chat';
 }
 window.petToast.onUpdate(render);
-void window.petToast.get().then(render);
+void window.petToast.get().then(render, () => window.petToast.dismiss());
 document.getElementById('dismiss')!.addEventListener('click', () => window.petToast.dismiss());
 open.addEventListener('click', async () => {
   open.disabled = true;

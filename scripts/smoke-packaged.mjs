@@ -50,6 +50,7 @@ assert.ok(!scale || ['1', '1.25', '1.5', '2', '3'].includes(scale), 'Invalid smo
 const testNotification = process.env.T3PET_SMOKE_NOTIFICATION === '1';
 const testHover = process.env.T3PET_SMOKE_HOVER === '1';
 const testToast = process.env.T3PET_SMOKE_TOAST === '1';
+assert.ok([testNotification, testHover, testToast].filter(Boolean).length <= 1, 'Run notification, hover, and toast smoke modes separately.');
 const child = spawn(executable, ['--smoke-test', directory, ...(testHover ? ['--hover-smoke-test'] : []), ...(testToast ? ['--toast-smoke-test'] : []), ...(testNotification ? ['--notification-smoke-test'] : []), ...(scale ? [`--force-device-scale-factor=${scale}`] : [])], { stdio: 'inherit', windowsHide: true, env: runtimeEnvironment });
 const timeout = setTimeout(() => child.kill(), 60_000);
 try {

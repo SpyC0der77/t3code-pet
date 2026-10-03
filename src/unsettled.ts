@@ -10,7 +10,7 @@ export function unsettledChats(threads: ThreadStatus[], now = Date.now()) {
     else if (thread.sessionStatus === 'starting') status = 'Starting';
     else if (thread.sessionStatus === 'running' || (thread.turnState === 'running' && !['stopped', 'interrupted', 'error'].includes(thread.sessionStatus ?? ''))) status = 'Working';
     else if (thread.sessionStatus === 'error' || thread.turnState === 'error') {
-      status = 'Error'; priority = 1;
+      status = 'Error'; priority = now - Date.parse(thread.completedAt ?? thread.updatedAt) < 300_000 ? 1 : 4;
     } else {
       status = thread.turnState === 'completed' ? 'Completed' : thread.sessionStatus === 'interrupted' || thread.sessionStatus === 'stopped' ? 'Stopped' : 'Ready';
       priority = 4;
