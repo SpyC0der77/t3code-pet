@@ -1,5 +1,7 @@
 # Project instructions
 
+For creating, repairing, importing, or integrating sprite sheets, read and follow [pet-guidance.md](pet-guidance.md).
+
 Never start a development server unless the user explicitly asks. Build and package with the npm scripts; the application loads built local files.
 
 Keep the pet separate from T3 Code. Its database connection must remain read-only. Never query credentials or message contents just to determine status. Provider names must not determine animation behavior.

@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-03",
+  "platform": "Windows x64",
+  "generationMode": "Built-in imagegen targeted edit with transparent output",
+  "change": "Removed the brown ear patch from all 40 frames; both outer ears now have cream fur and pink centers",
+  "checks": {
+    "typescript": "npm run check passed",
+    "tests": {
+      "command": "npm test",
+      "passed": 66,
+      "skipped": 2,
+      "failed": 0
+    },
+    "packaged": "npm run package:win and npm run test:packaged passed",
+    "spriteBytes": "Five 512x256 sheets decoded; all 40 bunny frames contain artwork and transparency; source and projected bounds checked before packing; final hashes match built bytes",
+    "electron": "All four pets selected and saved; 405 mood-frame cases decoded; still poses, animation advancement and persisted selection verified",
+    "visual": "Reviewed light/dark backgrounds, desktop outline, gallery80px and desktop96/128/160px, all five loops and frame-zero poses; compact gallery scrolls with its footer accessible",
+    "existingArtwork": "Biscuit and Miso hashes unchanged; original LFG assets unchanged",
+    "edit": "All 40 edited source silhouettes retain at least 97% overlap with their corresponding original poses; color removal reviewed in the contact sheet and running previews"
+  },
+  "evidence": {
+    "motion": "clover.gif",
+    "recording": "review.mp4",
+    "sizeReview": "review.png",
+    "selector": "selector.png",
+    "desktopOutline": "desktop-outline.png",
+    "prompts": "prompts.json",
+    "spriteValidation": "validation.json",
+    "packagedReport": "../../../release/smoke-win32-1791031194694/report.json",
+    "editValidation": "ear-edit-validation.json"
+  },
+  "crossPlatform": "macOS and Linux were not tested in this run"
+}

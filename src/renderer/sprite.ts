@@ -25,7 +25,7 @@ function loadSprites(petId = 'lfg'): Promise<void> {
   return loading;
 }
 
-function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elapsed: number, still: boolean, background = false, petId = 'lfg') {
+function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elapsed: number, still: boolean, background = false, petId = 'lfg', preview = false) {
   const id = isPetId(petId) ? petId : 'lfg';
   if (requestedPet !== id) void loadSprites(id).catch(error => console.error('Animation could not load', error));
   if (loadedPet !== id) return;
@@ -34,13 +34,17 @@ function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elapsed: num
   const image = sheets.get(animation.file);
   if (!image) return;
   const frame = frameAt(animation, elapsed, still);
-  if (canvas.dataset.pet === id && canvas.dataset.animation === name && canvas.dataset.frame === String(frame) && canvas.dataset.background === String(background)) return;
+  const resolution = `${canvas.width}x${canvas.height}:${preview}`;
+  if (canvas.dataset.pet === id && canvas.dataset.animation === name && canvas.dataset.frame === String(frame) && canvas.dataset.background === String(background) && canvas.dataset.resolution === resolution) return;
+  context.resetTransform();
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.imageSmoothingEnabled = false;
+  context.imageSmoothingEnabled = preview && id !== 'lfg';
+  context.imageSmoothingQuality = 'high';
+  if (preview) context.setTransform(canvas.width / 256, 0, 0, canvas.height / 256, 0, 0);
   context.drawImage(image,
     frame % animation.columns * animation.width, ((animation.row ?? 0) + Math.floor(frame / animation.columns)) * animation.height,
     animation.width, animation.height,
-    animation.x + (canvas.width - 256) / 2, animation.y + (canvas.height - 256) / 2,
+    animation.x + (preview ? 0 : (canvas.width - 256) / 2), animation.y + (preview ? 0 : (canvas.height - 256) / 2),
     animation.width * animation.scale, animation.height * animation.scale);
   if (background) {
     // Expand the frame's alpha mask behind the original pixels. Transparent
@@ -68,6 +72,7 @@ function drawSprite(canvas: HTMLCanvasElement, name: AnimationName, elapsed: num
   canvas.dataset.pet = id;
   canvas.dataset.frame = String(frame);
   canvas.dataset.background = String(background);
+  canvas.dataset.resolution = resolution;
 }
 return { loadSprites, drawSprite, release() {
   generation++; sheets.clear(); loadedPet = ''; requestedPet = ''; loading = undefined;

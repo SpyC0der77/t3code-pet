@@ -75,7 +75,7 @@ This is an independent companion that uses T3 Code's local data format. Remote T
 
 | Problem | What to try |
 | --- | --- |
-| The pet is offline | Open T3 Code and check the data folder in Settings. It should contain `state.sqlite`. |
+| The pet is offline | Open T3 Code and check the data folder in Settings. It should contain `statev2.sqlite` or `state.sqlite`. |
 | A chat is missing | Check both lists under Filters, including Advanced chat filters. Empty whitelists exclude all chats. Settled chats disappear from the hover list. |
 | Opening a chat asks for pairing | Complete pairing in your browser, then click the chat again. Chats open in T3 Code's local browser interface. |
 | Notifications don't appear | Enable desktop notifications in Pet settings, send a test, and check your system's notification settings. Leave fullscreen before testing. |
@@ -90,4 +90,4 @@ See the [development guide](docs/development.md) for building, packaging, tests,
 
 ## Credits
 
-The default character, Lil' Finder Guy, uses artwork from [LFG Pet by SpyC0der77](https://github.com/SpyC0der77/lfg-codex-pet), with provenance in the [LFG asset source notes](assets/lfg/SOURCE.md). Its internal ID remains `lfg`. The artwork is bundled locally. T3 Pet's paw icon is separate from the character artwork. The settings font is DM Sans, distributed under the SIL Open Font License.
+The default character, Lil' Finder Guy, uses artwork from [LFG Pet by SpyC0der77](https://github.com/SpyC0der77/lfg-codex-pet), with provenance in the [LFG asset source notes](assets/lfg/SOURCE.md). Its internal ID remains `lfg`. Biscuit is a golden-brown dog, Miso is an orange tabby cat, and Clover is a cream bunny, generated with OpenAI imagegen for T3 Pet. Their [dog source notes](assets/biscuit/SOURCE.md), [cat source notes](assets/miso/SOURCE.md), and [bunny source notes](assets/clover/SOURCE.md) record the artwork and animation timing. All four characters are bundled locally. T3 Pet's paw icon is separate from the character artwork. The settings font is DM Sans, distributed under the SIL Open Font License.

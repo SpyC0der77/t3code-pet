@@ -3,3 +3,6 @@ dist/
 release/
 .impeccable/review/
 *.log
+artifacts/sprites/*/frames/
+artifacts/sprites/*/previews/
+artifacts/sprites/*/runtime*/

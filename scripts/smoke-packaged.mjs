@@ -51,17 +51,20 @@ try {
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+assert.ok(Object.values(report.v2State).every(Boolean), 'V2 SQLite status detection failed in packaged Electron.');
 assert.ok(report.visibility.monitorReady && !report.visibility.monitorFailed, 'Native fullscreen monitor did not run.');
 assert.ok(report.controls.saveRoundTrip && report.controls.invalidRejected);
-assert.equal(report.petCatalog.characters, 1, 'Not every bundled character passed the settings save/preview check.');
-assert.ok(report.petCatalog.frames === 261 && report.petCatalog.draftRetained && report.petCatalog.discarded && report.petChoicePersisted, 'Pet frame decoding, selection persistence, or draft handling failed.');
-assert.ok(report.petCatalog.previewIsLocal && report.petCatalog.radioCount === 1, 'Gallery previews changed live status or omitted choices.');
+assert.equal(report.petCatalog.characters, 4, 'Not every bundled character passed the settings save/preview check.');
+// All six moods: LFG's original 261 frames plus three eight-frame pets, 48 cases each.
+assert.ok(report.petCatalog.frames === 405 && report.petCatalog.draftRetained && report.petCatalog.discarded && report.petChoicePersisted, 'Pet frame decoding, selection persistence, or draft handling failed.');
+assert.ok(report.petCatalog.previewIsLocal && report.petCatalog.radioCount === 4, 'Gallery previews changed live status or omitted choices.');
 assert.ok(report.projectBlocklist.saved && report.projectBlocklist.blocked && report.projectBlocklistPersisted, 'Blocklist did not persist through the settings form.');
 assert.equal(report.projectBlocklist.mood, 'working');
 assert.equal(report.projectBlocklist.waitingCount, 0);
 assert.equal(report.projectBlocklist.workingCount, 1);
 assert.ok(report.projectBlocklist.footerFits);
 assert.ok(Object.values(report.settingsDraft).every(Boolean), 'Search, draft retention, or discard failed.');
+assert.ok(Object.values(report.chatActivity).every(Boolean), 'Chat activity did not load or search correctly.');
 assert.ok(Object.values(report.selectionFilters).every(Boolean), 'Project/chat filter modes, search, intersection, or discard failed.');
 assert.ok(!report.advancedCompact.overflow && report.advancedCompact.footerFits && report.advancedCompact.chatControlsVisible, 'Advanced filters are inaccessible in the compact window.');
 assert.ok(!report.settingsCompact.overflow && report.settingsCompact.footerFits, 'Compact settings layout overflowed.');
@@ -69,6 +72,8 @@ assert.ok(report.ui.hasBridge && !report.ui.overflow);
 assert.ok(report.animation.opaquePixels > 0);
 assert.ok(report.hoverEmpty && report.chatNavigation.rejectedUnknown, 'The empty hover list was not hidden.');
 assert.ok(report.onboardingConnect.bridge && !report.onboardingConnect.overflow);
+assert.ok(Object.values(report.notificationModal).every(Boolean), 'Settings notification modal, cancellation, compact layout, or apply failed.');
+assert.ok(Object.values(report.onboardingPet).every(Boolean), 'Onboarding pet selection, navigation, persistence, or finish preview failed.');
 assert.ok(report.onboardingNotifications.visible && !report.onboardingNotifications.overflow);
 assert.ok(report.onboardingCancellation.cancelled && report.onboardingCancellation.unchanged && report.onboardingCancelFileUnchanged);
 assert.equal(report.fixtureMigration, 'complete');
@@ -77,8 +82,8 @@ assert.ok(report.onboardingFinish.visible && !report.onboardingFinish.overflow);
 assert.ok(report.onboardingProgressInitial && report.onboardingProgressFinished, 'Setup navigation allowed skipping a required stage or repeating completed migration.');
 assert.ok(Object.values(report.onboardingProgressBack).every(Boolean), 'Completed-step navigation lost the folder or current-step state.');
 assert.ok(report.onboardingActionIcon, 'Changing notification action removed its label or arrow.');
-for (const stage of ['connect', 'connection-folder', 'notifications', 'finish']) {
+for (const stage of ['connect', 'connection-folder', 'pet', 'notifications', 'finish']) {
   const layout = report['onboardingCompact' + stage];
-  assert.ok(!layout.overflow && layout.footerFits && layout.progressCount === 3 && layout.currentCount === 1, `Compact ${stage} onboarding overflowed or lost its progress/action controls.`);
+  assert.ok(!layout.overflow && layout.footerFits && layout.progressCount === 4 && layout.currentCount === 1, `Compact ${stage} onboarding overflowed or lost its progress/action controls.`);
 }
 console.log(`Packaged ${process.platform} smoke test passed. Report: ${directory}`);

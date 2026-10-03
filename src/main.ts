@@ -3,7 +3,7 @@ import { chatUrl } from './t3-navigation';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { readLocalSnapshot } from './t3-local';
+import { readLocalSnapshot, readThreads } from './t3-local';
 import { PetStateMachine } from './pet-state';
 import { HoverPanel } from './hover-panel';
 import { PetVisibility, watchFullscreen } from './fullscreen';
@@ -131,6 +131,7 @@ async function createPet() {
   traceSmoke('creating pet');
   petWindow = new BrowserWindow({
     ...fitPosition(preferences.position), title: 'T3 Pet', transparent: true, frame: false,
+    icon: join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
     hasShadow: false, alwaysOnTop: true, skipTaskbar: true, show: false,
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
@@ -164,7 +165,7 @@ function showSettings(onboarding = false) {
   if (migrating) { settingsWindow?.show(); return; }
   onboarding = onboarding === true;
   const file = onboarding ? 'onboarding.html' : 'settings.html';
-  const width = onboarding ? 768 : 580;
+  const width = 768;
   const height = Math.min(600, screen.getPrimaryDisplay().workArea.height - 32);
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     if (onboardingView !== onboarding) {
@@ -178,8 +179,8 @@ function showSettings(onboarding = false) {
   onboardingView = onboarding;
   settingsWindow = new BrowserWindow({
     width, height, minWidth: 470, minHeight: 500, title: onboarding ? 'Set up T3 Pet' : 'T3 Pet settings',
-    backgroundColor: nativeTheme.shouldUseDarkColors ? onboarding ? '#191919' : '#181619' : '#ffffff', autoHideMenuBar: true, show: false,
-    icon: join(__dirname, '..', 'assets', 'icon.png'),
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#191919' : '#ffffff', autoHideMenuBar: true, show: false,
+    icon: join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   lockWindow(settingsWindow);
@@ -301,7 +302,7 @@ function registerIpc() {
   ipcMain.handle('pet:notification-setup', event => { trusted(event); return setupState(); });
   ipcMain.handle('pet:finish-onboarding', async (event, choice: unknown) => {
     trusted(event);
-    if (event.sender !== settingsWindow?.webContents || !onboardingView) throw new Error('Open onboarding to change notification ownership.');
+    if (event.sender !== settingsWindow?.webContents) throw new Error('Open notification setup to change notification ownership.');
     if (!['keep', 'enable', 'migrate'].includes(choice as string)) throw new Error('Choose a notification option.');
     if (migrating) throw new Error('The switch is in progress. Please wait.');
     if (choice !== 'keep' && !Notification.isSupported()) throw new Error('Desktop notifications are unavailable on this system.');
@@ -437,6 +438,27 @@ async function runSmokeTest(directory: string) {
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(1200);
   const report: Record<string, unknown> = { electron: process.versions.electron, sqlite: process.versions.sqlite, connected: snapshot.connected, message: snapshot.message, threadCount: snapshot.threads.length, mood: pet.mood };
+  const { DatabaseSync } = await import('node:sqlite');
+  const v2File = join(directory, 'statev2-fixture.sqlite');
+  const v2Db = new DatabaseSync(v2File);
+  try {
+    v2Db.exec(`
+      CREATE TABLE projection_projects(project_id TEXT, title TEXT);
+      CREATE TABLE orchestration_v2_projection_threads(thread_id TEXT, project_id TEXT, title TEXT,
+        default_provider TEXT, updated_at TEXT, archived_at TEXT, deleted_at TEXT, payload_json TEXT);
+      CREATE TABLE orchestration_v2_projection_runs(run_id TEXT, thread_id TEXT, ordinal INTEGER, status TEXT, completed_at TEXT);
+      CREATE TABLE orchestration_v2_projection_runtime_requests(thread_id TEXT, kind TEXT, status TEXT);
+      INSERT INTO orchestration_v2_projection_threads VALUES('v2',NULL,'V2 fixture','custom','2026-10-03T14:00:00Z',NULL,NULL,'{}');
+      INSERT INTO orchestration_v2_projection_runs VALUES('run','v2',1,'running',NULL);
+    `);
+    const v2Machine = new PetStateMachine();
+    const v2Mood = () => v2Machine.update({ connected: true, message: '', checkedAt: Date.now(), threads: readThreads(v2File) }, null).mood;
+    const working = v2Mood() === 'working';
+    v2Db.exec("INSERT INTO orchestration_v2_projection_runtime_requests VALUES('v2','permission','pending')");
+    const waiting = v2Mood() === 'waiting';
+    v2Db.exec("UPDATE orchestration_v2_projection_runtime_requests SET status='resolved'; UPDATE orchestration_v2_projection_runs SET status='completed'");
+    report.v2State = { working, waiting, done: v2Mood() === 'done' };
+  } finally { v2Db.close(); }
   testingHover = true;
   const checkHoverOpen = visibility.visible;
   if (checkHoverOpen) hoverPanel.show();
@@ -555,6 +577,8 @@ async function runSmokeTest(directory: string) {
       document.getElementById('save').click();
       for (let retry=0;retry<200 && (document.getElementById('save-result').textContent !== 'Saved' || preview.dataset.pet !== character.id);retry++) await delay(10);
       if ((await window.pet.getState()).preferences.petId !== character.id || preview.dataset.pet !== character.id) throw new Error('Pet save/render failed: '+character.id);
+      if (preview.width !== Math.round(128 * devicePixelRatio) || preview.getBoundingClientRect().width !== 128) throw new Error('Preview resolution does not match display: '+character.id);
+      if (preview.getContext('2d').imageSmoothingEnabled !== (character.id !== 'lfg')) throw new Error('Incorrect preview sampling: '+character.id);
       for (const animation of character.animations) {
         const stateSelector = document.getElementById('preview');
         stateSelector.value = animation.mood; stateSelector.dispatchEvent(new Event('change',{bubbles:true}));
@@ -596,6 +620,31 @@ async function runSmokeTest(directory: string) {
   pet = machine.update(snapshot, null);
   publish();
   await wait(150);
+  report.chatActivity = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    document.getElementById('chats-tab').click();
+    const list = document.getElementById('chat-activity');
+    const loaded = list.querySelectorAll('button').length === 2 && list.textContent.includes('Working') && list.textContent.includes('Approval needed');
+    const search = document.getElementById('activity-search');
+    search.value = 'Sandbox'; search.dispatchEvent(new Event('input', {bubbles:true}));
+    const searched = list.querySelectorAll('button').length === 1 && list.textContent.includes('Experiment');
+    search.value = 'no-such-chat'; search.dispatchEvent(new Event('input', {bubbles:true}));
+    const emptySearch = list.children.length === 0 && !document.getElementById('activity-empty').hidden && document.getElementById('activity-empty').textContent.includes('No chats match');
+    search.value = ''; search.dispatchEvent(new Event('input', {bubbles:true}));
+    return {loaded, searched, emptySearch};
+  })()`);
+  writeFileSync(join(directory, 'settings-chat-activity.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  const activityReport = report.chatActivity as Record<string, boolean>;
+  settingsWindow!.webContents.send('pet:state', { ...state(), snapshot: { ...snapshot, threads: snapshot.threads.map(thread => ({ ...thread, sessionStatus: 'ready', turnState: 'completed', pendingApproval: 0 })) } });
+  await wait(80);
+  activityReport.updated = await settingsWindow!.webContents.executeJavaScript(`document.querySelectorAll('#chat-activity button').length === 2 && !document.getElementById('chat-activity').textContent.includes('Working') && document.getElementById('chat-activity').textContent.includes('Completed')`);
+  settingsWindow!.webContents.send('pet:state', { ...state(), snapshot: { ...snapshot, threads: [] } });
+  await wait(80);
+  activityReport.empty = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chat-activity').children.length === 0 && !document.getElementById('activity-empty').hidden && document.getElementById('activity-empty').textContent.includes('No chats yet')`);
+  settingsWindow!.webContents.send('pet:state', { ...state(), snapshot: { ...snapshot, connected: false, message: 'Open T3 Code to connect.' } });
+  await wait(80);
+  activityReport.disconnected = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chat-activity').children.length === 0 && document.getElementById('activity-empty').textContent === 'Open T3 Code to connect.'`);
+  publish();
+  await wait(80);
   report.projectBlocklist = await settingsWindow!.webContents.executeJavaScript(`(async () => {
     document.getElementById('projects-tab').click();
     document.querySelector('[data-project-id="example-ignored"]').click();
@@ -689,7 +738,7 @@ async function runSmokeTest(directory: string) {
   writeFileSync(join(directory, 'settings-filters-expanded-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('advanced-settings').open=false`);
   nativeTheme.themeSource = originalTheme;
-  settingsWindow!.setSize(580, 600);
+  settingsWindow!.setSize(768, 600);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chats-tab').click()`);
   snapshot = liveSnapshot;
   preferences = livePreferences;
@@ -721,8 +770,43 @@ async function runSmokeTest(directory: string) {
   preferences = { ...preferences, dataDirectory: fixture, onboardingCompleted: false };
   snapshot = { connected: false, threads: [], checkedAt: Date.now(), message: 'Open T3 Code to connect your pet.' };
   storePreferences(preferencesPath, preferences);
-  showSettings(true);
-  await new Promise<void>(resolve => settingsWindow!.webContents.once('did-finish-load', () => resolve()));
+  publish();
+  await wait(100);
+  report.notificationModal = await settingsWindow!.webContents.executeJavaScript(`(async () => {
+    document.getElementById('notifications-tab').click();
+    const before = (await window.pet.getState()).preferences;
+    document.getElementById('notification-setup').click();
+    const modal = document.getElementById('notification-dialog');
+    for (let i=0;i<40 && document.getElementById('notification-apply').disabled;i++) await new Promise(r=>setTimeout(r,25));
+    const opened = modal.open && document.title === 'T3 Pet settings' && modal.querySelector('h1').textContent === 'Choose your notifications';
+    document.querySelector('input[value=migrate]').click();
+    const action = document.getElementById('notification-action-label').textContent === 'Switch notifications';
+    document.getElementById('notification-apply').click();
+    for (let i=0;i<40 && document.getElementById('notification-apply').disabled;i++) await new Promise(r=>setTimeout(r,25));
+    const cancelled = modal.open && !document.getElementById('notification-error').hidden && JSON.stringify((await window.pet.getState()).preferences) === JSON.stringify(before);
+    document.getElementById('notification-cancel').click();
+    const closed = !modal.open;
+    document.getElementById('notification-setup').click();
+    for (let i=0;i<40 && document.getElementById('notification-apply').disabled;i++) await new Promise(r=>setTimeout(r,25));
+    const reset = document.querySelector('input[value=keep]').checked;
+    const setupVisible = !document.getElementById('notification-setup').hidden;
+    const globalOnboarding = !document.getElementById('reopen-onboarding').closest('[role=tabpanel]');
+    return {opened, action, cancelled, closed, reset, setupVisible, globalOnboarding};
+  })()`);
+  await wait(80);
+  writeFileSync(join(directory, 'notification-modal.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  settingsWindow!.setSize(470, 500);
+  await wait(80);
+  (report.notificationModal as Record<string, boolean>).compact = await settingsWindow!.webContents.executeJavaScript(`(() => { const modal=document.getElementById('notification-dialog'); const action=document.getElementById('notification-apply').getBoundingClientRect(); return modal.scrollWidth <= modal.clientWidth && action.bottom <= innerHeight && action.top >= 0; })()`);
+  writeFileSync(join(directory, 'notification-modal-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-apply').click()`);
+  await wait(150);
+  (report.notificationModal as Record<string, boolean>).applied = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('notification-dialog').open && document.title === 'T3 Pet settings' && document.getElementById('notification-setup').hidden`);
+  preferences = { ...preferences, onboardingCompleted: false };
+  storePreferences(preferencesPath, preferences);
+  const onboardingReopened = new Promise<void>(resolve => settingsWindow!.webContents.once('did-finish-load', () => resolve()));
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('reopen-onboarding').click()`);
+  await onboardingReopened;
   await wait(150);
   report.onboardingConnect = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('connect-step').hidden, overflow: document.documentElement.scrollWidth > innerWidth, bridge: typeof window.pet.finishOnboarding === 'function'})`);
   const captureOnboarding = async (stage: string) => {
@@ -753,13 +837,31 @@ async function runSmokeTest(directory: string) {
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('connection-settings').open = false`);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
+  report.onboardingPet = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const visible = !document.getElementById('pet-step').hidden;
+    const choices = document.querySelectorAll('#pet-gallery input[name=character]').length === 4;
+    document.querySelector('#pet-gallery input[value=miso]').click();
+    document.getElementById('pet-size').value = '96';
+    document.getElementById('pet-still').checked = true;
+    document.getElementById('pet-still').dispatchEvent(new Event('change', {bubbles:true}));
+    document.getElementById('back').click();
+    return {visible, choices, back: !document.getElementById('connect-step').hidden};
+  })()`);
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
+  await wait(200);
+  (report.onboardingPet as Record<string, boolean>).draftRetained = await settingsWindow!.webContents.executeJavaScript(`document.querySelector('#pet-gallery input[value=miso]').checked && document.getElementById('pet-size').value === '96' && document.getElementById('pet-still').checked`);
+  await captureOnboarding('pet');
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
+  await wait(200);
+  const chosenPet = loadPreferences(preferencesPath);
+  (report.onboardingPet as Record<string, boolean>).persisted = chosenPet.petId === 'miso' && chosenPet.size === 96 && chosenPet.reducedMotion;
   report.onboardingNotifications = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('notifications-step').hidden, migration: !document.getElementById('migrate-option').hidden, text: document.getElementById('notification-check').textContent, overflow: document.documentElement.scrollWidth > innerWidth, footerFits: document.getElementById('continue').getBoundingClientRect().bottom <= innerHeight})`);
   report.onboardingProgressBack = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const controls = document.querySelectorAll('.steps button');
-    const backEnabled = !controls[0].disabled && controls[1].disabled && controls[2].disabled;
-    controls[0].click();
-    return { backEnabled, returned: !document.getElementById('connect-step').hidden,
-      current: controls[0].getAttribute('aria-current') === 'step', folder: document.getElementById('directory').value === ${JSON.stringify(fixture)} };
+    const backEnabled = !controls[0].disabled && !controls[1].disabled && controls[2].disabled && controls[3].disabled;
+    controls[1].click();
+    return { backEnabled, returned: !document.getElementById('pet-step').hidden,
+      current: controls[1].getAttribute('aria-current') === 'step', folder: document.getElementById('directory').value === ${JSON.stringify(fixture)}, pet: document.querySelector('#pet-gallery input[value=miso]').checked };
   })()`);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
@@ -790,6 +892,7 @@ async function runSmokeTest(directory: string) {
   await settingsWindow!.webContents.executeJavaScript(`document.querySelector('input[value=enable]').click(); document.getElementById('continue').click()`);
   await wait(150);
   report.onboardingFinish = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('finish-step').hidden, test: !document.getElementById('test-row').hidden, text: document.getElementById('finish-detail').textContent, overflow: document.documentElement.scrollWidth > innerWidth})`);
+  (report.onboardingPet as Record<string, boolean>).finishPreview = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('preview-pet').dataset.pet === 'miso'`);
   report.onboardingProgressFinished = await settingsWindow!.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.steps button')).every(control => control.disabled)`);
   await captureOnboarding('finish');
   if (process.argv.includes('--notification-smoke-test')) {
