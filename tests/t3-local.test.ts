@@ -73,6 +73,27 @@ test('live snapshot prefers the v2 database over frozen legacy projections', asy
   assert.deepEqual(readFileSync(join(folder, 'statev2.sqlite')), before);
 });
 
+test('v2 extracts subagent lineage metadata, inherits settlement, and keeps forks independent', t => {
+  const folder = mkdtempSync(join(tmpdir(), 't3pet-lineage-'));
+  const file = join(folder, 'statev2.sqlite');
+  const db = createV2Database(file);
+  t.after(() => { db.close(); rmSync(folder, { recursive: true, force: true }); });
+  const insert = db.prepare('INSERT INTO orchestration_v2_projection_threads VALUES(?,?,?, ?,?,NULL,NULL,?)');
+  for (const [id, parent, relationship] of [['child', 'a', 'subagent'], ['nested', 'child', 'subagent'], ['fork', 'a', 'fork']] as const) {
+    insert.run(id, 'p', id, 'any', '2026-10-03T14:00:00Z', JSON.stringify({ lineage: { parentThreadId: parent, relationshipToParent: relationship } }));
+  }
+  db.exec(`UPDATE orchestration_v2_projection_threads SET payload_json='{"settledOverride":"settled"}' WHERE thread_id='a'`);
+  const before = readFileSync(file);
+  const rows = new Map(readThreads(file).map(thread => [thread.id, thread]));
+  assert.equal(rows.get('child')?.parentThreadId, 'a');
+  assert.equal(rows.get('child')?.parentTitle, 'Active');
+  assert.equal(rows.get('nested')?.parentTitle, 'child');
+  assert.equal(rows.get('nested')?.settledOverride, 'settled');
+  assert.equal(rows.get('fork')?.parentThreadId, null);
+  assert.equal(rows.get('fork')?.settledOverride, null);
+  assert.deepEqual(readFileSync(file), before);
+});
+
 test('local adapter reads metadata without changing database bytes', t => {
   const folder = mkdtempSync(join(tmpdir(), 't3pet-test-'));
   t.after(() => rmSync(folder, { recursive: true, force: true }));

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { createConnection } from 'node:net';
 import type { Snapshot, ThreadStatus } from './shared';
+import { inheritSubagentSettlement } from './unsettled';
 
 export function readThreads(databasePath: string): ThreadStatus[] {
   // Never create a missing database or issue writes against T3 Code's data.
@@ -45,6 +46,9 @@ function readV2Threads(db: DatabaseSync): ThreadStatus[] {
       r.status AS runStatus, r.completed_at AS completedAt, t.updated_at AS updatedAt,
       json_extract(t.payload_json, '$.settledOverride') AS settledOverride,
       json_extract(t.payload_json, '$.snoozedUntil') AS snoozedUntil,
+      CASE WHEN json_extract(t.payload_json, '$.lineage.relationshipToParent') = 'subagent'
+        THEN json_extract(t.payload_json, '$.lineage.parentThreadId') END AS parentThreadId,
+      parent.title AS parentTitle,
       (SELECT COUNT(*) FROM orchestration_v2_projection_runtime_requests q
         WHERE q.thread_id = t.thread_id AND q.status = 'pending'
           AND q.kind IN ('command', 'file-read', 'file-change', 'permission')) AS pendingApproval,
@@ -52,6 +56,9 @@ function readV2Threads(db: DatabaseSync): ThreadStatus[] {
         WHERE q.thread_id = t.thread_id AND q.status = 'pending'
           AND q.kind IN ('user_input', 'mcp-elicitation', 'auth_refresh')) AS pendingInput
     FROM orchestration_v2_projection_threads t
+    LEFT JOIN orchestration_v2_projection_threads parent ON parent.thread_id =
+      CASE WHEN json_extract(t.payload_json, '$.lineage.relationshipToParent') = 'subagent'
+        THEN json_extract(t.payload_json, '$.lineage.parentThreadId') END
     LEFT JOIN projection_projects p ON p.project_id = t.project_id
     LEFT JOIN orchestration_v2_projection_runs r ON r.run_id = (
       SELECT candidate.run_id FROM orchestration_v2_projection_runs candidate
@@ -63,14 +70,14 @@ function readV2Threads(db: DatabaseSync): ThreadStatus[] {
       AND json_extract(t.payload_json, '$.archivedAt') IS NULL
     ORDER BY t.updated_at DESC
   `).all() as unknown as (Omit<ThreadStatus, 'sessionStatus' | 'turnState'> & { runStatus: string | null })[];
-  return rows.map(({ runStatus, ...thread }) => {
+  return inheritSubagentSettlement(rows.map(({ runStatus, ...thread }) => {
     const active = ['preparing', 'starting', 'running', 'waiting'].includes(runStatus ?? '');
     return { ...thread,
       sessionStatus: active ? runStatus === 'preparing' || runStatus === 'starting' ? 'starting' : 'running' :
         runStatus === 'interrupted' || runStatus === 'cancelled' ? 'stopped' : 'ready',
       turnState: active ? 'running' : runStatus === 'failed' ? 'error' : runStatus === 'cancelled' ? 'interrupted' : runStatus,
     };
-  });
+  }));
 }
 
 export function readProjects(databasePath: string): { id: string; name: string }[] {

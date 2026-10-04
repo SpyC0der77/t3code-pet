@@ -23,9 +23,12 @@ export class HoverPanel {
       win.setMenu(null);
       win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       win.webContents.on('will-navigate', event => event.preventDefault());
-      win.once('ready-to-show', () => { this.ready = true; if (this.requested) this.show(); });
       win.on('closed', () => { this.window = null; this.ready = false; });
-      this.loading = win.loadFile(join(__dirname, 'renderer', 'hover.html'));
+      this.loading = win.loadFile(join(__dirname, 'renderer', 'hover.html')).then(() => {
+        if (this.window !== win || win.isDestroyed()) return;
+        this.ready = true;
+        if (this.requested) this.show();
+      });
     }
     return this.loading ?? Promise.resolve();
   }

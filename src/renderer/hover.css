@@ -1,7 +1,7 @@
 *{box-sizing:border-box}:root,body{margin:0;height:100%;background:transparent;overflow:hidden}
 #empty{margin:0;padding:10px 12px;color:var(--muted);line-height:1.4286}
 main{background:var(--surface);border:1px solid var(--border);border-radius:8px;max-height:100vh;overflow:auto}ul{list-style:none;margin:0;padding:0}li+li{border-top:1px solid var(--divider)}
-button{display:flex;align-items:center;gap:12px;width:100%;border:0;padding:10px 12px;background:var(--surface);color:inherit;font:inherit;text-align:left;cursor:pointer}button:hover{background:var(--canvas)}button:active{background:var(--selected)}button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
-.title{flex:1;min-width:0;line-height:1.4286;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{flex:none;white-space:nowrap;color:var(--muted);font-size: 0.8571rem;line-height:1.6667}[hidden]{display:none}
+button{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;row-gap:2px;width:100%;border:0;padding:10px 12px;background:var(--surface);color:inherit;font:inherit;text-align:left;cursor:pointer}button:hover{background:var(--canvas)}button:active{background:var(--selected)}button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.chat-name{min-width:0}.title{display:block;line-height:1.4286;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.parent{grid-column:1/-1;display:block;white-space:normal;overflow-wrap:anywhere;color:var(--text);font-size:0.8571rem;line-height:1.5}.status{white-space:nowrap;color:var(--muted);font-size:0.8571rem;line-height:1.6667}[hidden]{display:none}
 
 

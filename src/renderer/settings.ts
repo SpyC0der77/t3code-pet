@@ -1,4 +1,5 @@
 import { applyUiTheme } from './theme';
+import { createThemeControls } from './theme-controls';
 import { enhanceDropdowns, syncDropdowns, closeDropdowns } from './dropdown';
 import type { AppState, PetMood, Preferences, SelectionFilter } from '../shared';
 import { createPetGallery } from './pet-gallery';
@@ -74,8 +75,10 @@ const selectors = {
 const kinds: Kind[] = ['project', 'chat'];
 const errorText = (error: unknown) => error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': Error: /, '') : 'Could not complete this action. Try again.';
 const sorted = (items: SelectionFilter['selected']) => items.map(p => ({ ...p })).sort((a,b) => a.id.localeCompare(b.id));
+const themeControls = createThemeControls();
 function draft() {
   return {
+    ...themeControls.read(),
     petId: input('pet-id').value,
     dataDirectory: input('directory').value.trim(),
     projectFilter: { mode: select('project-mode').value as SelectionFilter['mode'], selected: sorted(selections.project) },
@@ -94,6 +97,7 @@ function dirty() {
   return JSON.stringify(draft()) !== JSON.stringify(baseline);
 }
 function updateControls(message?: string) {
+  themeControls.update(saving);
   const changed = dirty();
   button('save').disabled = saving || !changed; button('discard').hidden = !changed; button('discard').disabled = saving;
   button('notification-setup').disabled = saving || changed;
@@ -110,7 +114,7 @@ function updateNotificationControls() {
   input('notification-sound').disabled = saving || !supported || !input('notifications').checked;
   select('notification-style').disabled = saving;
   button('test-notification').disabled = saving || testingNotification || !supported;
-  text('notification-style-help', select('notification-style').value === 'custom' ? 'Custom alerts use your T3 Code theme and appear beside the pet.' : supported ? 'OS alerts use your system notification settings and notification center.' : 'OS notifications are unavailable on this system. Choose Custom to receive alerts.');
+  text('notification-style-help', select('notification-style').value === 'custom' ? "Custom alerts use your pet's theme and appear beside the pet." : supported ? 'OS alerts use your system notification settings and notification center.' : 'OS notifications are unavailable on this system. Choose Custom to receive alerts.');
   syncDropdowns();
 }
 function renderSelector(kind: Kind) {
@@ -167,6 +171,7 @@ function renderSelector(kind: Kind) {
 function renderSelectors(){for(const kind of kinds)renderSelector(kind);}
 function hydrate(p: Preferences) {
   saved=p;
+  themeControls.hydrate(p);
   for(const kind of kinds){const filter=p[kind==='project'?'projectFilter':'chatFilter'];selections[kind]=filter.selected.map(p=>({...p}));select(kind+'-mode').value=filter.mode;}
   input('directory').value=p.dataDirectory;select('size').value=String(p.size);
   input('pet-id').value=p.petId;showPetCredit();
@@ -190,6 +195,7 @@ tabs.forEach((tab, index) => {
 });
 function render(state: AppState) {
   applyUiTheme(state.theme);
+  themeControls.update(saving);
   const changed = dirty(); current = state;
   button('notification-setup').hidden = state.preferences.onboardingCompleted;
   if (!saved || (!changed && JSON.stringify(saved) !== JSON.stringify(state.preferences))) hydrate(state.preferences);

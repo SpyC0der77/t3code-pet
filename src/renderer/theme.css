@@ -5,7 +5,17 @@
   font-family: var(--ui-font); font-size: var(--ui-font-size); line-height: 1.5;
   --canvas: #fafafa; --panel: #fafafa; --surface: #fff; --overlay: #fff;
   --text: #27272a; --muted: #71717a; --border: #e4e4e7; --input-border: #d4d4d8;
-  --divider: var(--border); --accent: oklch(0.488 0.217 264); --accent-hover: var(--accent);
+  --divider: var(--border); --accent: #725366; --accent-hover: #624657;
   --on-accent: #fff; --error: #b91c1c; --selected: #f4f4f5;
+  --success: #047857; --warning: #bb4d00;
   color: var(--text); background: var(--canvas);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --canvas: #181818; --panel: #181818; --surface: #202020; --overlay: #252525;
+    --text: #e4e4e4; --muted: #b0b0b0; --border: #414141; --input-border: #808080;
+    --accent: #b3a3c2; --accent-hover: #c0b1cf; --on-accent: #181818;
+    --error: #dfa09a; --selected: #323232; --success: #a5b29a; --warning: #c2ad83;
+  }
 }

@@ -1,6 +1,8 @@
 export type PetMood = 'offline' | 'idle' | 'working' | 'waiting' | 'done' | 'error';
 
 export interface ThreadStatus {
+  parentThreadId?: string | null;
+  parentTitle?: string | null;
   projectId?: string | null;
   settledOverride?: string | null;
   snoozedUntil?: string | null;
@@ -31,6 +33,8 @@ export interface SelectionFilter {
 }
 
 export interface Preferences {
+  theme: import('./theme-options').PetThemeId;
+  themeAppearance: import('./theme-options').ThemeAppearance;
   petId: string;
   projectFilter: SelectionFilter;
   chatFilter: SelectionFilter;
@@ -70,6 +74,7 @@ export interface AppState {
 }
 
 export interface PetBridge {
+  onNotificationSound(listener: (kind: 'completion' | 'input') => void): () => void;
   notificationSetup(): Promise<NotificationSetup>;
   finishOnboarding(choice: 'keep' | 'enable' | 'migrate', style?: Preferences['notificationStyle']): Promise<NotificationSetup>;
   testNotification(style?: Preferences['notificationStyle']): Promise<void>;
@@ -81,7 +86,7 @@ export interface PetBridge {
   onState(listener: (state: AppState) => void): () => void;
   savePreferences(prefs: Partial<Preferences>): Promise<AppState>;
   chooseDirectory(): Promise<string | null>;
-  showMenu(): void;
+  showMenu(point?: { x: number; y: number }): void;
   showSettings(): void;
   preview(mood: PetMood | null): void;
   mousePassthrough(ignore: boolean): void;

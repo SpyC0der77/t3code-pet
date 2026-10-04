@@ -15,6 +15,10 @@ export function applyUiTheme(theme: UiTheme) {
     root.style.setProperty(`--${variable}`, CSS.supports('color', color) ? color : fallback);
   }
   root.style.setProperty('--divider', 'var(--border)');
+  // Muted semantic colors keep notification icons readable without neon accents.
+  root.style.setProperty('--success', theme.appearance === 'dark' ? '#a5b29a' : '#047857');
+  const warning = theme.colors.warningForeground;
+  root.style.setProperty('--warning', warning && CSS.supports('color', warning) ? warning : theme.appearance === 'dark' ? '#c2ad83' : '#bb4d00');
   if (CSS.supports('font-family', theme.fontFamily)) root.style.setProperty('--ui-font', theme.fontFamily);
   root.style.setProperty('--ui-font-size', `${theme.fontSize}px`);
 }

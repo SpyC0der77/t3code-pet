@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, watch, type FSWatcher } from 'node:fs';
 import { join } from 'node:path';
-import { palettes } from './t3-palettes';
+import { defaultUiPalette, palettes } from './t3-palettes';
 import { ThemeStorage } from './theme-storage';
 
 export interface UiTheme {
@@ -11,10 +11,7 @@ export interface UiTheme {
   fontFamily: string;
   fontSize: number;
 }
-const stock = {
-  light: { canvas: '#fafafa', chrome: '#fafafa', surface: '#ffffff', surfaceOverlay: '#ffffff', text: '#27272a', mutedForeground: '#71717a', border: '#e4e4e7', input: '#d4d4d8', messageAction: 'oklch(0.488 0.217 264)', messageActionForeground: '#ffffff', messageActionHover: 'oklch(0.488 0.217 264)', accentSurface: '#f4f4f5', errorForeground: '#b91c1c' },
-  dark: { canvas: '#0a0a0a', chrome: '#0a0a0a', surface: '#111111', surfaceOverlay: '#191919', text: '#f5f5f5', mutedForeground: '#8e8e8e', border: '#191919', input: '#1e1e1e', messageAction: 'oklch(0.571 0.21 264)', messageActionForeground: '#ffffff', messageActionHover: 'oklch(0.571 0.21 264)', accentSurface: '#141414', errorForeground: '#ff6467' },
-};
+const stock = defaultUiPalette;
 const font = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 function json(raw: string | undefined, fallback: any): any { try { return JSON.parse(raw ?? ''); } catch { return fallback; } }
 const record = (value: any): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);

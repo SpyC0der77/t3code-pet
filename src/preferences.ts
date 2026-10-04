@@ -3,9 +3,10 @@ import { dirname, isAbsolute, join } from 'node:path';
 import { homedir } from 'node:os';
 import type { Preferences } from './shared';
 import { isPetId } from './pets';
+import { themeChoices } from './theme-options';
 
 export function defaults(): Preferences {
-  return { petId: 'lfg', onboardingCompleted: false, notificationsEnabled: false, notificationSound: true, notificationStyle: 'os',
+  return { theme: 'follow-t3-code', themeAppearance: 'system', petId: 'lfg', onboardingCompleted: false, notificationsEnabled: false, notificationSound: true, notificationStyle: 'os',
     dataDirectory: join(homedir(), '.t3', 'userdata'), followThreadId: null, blockedProjects: [],
     projectFilter: { mode: 'blocklist', selected: [] }, chatFilter: { mode: 'blocklist', selected: [] }, size: 128,
     reducedMotion: false, showLabel: true, launchAtLogin: false, position: null };
@@ -15,6 +16,14 @@ export function validatePreferences(input: unknown, current: Preferences): Prefe
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Invalid settings.');
   const raw = input as Record<string, unknown>;
   const next = { ...current };
+  if ('theme' in raw) {
+    if (!themeChoices.some(([id]) => id === raw.theme)) throw new Error('Invalid theme.');
+    next.theme = raw.theme as Preferences['theme'];
+  }
+  if ('themeAppearance' in raw) {
+    if (!['system', 'light', 'dark'].includes(raw.themeAppearance as string)) throw new Error('Invalid theme appearance.');
+    next.themeAppearance = raw.themeAppearance as Preferences['themeAppearance'];
+  }
   if ('notificationStyle' in raw) {
     if (raw.notificationStyle !== 'custom' && raw.notificationStyle !== 'os') throw new Error('Invalid notification style.');
     next.notificationStyle = raw.notificationStyle;

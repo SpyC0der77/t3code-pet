@@ -8,13 +8,25 @@
 <main class="window-shell settings">
   <header class="window-header"><img class="app-mark" src="../../assets/icon.png" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><div class="header-end"><span id="version"></span><button id="reopen-onboarding" type="button">Reopen onboarding</button></div></header>
   <nav class="settings-tabs" role="tablist" aria-label="Settings">
-    <button id="chats-tab" type="button" role="tab" aria-selected="true" aria-controls="chats-panel">Chats</button>
+    <button id="general-tab" type="button" role="tab" aria-selected="true" aria-controls="general-panel">General</button>
+    <button id="chats-tab" type="button" role="tab" aria-selected="false" aria-controls="chats-panel" tabindex="-1">Chats</button>
     <button id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-panel" tabindex="-1">Filters</button>
     <button id="pet-tab" type="button" role="tab" aria-selected="false" aria-controls="pet-panel" tabindex="-1">Pet</button>
     <button id="notifications-tab" type="button" role="tab" aria-selected="false" aria-controls="notifications-panel" tabindex="-1">Notifications</button>
   </nav>
   <form id="settings-form">
-    <section id="chats-panel" class="tab-panel" role="tabpanel" aria-labelledby="chats-tab">
+    <section id="general-panel" class="tab-panel" role="tabpanel" aria-labelledby="general-tab">
+      <h1 class="panel-title">General</h1>
+      <div class="theme-controls">
+        <label class="theme-follow"><span>Follow T3 Code</span><input id="follow-t3-theme" type="checkbox"></label>
+        <select id="ui-theme" data-custom-dropdown="visual" data-theme-control hidden tabindex="-1" aria-label="Theme style"></select>
+        <select id="theme-appearance" data-custom-dropdown="visual" data-theme-control hidden tabindex="-1" aria-label="Theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+        <fieldset id="theme-appearance-field"><legend>Theme</legend><div id="theme-modes" class="theme-modes"></div></fieldset>
+        <fieldset><legend>Theme style</legend><div id="theme-styles" class="theme-styles"></div></fieldset>
+      </div>
+      <label class="preference-row"><span>Start when I sign in<span class="help">Launch T3 Pet automatically.</span></span><input id="login" type="checkbox"></label>
+    </section>
+    <section id="chats-panel" class="tab-panel" role="tabpanel" aria-labelledby="chats-tab" hidden>
       <h1 class="panel-title">Chat activity</h1>
       <p class="panel-description">Your pet follows your local agents.</p>
       <div class="connection-status"><div><strong id="connection">Looking for T3 Code...</strong><p id="connection-detail" role="status">Checking your local connection.</p></div><span id="chat-count">0 chats</span></div>
@@ -46,13 +58,12 @@
       <p class="help pet-credit" id="pet-credit"></p>
       <div class="appearance-row field-group"><div><label for="preview">Preview state</label><select id="preview"><option value="idle">Resting</option><option value="working">Working</option><option value="waiting">Needs attention</option><option value="done">Finished</option><option value="error">Error</option><option value="offline">Offline</option></select></div><div><label for="size">Desktop size</label><select id="size"><option value="96">Small</option><option value="128">Medium</option><option value="160">Large</option></select></div></div>
       <label class="preference-row"><span>Use still poses<span class="help">Keep the character visible without animation.</span></span><input id="reduced-motion" type="checkbox"></label>
-      <label class="preference-row"><span>Start when I sign in<span class="help">Launch T3 Pet automatically.</span></span><input id="login" type="checkbox"></label>
     </section>
     <section id="notifications-panel" class="tab-panel" role="tabpanel" aria-labelledby="notifications-tab" hidden>
       <h1 class="panel-title">Desktop notifications</h1><p class="panel-description">Get an alert when a chat needs you, finishes, or fails.</p>
       <label class="preference-row"><span>Notifications from T3 Pet<span class="help">Click an alert to open its chat.</span></span><input id="notifications" type="checkbox" aria-describedby="notification-status"></label>
       <div class="field-group"><label for="notification-style">Notification style</label><select id="notification-style" aria-describedby="notification-style-help"><option value="custom">Custom</option><option value="os">OS notifications</option></select></div>
-      <p class="help" id="notification-style-help">Custom alerts use your T3 Code theme and appear beside the pet.</p>
+      <p class="help" id="notification-style-help">Custom alerts use your pet's theme and appear beside the pet.</p>
       <label class="preference-row"><span>Play sounds<span class="help">Include sound with your alerts.</span></span><input id="notification-sound" type="checkbox"></label>
       <div class="notification-settings"><button id="notification-setup" type="button" hidden>Set up notifications…</button><button id="test-notification" type="button">Send a test</button></div>
       <p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>

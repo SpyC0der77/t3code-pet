@@ -1,0 +1,37 @@
+/* T3 Code's wireframe tiles and paired theme swatches. MIT, see docs/T3-THEME-LICENSE.txt. */
+.theme-controls { margin-top: 16px; }
+.theme-follow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; }
+.theme-controls fieldset { margin: 0 0 16px; }
+.theme-controls legend { font-size: 1rem; }
+.theme-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.theme-styles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.theme-mode-choice, .theme-style-choice { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; margin: 0; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); cursor: pointer; }
+.theme-mode-choice:hover, .theme-style-choice:hover { background: var(--surface); }
+.theme-mode-choice:has(input:checked), .theme-style-choice:has(input:checked) { border-color: var(--accent); background: var(--selected); }
+.theme-mode-choice:has(input:focus-visible), .theme-style-choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-mode-choice:has(input:disabled), .theme-style-choice:has(input:disabled) { opacity: .64; cursor: default; }
+.theme-mode-choice > input, .theme-style-choice > input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+.theme-choice-name { font-size: .8571rem; line-height: 1.5; text-align: center; }
+.theme-wireframe { position: relative; display: block; height: 76px; overflow: hidden; border: 1px solid var(--border); border-radius: 5px; }
+.theme-wireframe-pane { position: absolute; inset: 0; background: var(--preview-canvas); }
+.theme-wireframe-pane[data-half=left] { clip-path: polygon(0 0, calc(50% - 1px) 0, calc(50% - 1px) 100%, 0 100%); }
+.theme-wireframe-pane[data-half=right] { clip-path: polygon(calc(50% + 1px) 0, 100% 0, 100% 100%, calc(50% + 1px) 100%); }
+.theme-wireframe-pane > span { position: absolute; border-radius: 2px; }
+.wireframe-sidebar { inset: 0 auto 0 0; width: 22%; background: var(--preview-sidebar); border-right: 1px solid rgb(127 127 127 / .25); border-radius: 0 !important; }
+.wireframe-search { left: 3%; top: 8%; height: 8%; width: 16%; background: var(--preview-surface); border: 1px solid rgb(127 127 127 / .25); }
+.wireframe-thread { left: 3%; top: 22%; height: 7%; width: 16%; background: var(--preview-selected); }
+.wireframe-thread.wireframe-second { top: 32%; background: var(--preview-message); opacity: .7; }
+.wireframe-thread.wireframe-third { top: 42%; background: var(--preview-message); opacity: .5; }
+.wireframe-message { right: 8%; top: 11%; height: 9%; width: 24%; background: var(--preview-message); }
+.wireframe-line { left: 27%; top: 28%; height: 5%; width: 34%; background: rgb(127 127 127 / .25); }
+.wireframe-line.wireframe-second { top: 38%; width: 26%; }
+.wireframe-composer { bottom: 8%; left: 26%; right: 6%; height: 15%; background: var(--preview-surface); border: 1px solid rgb(127 127 127 / .25); }
+.wireframe-send { bottom: 12%; right: 9%; height: 7%; aspect-ratio: 1; background: var(--preview-action); }
+.theme-style-swatches { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 2px 0; }
+.theme-swatch { position: relative; display: block; width: 40px; height: 40px; border: 1px solid rgb(127 127 127 / .4); border-radius: 50%; overflow: hidden; }
+.theme-swatch-artwork { position: absolute; inset: -2px; border-radius: 50%; filter: blur(2px); }
+@media (max-width: 540px) {
+  .theme-styles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .theme-modes { gap: 8px; }
+  .theme-wireframe { height: 64px; }
+}

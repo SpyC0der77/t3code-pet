@@ -1,5 +1,6 @@
 @import url("theme.css");
 @import url("dropdown.css");
+@import url("theme-controls.css");
 * { box-sizing: border-box; }
 body { margin: 0; }
 [hidden] { display: none !important; }

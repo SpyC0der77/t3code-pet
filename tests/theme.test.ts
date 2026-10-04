@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { compress } from 'snappyjs';
 import { readThemeLog, readThemeTable, ThemeStorage } from '../src/theme-storage';
 import { resolveUiTheme, T3ThemeSync } from '../src/t3-theme';
-import { palettes } from '../src/t3-palettes';
+import { defaultUiPalette, palettes } from '../src/t3-palettes';
 import { maskedCrc32c } from '../src/leveldb-checksum';
 import { writeThemeManifestFixture } from '../src/theme-fixture';
 
@@ -103,6 +103,53 @@ test('T3 palettes follow appearance modes, system changes, aliases, halves and c
   assert.equal(theme.appearance, 'dark'); assert.equal(theme.colors.canvas, '#121314'); assert.equal(theme.colors.text, palettes['t3-chat'].dark.text);
   assert.equal(theme.source, 'dark');
   assert.equal(theme.fontFamily, 'Georgia'); assert.equal(theme.fontSize, 16);
+});
+
+function luminance(hex: string) {
+  assert.match(hex, /^#[0-9a-f]{6}$/i, 'dark palette colors must use opaque sRGB values');
+  const channels = hex.slice(1).match(/../g)!.map(channel => {
+    const value = parseInt(channel, 16) / 255;
+    return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+  });
+  return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+}
+function contrast(a: string, b: string) {
+  const values = [luminance(a), luminance(b)].sort((a, b) => b - a);
+  return (values[0] + .05) / (values[1] + .05);
+}
+
+test('every built-in dark palette has readable text, actions and input boundaries', () => {
+  const themes = [
+    resolveUiTheme({ 't3code:theme': 'dark' }, false),
+    resolveUiTheme({ 't3code:theme': 'system' }, true),
+    ...Object.keys(palettes).map(id => resolveUiTheme({ 't3code:theme': id, 't3code:theme-appearance-mode': 'dark' }, false)),
+  ];
+  for (const theme of themes) {
+    const colors = theme.colors;
+    for (const surface of ['canvas', 'chrome', 'surface', 'surfaceOverlay', 'accentSurface']) {
+      for (const foreground of ['text', 'mutedForeground', 'errorForeground']) {
+        assert.ok(contrast(colors[foreground], colors[surface]) >= 4.5, `${theme.id}: ${foreground} on ${surface}`);
+      }
+      assert.ok(contrast(colors.input, colors[surface]) >= 3, `${theme.id}: input on ${surface}`);
+      assert.ok(contrast(colors.messageAction, colors[surface]) >= 3, `${theme.id}: focus on ${surface}`);
+    }
+    for (const background of ['messageAction', 'messageActionHover']) {
+      assert.ok(contrast(colors.messageActionForeground, colors[background]) >= 4.5, `${theme.id}: button text on ${background}`);
+    }
+    assert.ok(luminance(colors.canvas) < luminance(colors.surface));
+    assert.ok(luminance(colors.surface) < luminance(colors.surfaceOverlay));
+    assert.ok(luminance(colors.surfaceOverlay) < luminance(colors.accentSurface));
+  }
+});
+
+test('dark packaged-check fixtures resolve the restrained Ember and Iris palettes', () => {
+  for (const id of ['ember', 'iris'] as const) {
+    const theme = resolveUiTheme({ 't3code:theme': id, 't3code:theme-appearance-mode': 'dark' }, false);
+    assert.deepEqual(theme.colors, palettes[id].dark);
+    assert.equal(theme.colors.canvas, defaultUiPalette.dark.canvas);
+    assert.equal(theme.colors.surfaceOverlay, defaultUiPalette.dark.surfaceOverlay);
+  }
+  assert.notEqual(palettes.ember.dark.messageAction, palettes.iris.dark.messageAction);
 });
 test('the live watcher publishes a theme edit without status polling or restarting', async t => {
   t.mock.method(globalThis, 'setInterval', () => { throw new Error('The watcher test must not start periodic refresh'); });
