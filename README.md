@@ -58,9 +58,10 @@ Open **Settings** from the pet's right-click menu or tray icon:
 
 Both open a compact custom menu that uses the pet's theme and T3 Code's font. Use arrow keys or type a label to navigate; Escape closes the preview submenu, then the menu. Enter, Space, Shift+F10, or the Context Menu key also opens it from the focused pet.
 
+- **General** opens first, with visual Theme and Theme style selectors plus login startup. Theme defaults to **Follow T3 Code**; other themes apply only to T3 Pet.
 - **Chats** shows the local connection and lets you change the data folder.
 - **Filters** has searchable project and chat lists. Each can be a blocklist or whitelist. Expand **Advanced chat filters** beneath the projects to choose chats.
-- **Pet** shows a responsive grid of character previews. Choose the preview state, select a character, then save to apply it to the desktop. Size and still poses are also available here. **General** opens first, with visual Theme and Theme style selectors plus login startup. Theme defaults to **Follow T3 Code**; other themes apply only to T3 Pet.
+- **Pet** shows a responsive grid of character previews. Choose the preview state, select a character, then save to apply it to the desktop. Size and still poses are also available here.
 - **Notifications** controls desktop alerts, Custom or OS style, and sound, with setup and test buttons. Custom alerts use the pet's theme and appear beside it. Send a test previews the selected style before saving.
 
 Hovering over the pet groups subagents under their parent chats, including nested subagents. Child rows name their parent. Each group takes its position from its most urgent chat. Subagents follow their parent's settlement and snooze state.

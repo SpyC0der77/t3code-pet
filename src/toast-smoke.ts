@@ -6,6 +6,15 @@ import type { ToastWindows } from './toast-windows';
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, directory: string, theme: (value: 'light' | 'dark') => Promise<void>) {
   const checks: Record<string, any> = {};
+  // Hosted desktops can disable OS animations. Exercise both media settings
+  // explicitly instead of letting that preference skip all transition checks.
+  const enableMotion = async (win: BrowserWindow) => {
+    writeFileSync(join(directory, 'notification-motion-host.json'), JSON.stringify(await win.webContents.executeJavaScript(`({reduced:matchMedia('(prefers-reduced-motion: reduce)').matches})`)));
+    win.webContents.debugger.attach('1.3');
+    await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }],
+    });
+  };
   toasts.pointerTracking = false;
   checks.audio = await pet.webContents.executeJavaScript(`(async () => {
     const results = [];
@@ -19,6 +28,7 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   for (const appearance of ['light', 'dark'] as const) {
     await theme(appearance);
     const win = toasts.show({ threadId: '', title: 'Approval needed', body: 'Update the notification settings', kind: 'Approval needed' }, true);
+    await enableMotion(win);
     await wait(650);
     checks[appearance] = await win.webContents.executeJavaScript(`(() => {
       const node = document.querySelector('.toast'), r = node.getBoundingClientRect(), action = node.querySelector('.open').getBoundingClientRect();
@@ -41,6 +51,7 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   }
   const notice = (threadId: string, kind = 'Turn finished') => ({ threadId, kind, title: kind, body: 'A finished chat' });
   const win = toasts.show(notice('one'));
+  await enableMotion(win);
   const same = toasts.show(notice('two'));
   toasts.show(notice('three'));
   await wait(650);
@@ -120,7 +131,6 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   toasts.pointerTracking = false;
   await wait(80);
   checks.clickThrough = await win.webContents.executeJavaScript(`window.pointerDecisions.includes(true) && window.pointerDecisions.includes(false)`);
-  win.webContents.debugger.attach('1.3');
   await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   checks.reducedMotion = await win.webContents.executeJavaScript(`getComputedStyle(document.querySelector('.toast')).transitionDuration==='0s'`);
   win.webContents.debugger.detach();

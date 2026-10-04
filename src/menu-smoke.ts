@@ -51,11 +51,12 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
     win.webContents.sendInputEvent({type:'keyDown',keyCode:'S'}); win.webContents.sendInputEvent({type:'keyUp',keyCode:'S'});
     await wait(80);
     checks[appearance + 'Typeahead'] = await win.webContents.executeJavaScript(`document.activeElement.dataset.action==='settings'`);
-    await win.webContents.executeJavaScript(`(() => {const r=document.getElementById('preview').getBoundingClientRect();document.getElementById('preview').dispatchEvent(new PointerEvent('pointerenter',{clientX:r.x+r.width/2,clientY:r.y+r.height/2,screenX:screenX+r.x+r.width/2,screenY:screenY+r.y+r.height/2}));})()`);
+    await win.webContents.executeJavaScript(`(() => {const r=document.getElementById('preview').getBoundingClientRect();document.getElementById('preview').dispatchEvent(new PointerEvent('pointerenter',{clientX:r.x+r.width/2,clientY:r.y+r.height/2,screenX:100,screenY:100}));})()`);
     await wait(220);
     checks[appearance + 'StationaryPointer'] = await win.webContents.executeJavaScript(`document.getElementById('animations').hidden`);
-    await win.webContents.executeJavaScript(`(() => {const r=document.getElementById('preview').getBoundingClientRect();document.getElementById('preview').dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:r.x+r.width/2+6,clientY:r.y+r.height/2,screenX:screenX+r.x+r.width/2+6,screenY:screenY+r.y+r.height/2}));})()`);
-    await wait(200);
+    await win.webContents.executeJavaScript(`(() => {const r=document.getElementById('preview').getBoundingClientRect();document.getElementById('preview').dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:r.x+r.width/2+6,clientY:r.y+r.height/2,screenX:106,screenY:100}));})()`);
+    const hoverDeadline = Date.now() + 1200;
+    while (Date.now() < hoverDeadline && await win.webContents.executeJavaScript(`document.getElementById('animations').hidden`)) await wait(25);
     checks[appearance + 'DeliberateHover'] = await win.webContents.executeJavaScript(`!document.getElementById('animations').hidden && scrollX===0 && scrollY===0`);
     menu.hide();
     if (process.platform === 'win32') checks[appearance + 'DismissedTaskbarHidden'] = await taskbarWindowCount() === 0;
@@ -118,7 +119,9 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
   win = await show();
   checks.visibilityLabel = await win.webContents.executeJavaScript(`document.getElementById('visibility-label').textContent==='${hidden ? 'Hide pet' : 'Show pet'}'`);
   await win.webContents.executeJavaScript(`document.querySelector('[data-action=visibility]').click()`); await wait(80);
-  win = await show(); settingsWindow()!.focus(); await wait(220);
+  win = await show(); settingsWindow()!.show(); settingsWindow()!.focus();
+  const blurDeadline = Date.now() + 2000;
+  while (menu.visible && Date.now() < blurDeadline) await wait(25);
   checks.blurCloses = !menu.visible && await win.webContents.executeJavaScript(`document.body.hasAttribute('data-closed') && getComputedStyle(document.getElementById('primary')).visibility==='hidden'`);
   const senderWin = await show();
   await senderWin.webContents.executeJavaScript(`window.petMenu.action('invalid')`); await wait(80);

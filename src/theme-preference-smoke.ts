@@ -8,6 +8,16 @@ export async function runThemePreferenceSmoke(win: BrowserWindow, hover: Browser
   const checks: Record<string, boolean> = {};
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   checks.default = await win.webContents.executeJavaScript(`document.getElementById('ui-theme').value==='follow-t3-code' && !document.getElementById('theme-appearance-field').hidden && document.querySelector('#theme-modes input').disabled`);
+  checks.customPaletteIds = await win.webContents.executeJavaScript(`(() => {
+    const root=document.documentElement, original=root.dataset.theme, errors=[];
+    const onError=event=>{errors.push(event.message);event.preventDefault();};window.addEventListener('error',onError);
+    const safe=['constructor','__proto__','toString'].every(id=>{
+      root.dataset.theme=id;document.getElementById('ui-theme').dispatchEvent(new Event('change',{bubbles:true}));
+      return document.querySelector('.theme-wireframe-pane').style.getPropertyValue('--preview-canvas')==='#fafafa';
+    });
+    root.dataset.theme=original;document.getElementById('ui-theme').dispatchEvent(new Event('change',{bubbles:true}));
+    window.removeEventListener('error',onError);return safe && errors.length===0;
+  })()`);
   const save = async (theme: string, appearance: string) => {
     await win.webContents.executeJavaScript(`(() => {
       document.getElementById('general-tab').click();

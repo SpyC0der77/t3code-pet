@@ -6,7 +6,7 @@ import type { Preferences } from '../shared';
 
 type Colors = typeof defaultUiPalette.light;
 type Mode = 'light' | 'dark';
-const colorsFor = (id: string, mode: Mode): Colors => id in palettes
+const colorsFor = (id: string, mode: Mode): Colors => Object.hasOwn(palettes, id)
   ? palettes[id as keyof typeof palettes][mode] : defaultUiPalette[mode];
 const span = (className: string) => {
   const node = document.createElement('span'); node.className = className; return node;

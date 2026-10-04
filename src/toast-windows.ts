@@ -135,7 +135,8 @@ export class ToastWindows {
     const bounds = this.window.getBounds();
     const fits = screen.getAllDisplays().some(({ workArea: a }) => bounds.x >= a.x && bounds.y >= a.y && bounds.x + bounds.width <= a.x + a.width && bounds.y + bounds.height <= a.y + a.height);
     if (fits) return;
-    const pet = this.pet()?.getBounds();
+    const candidate = this.pet();
+    const pet = candidate && !candidate.isDestroyed() ? candidate.getBounds() : undefined;
     const area = pet ? screen.getDisplayMatching(pet).workArea : screen.getPrimaryDisplay().workArea;
     this.placement = toastPlacement(area, pet);
     this.window.setBounds(this.placement.bounds);
