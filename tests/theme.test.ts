@@ -159,10 +159,13 @@ test('the live watcher publishes a theme edit without status polling or restarti
   const changes: string[] = [];
   const sync = new T3ThemeSync(() => root, () => root, () => false, theme => changes.push(theme.id), null);
   t.after(() => { sync.dispose(); rmSync(root, { recursive: true, force: true }); });
+  // Let the native watcher start before editing. macOS directory events can
+  // be batched, especially while the rest of the CI suite is running.
+  await new Promise<void>(resolve => setImmediate(resolve));
   writeFileSync(join(directory, '000002.log'), log({ 't3code:theme': 'iris' }, 100n));
-  const deadline = Date.now() + 2000;
+  const deadline = Date.now() + 10_000;
   while (!changes.includes('iris') && Date.now() < deadline) await new Promise(r => setTimeout(r, 20));
-  assert.deepEqual(changes, ['ember', 'iris']);
+  assert.deepEqual(changes, ['ember', 'iris'], 'Native filesystem events must publish the edit without periodic refresh.');
 });
 
 test('custom themes retain warning colors and both preview variants, including mixed halves', () => {
