@@ -58,34 +58,42 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     checks[appearance + 'Bounds'] = bounds.x >= area.x && bounds.y >= area.y && bounds.x + bounds.width <= area.x + area.width && bounds.y + bounds.height <= area.y + area.height;
     await win.webContents.executeJavaScript(`window.petToast.pause(true)`);
     checks[appearance + 'Paused'] = toasts.state.entries.every(entry => entry.resumedAt === null);
-    if (appearance === 'light') {
-      await win.webContents.executeJavaScript(`(() => {
-        const content=document.querySelector('.content');
-        content.querySelector('.description').textContent='Long notification text '.repeat(150);
-        content.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch',pointerId:42,button:0,clientX:100,clientY:50}));
-      })()`);
-      await wait(200);
-      checks.touchContent = await win.webContents.executeJavaScript(`(() => {
-        const content=document.querySelector('.content');
-        return !document.querySelector('[data-dragging]') && content.scrollHeight>content.clientHeight && getComputedStyle(document.querySelector('.toast')).touchAction==='pan-y';
-      })()`);
-      const scrollPoint = await win.webContents.executeJavaScript(`(() => {const r=document.querySelector('.content').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
-      await win.webContents.debugger.sendCommand('Emulation.setTouchEmulationEnabled', { enabled: true });
-      await win.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...scrollPoint, id: 1 }] });
-      for (let distance = 10; distance <= 80; distance += 10) {
-        await win.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: scrollPoint.x, y: scrollPoint.y - distance, id: 1 }] });
-        await wait(25);
-      }
-      await win.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      await wait(100);
-      checks.touchScroll = await win.webContents.executeJavaScript(`document.querySelector('.content').scrollTop>0 && !document.querySelector('[data-dragging]')`);
-    }
     await win.webContents.executeJavaScript(`document.querySelector('.${appearance === 'light' ? 'dismiss' : 'open'}').click()`);
     await wait(60);
     checks.animatedDismiss = await win.webContents.executeJavaScript(`!!document.querySelector('[data-ending]') && Number(getComputedStyle(document.querySelector('.toast')).opacity)<1`);
     await wait(550);
     checks[appearance + 'Dismissed'] = win.isDestroyed();
   }
+  // Use real long content so layout sizes the card before touch hit testing.
+  const touchWin = toasts.show({ threadId: 'touch-scroll', title: 'Long notification',
+    body: 'Long notification text '.repeat(150), kind: 'Approval needed' }, true);
+  await enableMotion(touchWin); await wait(650);
+  toasts.capture(touchWin.webContents, true);
+  await touchWin.webContents.executeJavaScript(`(() => {
+    const content=document.querySelector('.content');
+    content.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch',pointerId:42,button:0,clientX:100,clientY:50}));
+  })()`);
+  await wait(100);
+  checks.touchContent = await touchWin.webContents.executeJavaScript(`(() => {
+    const content=document.querySelector('.content');
+    return !document.querySelector('[data-dragging]') && content.scrollHeight>content.clientHeight && getComputedStyle(document.querySelector('.toast')).touchAction==='pan-y';
+  })()`);
+  const scrollPoint = await touchWin.webContents.executeJavaScript(`(() => {const r=document.querySelector('.content').getBoundingClientRect();return {x:r.x+r.width/2,y:r.bottom-12};})()`);
+  await touchWin.webContents.debugger.sendCommand('Emulation.setTouchEmulationEnabled', { enabled: true });
+  await touchWin.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...scrollPoint, id: 1 }] });
+  for (let distance = 10; distance <= 80; distance += 10) {
+    await touchWin.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: scrollPoint.x, y: scrollPoint.y - distance, id: 1 }] });
+    await wait(25);
+  }
+  await touchWin.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await wait(100);
+  checks.touchScroll = await touchWin.webContents.executeJavaScript(`document.querySelector('.content').scrollTop>0 && !document.querySelector('[data-dragging]')`);
+  writeFileSync(join(directory, 'notification-touch.json'), JSON.stringify(await touchWin.webContents.executeJavaScript(`(() => {
+    const content=document.querySelector('.content'), r=content.getBoundingClientRect();
+    return {scrollTop:content.scrollTop,scrollHeight:content.scrollHeight,clientHeight:content.clientHeight,
+      top:r.top,bottom:r.bottom,viewportHeight:innerHeight,dragging:!!document.querySelector('[data-dragging]')};
+  })()`), null, 2));
+  toasts.capture(touchWin.webContents, false); toasts.clear();
   // Resume updates must still reach the compositor during its empty exit delay.
   const emptyHost = toasts.show({ threadId: 'pause-regression', title: 'Finished', body: 'Done', kind: 'Turn finished' });
   await wait(100);
