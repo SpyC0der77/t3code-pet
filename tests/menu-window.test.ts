@@ -8,7 +8,7 @@ import type { PetMenu, PetMenuView } from '../src/pet-menu';
 const source = buildSync({ entryPoints: ['src/pet-menu.ts'], bundle: true, write: false,
   platform: 'node', format: 'cjs', external: ['electron'] }).outputFiles[0].text;
 
-function fixture(platform = process.platform) {
+function fixture(platform: NodeJS.Platform = 'win32') {
   let menu: PetMenu;
   const windows: Window[] = [];
   const cursor = { x: 100, y: 100 };
@@ -68,7 +68,7 @@ function fixture(platform = process.platform) {
   return { menu, windows, cursor };
 }
 
-test('menu stays out of taskbar through warmup, keyboard focus, dismissal and repeated openings', async t => {
+test('Windows menu stays out of taskbar through warmup, keyboard focus, dismissal and repeated openings', async t => {
   const { menu, windows } = fixture();
   t.after(() => menu.dispose());
   for (let opening = 0; opening < 3; opening++) {
