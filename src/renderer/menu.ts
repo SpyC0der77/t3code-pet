@@ -8,6 +8,7 @@ declare global { interface Window { petMenu: {
   get(): Promise<PetMenuView>; onUpdate(listener: (view: PetMenuView) => void): () => void;
   size(main: number, sub: number, top: number): void;
   painted(sequence: number, layout: string): void;
+  pointer(): void;
   action(action: MenuAction, mood?: PetMood | null): void; close(): void;
 }; } }
 const primary = document.getElementById('primary')!;
@@ -72,6 +73,9 @@ function setOpen(value: boolean, keyboard = false) {
   focusSubmenu = value && keyboard;
   if (!value) { primary.classList.remove('concealed'); primary.inert = false; }
   measure();
+  if (focusSubmenu && view?.layout.sub && submenu.style.visibility === 'visible') {
+    focusSubmenu = false; focus(buttons(submenu).find(node => node !== back) ?? buttons(submenu)[0]!);
+  }
   if (keyboard && !value) focus(trigger);
 }
 function render(next: PetMenuView) {
@@ -148,6 +152,8 @@ document.addEventListener('keydown', event => {
   }
 });
 document.addEventListener('pointerdown', event => { if (!(event.target as Element).closest('.popup')) window.petMenu.close(); });
+// Forwarded native mouse movement enables a panel before the next click.
+document.addEventListener('pointermove', () => window.petMenu.pointer());
 document.addEventListener('contextmenu', event => event.preventDefault());
 new ResizeObserver(measure).observe(primary);
 new ResizeObserver(measure).observe(submenu);

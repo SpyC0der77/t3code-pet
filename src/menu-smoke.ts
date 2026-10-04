@@ -58,6 +58,10 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
     const hoverDeadline = Date.now() + 1200;
     while (Date.now() < hoverDeadline && await win.webContents.executeJavaScript(`document.getElementById('animations').hidden`)) await wait(25);
     checks[appearance + 'DeliberateHover'] = await win.webContents.executeJavaScript(`!document.getElementById('animations').hidden && scrollX===0 && scrollY===0`);
+    await win.webContents.executeJavaScript(`document.getElementById('preview').focus()`);
+    win.webContents.sendInputEvent({type:'keyDown',keyCode:'Right'}); win.webContents.sendInputEvent({type:'keyUp',keyCode:'Right'});
+    await wait(80);
+    checks[appearance + 'HoverKeyboard'] = await win.webContents.executeJavaScript(`document.activeElement.dataset.mood==='idle'`);
     menu.hide();
     if (process.platform === 'win32') checks[appearance + 'DismissedTaskbarHidden'] = await taskbarWindowCount() === 0;
   }

@@ -42,14 +42,15 @@ function actionLabel() {
 }
 function updateStepControls() {
   document.querySelectorAll<HTMLButtonElement>('.steps button').forEach((control, i) => {
-    control.disabled = busy || step === 4 || i >= step;
+    control.disabled = busy || !initialized || step === 4 || i >= step;
   });
 }
 function setBusy(value: boolean) {
   busy = value;
-  for (const control of document.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select')) control.disabled = value;
-  themeControls.update(value);
-  login.disabled = value || !state?.supportsLoginStartup;
+  const blocked = value || !initialized;
+  for (const control of document.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select')) control.disabled = blocked;
+  themeControls.update(blocked);
+  login.disabled = blocked || !state?.supportsLoginStartup;
   actionLabel();
   renderSetup();
   updateStepControls();
@@ -85,7 +86,7 @@ async function checkSetup() {
 }
 function render(value: AppState) {
   applyUiTheme(value.theme);
-  themeControls.update(busy);
+  themeControls.update(busy || !initialized, value.theme);
   state = value;
   if (!initialized) {
     themeControls.hydrate(value.preferences);
@@ -96,7 +97,7 @@ function render(value: AppState) {
     login.checked = value.preferences.launchAtLogin;
     notificationChoices.reset(value.preferences.notificationStyle);
     updatePet(); initialized = true;
-    syncDropdowns();
+    setBusy(busy);
   }
   login.disabled = busy || !value.supportsLoginStartup;
   login.closest('label')!.title = value.supportsLoginStartup ? '' : 'Login startup is unavailable on this system.';
@@ -105,6 +106,7 @@ function render(value: AppState) {
 }
 window.pet.onState(render);
 element('ui-theme').addEventListener('change', () => { themeControls.update(busy); syncDropdowns(); });
+setBusy(false);
 void window.pet.getState().then(async value => { render(value); await checkSetup(); }).catch(showError);
 void loadSprites().then(() => {
   const start = performance.now();
@@ -137,13 +139,13 @@ button('retry').addEventListener('click', async () => {
   try { await checkSetup(); } catch (error) { showError(error); } finally { setBusy(false); }
 });
 button('skip').addEventListener('click', async () => {
-  if (busy) return;
+  if (busy || !initialized) return;
   setBusy(true); clearError();
   try { await window.pet.finishOnboarding('keep'); window.pet.showSettings(); }
   catch (error) { showError(error); } finally { setBusy(false); }
 });
 element('onboarding-form').addEventListener('submit', async event => {
-  event.preventDefault(); if (busy) return;
+  event.preventDefault(); if (busy || !initialized) return;
   clearError(); setBusy(true);
   const previousStep = step;
   try {

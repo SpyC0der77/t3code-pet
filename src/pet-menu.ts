@@ -4,7 +4,7 @@ import type { AppState, PetMood } from './shared';
 import { menuPlacement } from './menu-layout';
 
 export type MenuAction = 'visibility' | 'settings' | 'notifications' | 'preview' | 'reset' | 'quit';
-export interface PetMenuData { state: AppState; hidden: boolean; previewMood: PetMood | null; fullscreenFailed: boolean; }
+export interface PetMenuData { state: AppState; hidden: boolean; previewMood: PetMood | null; }
 export interface PetMenuView extends PetMenuData { layout: ReturnType<typeof menuPlacement>; sequence: number; }
 export class PetMenu {
   window: BrowserWindow | null = null;
@@ -17,6 +17,8 @@ export class PetMenu {
   private sequence = 0;
   private opening?: { sequence: number; resolve: () => void; timer: ReturnType<typeof setTimeout> };
   private blurTimer?: ReturnType<typeof setTimeout>;
+  private pointerTimer?: ReturnType<typeof setInterval>;
+  private interactive = false;
   constructor(private data: () => PetMenuData, private action: (action: MenuAction, mood: PetMood | null) => void) {}
   get visible() { return this.requested; }
   private prepare() {
@@ -68,24 +70,33 @@ export class PetMenu {
   painted(sequence: number, layout: string) {
     if (!this.opening || this.opening.sequence !== sequence || !this.requested || !this.window || layout !== JSON.stringify(this.view().layout)) return;
     const opening = this.opening; this.opening = undefined; clearTimeout(opening.timer);
-    // Accept native mouse input before revealing the menu. Cursor polling can
-    // leave a visible row click-through when the user moves and clicks quickly.
     this.window.setFocusable(true);
     // On Windows, changing focusability resets the native taskbar policy.
     // Restore it before focusing so keyboard navigation has no taskbar entry.
     this.window.setSkipTaskbar(true);
-    this.window.setIgnoreMouseEvents(false);
+    this.checkPointer();
+    this.pointerTimer = setInterval(() => this.checkPointer(), 10);
     this.window.webContents.send('menu:visible', true);
     this.window.focus();
     opening.resolve();
   }
   isSender(sender: WebContents) { return !!this.window && !this.window.isDestroyed() && this.window.webContents === sender; }
+  checkPointer() {
+    if (!this.requested || this.opening || !this.window || this.window.isDestroyed()) return;
+    const cursor = screen.getCursorScreenPoint(), layout = menuPlacement(this.area, this.point, this.heights);
+    const x = cursor.x - layout.bounds.x, y = cursor.y - layout.bounds.y;
+    const panels = layout.stacked && layout.sub ? [layout.sub] : [layout.main, layout.sub];
+    const inside = panels.some(rect => rect && x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height);
+    if (inside === this.interactive) return;
+    this.interactive = inside;
+    this.window.setIgnoreMouseEvents(!inside, { forward: true });
+  }
   view(): PetMenuView { return { ...this.data(), layout: menuPlacement(this.area, this.point, this.heights), sequence: this.sequence }; }
   resize(main: number, sub: number, top: number) {
     if (!this.requested) return;
     const next = { main: Math.ceil(main), sub: Math.ceil(sub), top: Math.ceil(top) };
     if (JSON.stringify(next) === JSON.stringify(this.heights)) return;
-    this.heights = next; this.position(); this.publish();
+    this.heights = next; this.position(); this.publish(); this.checkPointer();
   }
   private position() {
     if (!this.window) return;
@@ -98,6 +109,8 @@ export class PetMenu {
     if (this.blurTimer) clearTimeout(this.blurTimer);
     this.blurTimer = undefined;
     this.requested = false;
+    if (this.pointerTimer) clearInterval(this.pointerTimer);
+    this.pointerTimer = undefined; this.interactive = false;
     if (this.opening) { clearTimeout(this.opening.timer); this.opening.resolve(); this.opening = undefined; }
     if (this.window && !this.window.isDestroyed()) {
       if(this.ready) this.window.webContents.send('menu:visible', false);

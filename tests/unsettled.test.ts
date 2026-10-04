@@ -82,3 +82,11 @@ test('missing and cyclic lineage never drops or duplicates chats', () => {
   assert.equal(new Set(rows.map(row => row.thread.id)).size, 4);
   assert.equal(rows.find(row => row.thread.id === 'orphan')?.parentTitle, 'Filtered parent');
 });
+
+test('cyclic lineage preserves each thread settlement instead of inheriting another node', () => {
+  const a = thread({ id: 'a', parentThreadId: 'b', settledOverride: 'settled' });
+  const b = thread({ id: 'b', parentThreadId: 'a' });
+  const rows = inheritSubagentSettlement([a, b]);
+  assert.equal(rows[1].settledOverride, b.settledOverride);
+  assert.deepEqual(unsettledChats(rows, now).map(row => row.thread.id), ['b']);
+});

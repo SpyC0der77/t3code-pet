@@ -8,6 +8,7 @@ export interface UiTheme {
   source: 'light' | 'dark' | 'system';
   id: string;
   colors: Record<string, string>;
+  previewColors?: { light: Record<string, string>; dark: Record<string, string> };
   fontFamily: string;
   fontSize: number;
 }
@@ -17,7 +18,7 @@ function json(raw: string | undefined, fallback: any): any { try { return JSON.p
 const record = (value: any): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);
 function overrides(value: unknown) {
   if (!record(value)) return {};
-  return Object.fromEntries(Object.keys(stock.light).filter(key => typeof value[key] === 'string' && value[key].length <= 200).map(key => [key, value[key]]));
+  return Object.fromEntries([...Object.keys(stock.light), 'warningForeground'].filter(key => typeof value[key] === 'string' && value[key].length <= 200).map(key => [key, value[key]]));
 }
 export function resolveUiTheme(values: Record<string, string>, systemDark: boolean, settings: Record<string, unknown> = {}): UiTheme {
   const custom = json(values['t3code:themes:v1'], []);
@@ -45,7 +46,15 @@ export function resolveUiTheme(values: Record<string, string>, systemDark: boole
     const half = record(halves) && typeof halves[mode] === 'string' ? definitions[alias(halves[mode])] : null;
     return !theme || theme.appearance === mode || record(theme.variants?.[mode]) || !!(half && (half.appearance === mode || record(half.variants?.[mode])));
   };
+  const preview = (variant: 'light' | 'dark') => {
+    const half = record(halves) && typeof halves[variant] === 'string' ? definitions[alias(halves[variant])] : null;
+    const candidate = half && (half.appearance === variant || record(half.variants?.[variant])) ? half : theme;
+    return candidate && (candidate.appearance === variant || record(candidate.variants?.[variant]))
+      ? { ...palettes['t3-chat'][variant], ...overrides(candidate.appearance === variant ? candidate.colors : candidate.variants[variant]) }
+      : stock[variant];
+  };
   return { appearance, source: mode === 'system' && supports('light') && supports('dark') ? 'system' : appearance, id: usableHalf ? halves[appearance] : selected, colors,
+    previewColors: { light: preview('light'), dark: preview('dark') },
     fontFamily: typeof settings.fontFamilySans === 'string' && settings.fontFamilySans.trim() && settings.fontFamilySans.length <= 500 ? settings.fontFamilySans : font,
     fontSize: typeof settings.fontSizeInterface === 'number' && settings.fontSizeInterface >= 10 && settings.fontSizeInterface <= 24 ? settings.fontSizeInterface : 14 };
 }

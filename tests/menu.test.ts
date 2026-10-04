@@ -17,10 +17,17 @@ test('submenu intent protects diagonal travel on either side and rejects movemen
 test('context menu and submenu fit edges, narrow monitors, and negative monitor coordinates', () => {
   for (const area of [{x:0,y:0,width:1920,height:1080}, {x:-1280,y:-300,width:1280,height:720}, {x:0,y:0,width:320,height:480}, {x:0,y:0,width:600,height:480}]) {
     for (const x of [area.x, area.x + area.width / 2, area.x + area.width]) for (const y of [area.y, area.y + area.height]) {
-      const { bounds } = menuPlacement(area, {x,y}, {main:350,sub:300,top:220});
+      const { bounds, main, sub } = menuPlacement(area, {x,y}, {main:350,sub:300,top:220});
       assert.ok(bounds.x >= area.x && bounds.y >= area.y);
       assert.ok(bounds.x + bounds.width <= area.x + area.width);
       assert.ok(bounds.y + bounds.height <= area.y + area.height);
+      for (const panel of [main, sub]) {
+        assert.ok(panel);
+        assert.ok(bounds.x + panel.x >= area.x);
+        assert.ok(bounds.y + panel.y >= area.y);
+        assert.ok(bounds.x + panel.x + panel.width <= area.x + area.width);
+        assert.ok(bounds.y + panel.y + panel.height <= area.y + area.height);
+      }
     }
   }
 });

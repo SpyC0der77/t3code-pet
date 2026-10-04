@@ -3,8 +3,9 @@
 import { themeChoices } from '../theme-options';
 import { defaultUiPalette, palettes } from '../t3-palettes';
 import type { Preferences } from '../shared';
+import type { UiTheme } from '../t3-theme';
 
-type Colors = typeof defaultUiPalette.light;
+type Colors = Record<string, string>;
 type Mode = 'light' | 'dark';
 const colorsFor = (id: string, mode: Mode): Colors => Object.hasOwn(palettes, id)
   ? palettes[id as keyof typeof palettes][mode] : defaultUiPalette[mode];
@@ -73,7 +74,9 @@ export function createThemeControls() {
   }
   follow.addEventListener('change', () => choose(theme, follow.checked ? 'follow-t3-code' : independent));
   let previewId = '';
-  function update(saving = false) {
+  let resolved: UiTheme | undefined;
+  function update(saving = false, liveTheme?: UiTheme) {
+    if (liveTheme) resolved = liveTheme;
     busy = saving;
     const following = theme.value === 'follow-t3-code';
     if (!following) independent = theme.value as Preferences['theme'];
@@ -82,11 +85,14 @@ export function createThemeControls() {
     for (const input of styles) { input.checked = input.value === theme.value; input.disabled = busy; }
     for (const { input } of modes) { input.checked = input.value === appearance.value; input.disabled = busy || following; }
     const id = following ? document.documentElement.dataset.theme ?? 'default' : theme.value;
-    if (previewId === id) return;
-    previewId = id;
+    const colors = (mode: Mode) => following && resolved
+      ? resolved.previewColors?.[mode] ?? (resolved.appearance === mode ? resolved.colors : colorsFor(id, mode)) : colorsFor(id, mode);
+    const signature = JSON.stringify([id, colors('light'), colors('dark')]);
+    if (previewId === signature) return;
+    previewId = signature;
     for (const { input, frame } of modes) frame.replaceChildren(...(input.value === 'system'
-      ? [wireframe(colorsFor(id, 'light'), 'left'), wireframe(colorsFor(id, 'dark'), 'right')]
-      : [wireframe(colorsFor(id, input.value as Mode))]));
+      ? [wireframe(colors('light'), 'left'), wireframe(colors('dark'), 'right')]
+      : [wireframe(colors(input.value as Mode))]));
   }
   theme.addEventListener('change', () => update(busy));
   appearance.addEventListener('change', () => update(busy));

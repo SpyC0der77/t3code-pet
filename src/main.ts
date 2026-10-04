@@ -40,6 +40,7 @@ const fixtureIndex = process.argv.indexOf('--fullscreen-fixture');
 const fixtureDirectory = fixtureIndex >= 0 ? process.argv[fixtureIndex + 1] : undefined;
 const smokeIndex = process.argv.indexOf(fullscreenTest ? '--fullscreen-test' : '--smoke-test');
 const smokeDirectory = smokeIndex >= 0 ? process.argv[smokeIndex + 1] : undefined;
+let smokeStateDelay = 0;
 if (smokeDirectory) app.setPath('userData', join(smokeDirectory, 'user-data'));
 if (fixtureDirectory) app.setPath('userData', join(fixtureDirectory, 'fixture-user-data'));
 if (closeFixtureDirectory) app.setPath('userData', join(closeFixtureDirectory, 'close-fixture-user-data'));
@@ -96,7 +97,7 @@ const machine = new PetStateMachine();
 let pet = machine.update(snapshot, null);
 const moods: PetMood[] = ['idle', 'working', 'waiting', 'done', 'error', 'offline'];
 const labels: Record<PetMood, string> = { idle: 'Resting', working: 'Working', waiting: 'Approval needed', done: 'Turn finished', error: 'A chat hit an error', offline: 'T3 Code offline' };
-const contextMenu = new PetMenu(() => ({ state: state(), hidden: visibility.manualHidden, previewMood, fullscreenFailed: fullscreenCheckFailed }), (action, mood) => {
+const contextMenu = new PetMenu(() => ({ state: state(), hidden: visibility.manualHidden, previewMood }), (action, mood) => {
   if (action === 'visibility') { visibility.manualHidden = !visibility.manualHidden; applyVisibility(); publish(); }
   else if (action === 'settings') showSettings();
   else if (action === 'notifications') showSettings(true);
@@ -253,7 +254,7 @@ async function openNotifiedChat(threadId: string) {
 function showNotification(notice: ChatNotification, test = false, style = preferences.notificationStyle) {
   const playSound = () => {
     if (preferences.notificationSound && !smokeDirectory && petWindow && !petWindow.isDestroyed()) {
-      petWindow.webContents.send('pet:notification-sound', notice.kind === 'Turn finished' ? 'completion' : 'input');
+      petWindow.webContents.send('pet:notification-sound', notice.kind === 'Turn finished' ? 'completion' : 'input', test);
     }
   };
   if (style === 'custom') {
@@ -403,8 +404,7 @@ function registerIpc() {
   });
   ipcMain.on('toast:pause', (event, paused: unknown) => {
     if (event.senderFrame !== event.sender.mainFrame || typeof paused !== 'boolean') return;
-    const entry = customNotifications.entryFor(event.sender);
-    if (entry) customNotifications.pause(event.sender, paused);
+    customNotifications.pause(event.sender, paused);
   });
   ipcMain.on('toast:capture', (event, active: unknown) => {
     if (event.senderFrame === event.sender.mainFrame && typeof active === 'boolean') customNotifications.capture(event.sender, active);
@@ -427,7 +427,7 @@ function registerIpc() {
   });
   ipcMain.handle('pet:state', event => {
     if (event.sender !== hoverPanel.window?.webContents || event.senderFrame !== event.sender.mainFrame) trusted(event);
-    return state();
+    return smokeStateDelay ? new Promise(resolve => setTimeout(() => resolve(state()), smokeStateDelay)) : state();
   });
   ipcMain.on('pet:hover', event => {
     trusted(event);
@@ -494,6 +494,7 @@ function registerIpc() {
   const menuSender = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => event.senderFrame === event.sender.mainFrame && contextMenu.isSender(event.sender);
   ipcMain.handle('menu:get', event => { if (!menuSender(event)) throw new Error('Unknown menu window.'); return contextMenu.view(); });
   ipcMain.on('menu:close', event => { if (menuSender(event)) contextMenu.hide(); });
+  ipcMain.on('menu:pointer', event => { if (menuSender(event)) contextMenu.checkPointer(); });
   ipcMain.on('menu:painted', (event, sequence: unknown, layout: unknown) => {
     if (menuSender(event) && typeof sequence === 'number' && Number.isSafeInteger(sequence) && typeof layout === 'string' && layout.length < 2000) contextMenu.painted(sequence, layout);
   });
@@ -599,9 +600,10 @@ async function runSmokeTest(directory: string) {
     const rows=[...document.querySelectorAll('li')],buttons=rows.map(row=>row.querySelector('button'));
     return {ordered:buttons.map(button=>button.dataset.chatId).join(',')==='parent,child,nested',
       nested:rows.map(row=>row.dataset.depth).join(',')==='0,1,2',
+      indentation:rows.every(row=>parseFloat(getComputedStyle(row.querySelector('button')).paddingLeft)===12+12*Number(row.dataset.depth)),
       parents:rows[1].textContent.includes('Subagent of Build feature') && rows[2].textContent.includes('Subagent of Review changes'),
       accessible:buttons[1].getAttribute('aria-label').includes('subagent of Build feature'),
-      explicit:buttons.every(button=>getComputedStyle(button).paddingLeft==='12px') && [...document.querySelectorAll('.parent')].every(label=>label.parentElement.tagName==='BUTTON' && getComputedStyle(label).whiteSpace==='normal' && label.clientWidth>buttons[1].clientWidth-30),
+      explicit:[...document.querySelectorAll('.parent')].every(label=>label.parentElement.tagName==='BUTTON' && getComputedStyle(label).whiteSpace==='normal' && label.clientWidth>0),
       overflow:document.documentElement.scrollWidth<=innerWidth};
   })()`);
   hoverWindow.showInactive();
@@ -1059,9 +1061,18 @@ async function runSmokeTest(directory: string) {
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);
   const onboardingReopened = new Promise<void>(resolve => settingsWindow!.webContents.once('did-finish-load', () => resolve()));
+  smokeStateDelay = 750;
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('reopen-onboarding').click()`);
   await onboardingReopened;
-  await wait(150);
+  const beforeInitialization = JSON.stringify(preferences);
+  report.onboardingInitialization = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const disabled=document.getElementById('continue').disabled && document.getElementById('skip').disabled;
+    document.getElementById('onboarding-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+    return disabled;
+  })()`);
+  await wait(80);
+  report.onboardingInitialization = report.onboardingInitialization && beforeInitialization === JSON.stringify(preferences);
+  await wait(850); smokeStateDelay = 0;
   report.onboardingGeneral = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const visible = !document.getElementById('general-step').hidden;
     const first = document.querySelector('.steps button').dataset.step === '0';

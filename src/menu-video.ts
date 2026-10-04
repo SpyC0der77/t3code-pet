@@ -26,8 +26,9 @@ export async function runMenuVideo(menu: PetMenu, pet: BrowserWindow, directory:
   const samples: unknown[] = [];
   for (let index=0;index<3;index++) {
     await pet.webContents.executeJavaScript(`document.getElementById('cat').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,screenX:${point.x},screenY:${point.y}}))`);
-    await wait(250);
-    if(!menu.visible) throw new Error('Right-click menu did not remain visible for recording.');
+    const deadline = Date.now() + 3000;
+    while (!await win.webContents.executeJavaScript(`!document.body.hasAttribute('data-closed')`) && Date.now() < deadline) await wait(20);
+    if(!menu.visible || !await win.webContents.executeJavaScript(`!document.body.hasAttribute('data-closed')`)) throw new Error('Right-click menu did not become visible for recording.');
     await win.webContents.executeJavaScript(`(() => {const r=document.getElementById('preview').getBoundingClientRect();window.initialMenuFrames=[];const start=performance.now();const sample=()=>{const p=document.getElementById('primary').getBoundingClientRect();window.initialMenuFrames.push({time:performance.now()-start,top:p.top,left:p.left,submenu:!document.getElementById('animations').hidden,focus:document.activeElement?.id});if(performance.now()-start<900)requestAnimationFrame(sample);};sample();document.getElementById('preview').dispatchEvent(new PointerEvent('pointerenter',{clientX:r.x+r.width/2,clientY:r.y+r.height/2}));})()`);
     await wait(950);
     const initialFrames = await win.webContents.executeJavaScript(`window.initialMenuFrames`);

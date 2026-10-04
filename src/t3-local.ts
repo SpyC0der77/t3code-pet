@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { createConnection } from 'node:net';
 import type { Snapshot, ThreadStatus } from './shared';
-import { inheritSubagentSettlement } from './unsettled';
+import { inheritSubagentSettlement, type SettlementMetadata } from './unsettled';
 
 export function readThreads(databasePath: string): ThreadStatus[] {
   // Never create a missing database or issue writes against T3 Code's data.
@@ -70,6 +70,14 @@ function readV2Threads(db: DatabaseSync): ThreadStatus[] {
       AND json_extract(t.payload_json, '$.archivedAt') IS NULL
     ORDER BY t.updated_at DESC
   `).all() as unknown as (Omit<ThreadStatus, 'sessionStatus' | 'turnState'> & { runStatus: string | null })[];
+  // Archived/deleted ancestors still own settlement. Read only lineage and
+  // settlement metadata; they must not become display rows.
+  const ancestors = db.prepare(`SELECT thread_id AS id,
+    json_extract(payload_json, '$.settledOverride') AS settledOverride,
+    json_extract(payload_json, '$.snoozedUntil') AS snoozedUntil,
+    CASE WHEN json_extract(payload_json, '$.lineage.relationshipToParent') = 'subagent'
+      THEN json_extract(payload_json, '$.lineage.parentThreadId') END AS parentThreadId
+    FROM orchestration_v2_projection_threads`).all() as unknown as SettlementMetadata[];
   return inheritSubagentSettlement(rows.map(({ runStatus, ...thread }) => {
     const active = ['preparing', 'starting', 'running', 'waiting'].includes(runStatus ?? '');
     return { ...thread,
@@ -77,7 +85,7 @@ function readV2Threads(db: DatabaseSync): ThreadStatus[] {
         runStatus === 'interrupted' || runStatus === 'cancelled' ? 'stopped' : 'ready',
       turnState: active ? 'running' : runStatus === 'failed' ? 'error' : runStatus === 'cancelled' ? 'interrupted' : runStatus,
     };
-  }));
+  }), ancestors);
 }
 
 export function readProjects(databasePath: string): { id: string; name: string }[] {

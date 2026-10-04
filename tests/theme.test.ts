@@ -164,3 +164,19 @@ test('the live watcher publishes a theme edit without status polling or restarti
   while (!changes.includes('iris') && Date.now() < deadline) await new Promise(r => setTimeout(r, 20));
   assert.deepEqual(changes, ['ember', 'iris']);
 });
+
+test('custom themes retain warning colors and both preview variants, including mixed halves', () => {
+  const values = {
+    't3code:theme': 'custom', 't3code:theme-appearance-mode': 'dark',
+    't3code:themes:v1': JSON.stringify([{ id: 'custom', appearance: 'light',
+      colors: { canvas: '#faf0e0', warningForeground: '#aabbcc' },
+      variants: { dark: { canvas: '#112233', warningForeground: '#ccbbaa' } } }]),
+  };
+  const theme = resolveUiTheme(values, false);
+  assert.equal(theme.colors.warningForeground, '#ccbbaa');
+  assert.equal(theme.previewColors?.light.canvas, '#faf0e0');
+  assert.equal(theme.previewColors?.dark.canvas, '#112233');
+  const mixed = resolveUiTheme({ ...values, 't3code:theme-halves:v1': JSON.stringify({ light: 'grove' }) }, false);
+  assert.equal(mixed.previewColors?.light.canvas, palettes.grove.light.canvas);
+  assert.equal(mixed.previewColors?.dark.canvas, '#112233');
+});

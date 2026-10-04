@@ -11,6 +11,7 @@ const source = buildSync({ entryPoints: ['src/pet-menu.ts'], bundle: true, write
 function fixture() {
   let menu: PetMenu;
   const windows: Window[] = [];
+  const cursor = { x: 100, y: 100 };
   class Window {
     skipTaskbar: boolean;
     focusable: boolean;
@@ -55,11 +56,11 @@ function fixture() {
   const require = createRequire(import.meta.url);
   runInNewContext(source, { module, exports: module.exports, __dirname: 'dist',
     require: (name: string) => name === 'electron' ? { BrowserWindow: Window,
-      screen: { getCursorScreenPoint: () => ({ x: 100, y: 100 }),
+      screen: { getCursorScreenPoint: () => ({ ...cursor }),
         getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }) } } : require(name),
     setTimeout, clearTimeout, setInterval, clearInterval });
   menu = new module.exports.PetMenu(() => ({} as ReturnType<PetMenu['view']>), () => {});
-  return { menu, windows };
+  return { menu, windows, cursor };
 }
 
 test('menu stays out of taskbar through warmup, keyboard focus, dismissal and repeated openings', async t => {
@@ -110,4 +111,30 @@ test('recreated menu applies the same taskbar policy after its native window clo
   assert.equal(windows.length, 2);
   assert.equal(windows[1].skipTaskbar, true);
   assert.equal(windows[1].focusable, true);
+});
+
+test('only visible menu panels capture native clicks', async t => {
+  const { menu, windows, cursor } = fixture();
+  t.after(() => menu.dispose());
+  await menu.show();
+  const win = windows[0];
+  const layout = menu.view().layout;
+  cursor.x = layout.bounds.x + layout.main.x + 10;
+  cursor.y = layout.bounds.y + 1;
+  menu.checkPointer();
+  assert.equal(win.ignored, true, 'transparent space passes through');
+  assert.equal(win.focusable, true, 'keyboard navigation remains available');
+  cursor.y = layout.bounds.y + layout.main.y + 10;
+  menu.checkPointer();
+  assert.equal(win.ignored, false, 'main panel receives clicks');
+  menu.resize(320, 200, 80);
+  const expanded = menu.view().layout;
+  assert.ok(expanded.sub);
+  cursor.x = expanded.bounds.x + expanded.sub.x + 10;
+  cursor.y = expanded.bounds.y + expanded.sub.y + 10;
+  menu.checkPointer();
+  assert.equal(win.ignored, false, 'visible submenu receives clicks');
+  menu.resize(320, 0, 80);
+  menu.checkPointer();
+  assert.equal(win.ignored, true, 'closed submenu area passes through');
 });

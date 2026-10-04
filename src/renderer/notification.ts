@@ -122,11 +122,14 @@ function render(next: ToastView) {
     }
     const node = card.node;
     node.dataset.kind = entry.notice.kind;
-    node.querySelector('.title')!.textContent = entry.notice.title;
-    node.querySelector('.description')!.textContent = entry.notice.body;
+    const title = node.querySelector('.title')!, description = node.querySelector('.description')!;
+    if (title.textContent !== entry.notice.title) title.textContent = entry.notice.title;
+    if (description.textContent !== entry.notice.body) description.textContent = entry.notice.body;
     node.querySelector<HTMLElement>('.description')!.title = entry.notice.body;
-    node.querySelector('.status-icon')!.innerHTML = icons[entry.notice.kind] ?? icons.test!;
-    node.querySelector('.open')!.textContent = entry.test ? 'Open settings' : 'Open chat';
+    const icon = node.querySelector<HTMLElement>('.status-icon')!;
+    if (icon.dataset.kind !== entry.notice.kind) { icon.dataset.kind = entry.notice.kind; icon.innerHTML = icons[entry.notice.kind] ?? icons.test!; }
+    const action = node.querySelector('.open')!, label = entry.test ? 'Open settings' : 'Open chat';
+    if (action.textContent !== label) action.textContent = label;
   }
   let previous: ChildNode | null = null;
   const reorder = stack as HTMLElement & { moveBefore?: (node: Node, reference: Node | null) => void };
@@ -156,6 +159,7 @@ function wire(node: HTMLElement, id: number) {
   });
   node.addEventListener('pointerenter', () => { hovered = true; interaction(); });
   node.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'touch' && (event.target as Element).closest('.content')) return;
     if (event.button !== 0 || drag || node.hasAttribute('data-behind') || (event.target as Element).closest('button')) return;
     drag = { id, pointer: event.pointerId, x: event.clientX, y: event.clientY, last: 0, lastTime: performance.now(), velocity: 0 };
     node.dataset.dragging = '';

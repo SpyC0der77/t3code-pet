@@ -38,7 +38,6 @@ h1:focus { outline: none; }
 .pet-size select { width: 150px; }
 .pet-motion { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 16px 0 0; }
 .pet-motion input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
-.appearance-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 .pet-preview canvas { width: 96px; height: 96px; image-rendering: auto; flex-shrink: 0; }
 .pet-preview canvas[data-character=lfg] { image-rendering: pixelated; }
 .instructions-list { margin: 0; flex: 1; }

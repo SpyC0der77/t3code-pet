@@ -69,3 +69,19 @@ test('warmup stays hidden and a cancelled hover cannot reopen after loading', as
   panel.show();
   assert.equal(windows[0].visible, false);
 });
+
+test('ready-to-show retries a first hover ignored before native initialization', async t => {
+  const { panel, windows, finish } = fixture();
+  t.after(() => panel.dispose());
+  panel.show();
+  const win = windows[0];
+  const show = win.showInactive.bind(win);
+  let attempts = 0;
+  win.showInactive = () => { if (++attempts > 1) show(); };
+  finish(); await panel.prepare();
+  assert.equal(win.visible, false);
+  win.events.get('ready-to-show')?.();
+  assert.equal(win.visible, true);
+  panel.hide(); win.events.get('ready-to-show')?.();
+  assert.equal(win.visible, false, 'a cancelled hover stays hidden');
+});

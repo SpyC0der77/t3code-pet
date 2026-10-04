@@ -32,6 +32,10 @@ test('resolved attention disappears and an offline snapshot preserves it', () =>
   state.add(notice('a', 'Input needed'), false, 0);
   thread.pendingInput = 1;
   state.reconcile(snapshot); assert.equal(state.entries.length, 1);
+  thread.pendingInput = 0;
+  state.reconcile(snapshot); assert.equal(state.entries.length, 0);
+  state.add(notice('a', 'Input needed'), false, 0);
+  thread.pendingInput = 1;
   state.reconcile({...snapshot, threads:[]}); assert.equal(state.entries.length, 0);
 });
 

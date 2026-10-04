@@ -92,6 +92,19 @@ test('v2 extracts subagent lineage metadata, inherits settlement, and keeps fork
   assert.equal(rows.get('fork')?.parentThreadId, null);
   assert.equal(rows.get('fork')?.settledOverride, null);
   assert.deepEqual(readFileSync(file), before);
+  for (const column of ['archived_at', 'deleted_at']) {
+    db.exec(`UPDATE orchestration_v2_projection_threads SET ${column}='2026-10-03' WHERE thread_id IN ('a','child')`);
+    const hidden = new Map(readThreads(file).map(thread => [thread.id, thread]));
+    assert.equal(hidden.has('a'), false);
+    assert.equal(hidden.has('child'), false);
+    assert.equal(hidden.get('nested')?.settledOverride, 'settled');
+    db.exec(`UPDATE orchestration_v2_projection_threads SET ${column}=NULL`);
+  }
+  db.prepare('UPDATE orchestration_v2_projection_threads SET payload_json=? WHERE thread_id=?')
+    .run(JSON.stringify({ archivedAt: '2026-10-03', snoozedUntil: '2099-01-01T00:00:00Z' }), 'a');
+  const snoozed = new Map(readThreads(file).map(thread => [thread.id, thread]));
+  assert.equal(snoozed.has('a'), false);
+  assert.equal(snoozed.get('nested')?.snoozedUntil, '2099-01-01T00:00:00Z');
 });
 
 test('local adapter reads metadata without changing database bytes', t => {

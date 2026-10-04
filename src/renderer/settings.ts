@@ -195,7 +195,7 @@ tabs.forEach((tab, index) => {
 });
 function render(state: AppState) {
   applyUiTheme(state.theme);
-  themeControls.update(saving);
+  themeControls.update(saving, state.theme);
   const changed = dirty(); current = state;
   button('notification-setup').hidden = state.preferences.onboardingCompleted;
   if (!saved || (!changed && JSON.stringify(saved) !== JSON.stringify(state.preferences))) hydrate(state.preferences);

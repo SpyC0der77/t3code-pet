@@ -68,6 +68,7 @@ if (!testHover) {
   assert.ok(Object.values(report.contextMenu).every(Boolean), 'Custom context menu layout, navigation, or actions failed.');
   assert.ok(report.customNotifications.entryHeight, 'Notification entrance did not descend 32px from above its anchor.');
   assert.ok(report.customNotifications.audio, 'Packaged notification audio could not load or play.');
+  for (const key of ['touchContent', 'touchScroll', 'stableAnnouncements', 'emptyStackResumes', 'emptyStackExpires', 'disabledAlertsSilent', 'testSound', 'mutedTestSilent']) assert.equal(report.customNotifications[key], true, `Notification ${key} failed.`);
   for (const key of ['animatedDismiss', 'singleWindow', 'collapsed', 'expanded', 'stackPaused', 'reused', 'parallelExit', 'removed', 'collapses', 'keyboardExpands', 'dragHeld', 'returnAnimated', 'returned', 'inwardResisted', 'axisLocked', 'cancelled', 'waitsForRelease', 'swipeDismissed', 'nativeStable', 'bounded', 'clickThrough', 'reducedMotion', 'cleared']) assert.ok(report.customNotifications[key], `Notification ${key} failed.`);
 }
 if (testToast) {
@@ -89,6 +90,7 @@ if (testHover) {
 }
 assert.ok(Object.values(report.notificationChoice).every(Boolean), 'Notification choice did not save or discard correctly.');
 assert.ok(Object.values(report.themePreferences).every(Boolean), 'Independent theme save, discard, live updates, or follow behavior failed.');
+assert.equal(report.onboardingInitialization, true, 'Onboarding submitted unhydrated preferences.');
 assert.ok(Object.values(report.settingsDropdowns).every(Boolean), 'Custom settings dropdown accessibility, keyboard, bounds, or draft behavior failed.');
 assert.ok(Object.values(report.notificationTestPending).every(Boolean), 'A settings update re-enabled a pending test notification.');
 assert.ok(Object.values(report.onboardingDropdowns).every(Boolean), 'Custom onboarding dropdown selection or bounds failed.');

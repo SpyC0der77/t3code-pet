@@ -9,8 +9,8 @@ const notificationAudio = {
   input: new Audio('notification-input.mp3'),
 };
 for (const audio of Object.values(notificationAudio)) audio.preload = 'auto';
-window.pet.onNotificationSound(kind => {
-  if (!current?.preferences.notificationsEnabled || !current.preferences.notificationSound) return;
+window.pet.onNotificationSound((kind, test) => {
+  if (!current?.preferences.notificationSound || (!test && !current.preferences.notificationsEnabled)) return;
   // A burst should play one cue, rather than several sounds over each other.
   for (const audio of Object.values(notificationAudio)) { audio.pause(); audio.currentTime = 0; }
   void notificationAudio[kind].play().catch(error => console.error('Notification sound could not play', error));

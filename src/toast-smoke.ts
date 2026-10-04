@@ -25,6 +25,21 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     }
     return results.every(Boolean) && typeof window.pet.onNotificationSound === 'function';
   })()`);
+  const original = await pet.webContents.executeJavaScript(`window.pet.getState()`);
+  await pet.webContents.executeJavaScript(`window.soundPreviewCalls=0;window.savedAudioPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){window.soundPreviewCalls++;return Promise.resolve();};void 0;`);
+  pet.webContents.send('pet:state', { ...original, preferences: { ...original.preferences, notificationsEnabled: false, notificationSound: true } });
+  pet.webContents.send('pet:notification-sound', 'input', false);
+  await wait(50);
+  checks.disabledAlertsSilent = await pet.webContents.executeJavaScript(`window.soundPreviewCalls===0`);
+  pet.webContents.send('pet:notification-sound', 'input', true);
+  await wait(50);
+  checks.testSound = await pet.webContents.executeJavaScript(`window.soundPreviewCalls===1`);
+  pet.webContents.send('pet:state', { ...original, preferences: { ...original.preferences, notificationsEnabled: false, notificationSound: false } });
+  pet.webContents.send('pet:notification-sound', 'input', true);
+  await wait(50);
+  checks.mutedTestSilent = await pet.webContents.executeJavaScript(`window.soundPreviewCalls===1`);
+  await pet.webContents.executeJavaScript(`HTMLMediaElement.prototype.play=window.savedAudioPlay;delete window.savedAudioPlay;delete window.soundPreviewCalls;`);
+  pet.webContents.send('pet:state', original);
   for (const appearance of ['light', 'dark'] as const) {
     await theme(appearance);
     const win = toasts.show({ threadId: '', title: 'Approval needed', body: 'Update the notification settings', kind: 'Approval needed' }, true);
@@ -43,12 +58,46 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     checks[appearance + 'Bounds'] = bounds.x >= area.x && bounds.y >= area.y && bounds.x + bounds.width <= area.x + area.width && bounds.y + bounds.height <= area.y + area.height;
     await win.webContents.executeJavaScript(`window.petToast.pause(true)`);
     checks[appearance + 'Paused'] = toasts.state.entries.every(entry => entry.resumedAt === null);
+    if (appearance === 'light') {
+      await win.webContents.executeJavaScript(`(() => {
+        const content=document.querySelector('.content');
+        content.querySelector('.description').textContent='Long notification text '.repeat(150);
+        content.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch',pointerId:42,button:0,clientX:100,clientY:50}));
+      })()`);
+      await wait(200);
+      checks.touchContent = await win.webContents.executeJavaScript(`(() => {
+        const content=document.querySelector('.content');
+        return !document.querySelector('[data-dragging]') && content.scrollHeight>content.clientHeight && getComputedStyle(document.querySelector('.toast')).touchAction==='pan-y';
+      })()`);
+      const scrollPoint = await win.webContents.executeJavaScript(`(() => {const r=document.querySelector('.content').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+      await win.webContents.debugger.sendCommand('Emulation.setTouchEmulationEnabled', { enabled: true });
+      await win.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...scrollPoint, id: 1 }] });
+      for (let distance = 10; distance <= 80; distance += 10) {
+        await win.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: scrollPoint.x, y: scrollPoint.y - distance, id: 1 }] });
+        await wait(25);
+      }
+      await win.webContents.debugger.sendCommand('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await wait(100);
+      checks.touchScroll = await win.webContents.executeJavaScript(`document.querySelector('.content').scrollTop>0 && !document.querySelector('[data-dragging]')`);
+    }
     await win.webContents.executeJavaScript(`document.querySelector('.${appearance === 'light' ? 'dismiss' : 'open'}').click()`);
     await wait(60);
     checks.animatedDismiss = await win.webContents.executeJavaScript(`!!document.querySelector('[data-ending]') && Number(getComputedStyle(document.querySelector('.toast')).opacity)<1`);
     await wait(550);
     checks[appearance + 'Dismissed'] = win.isDestroyed();
   }
+  // Resume updates must still reach the compositor during its empty exit delay.
+  const emptyHost = toasts.show({ threadId: 'pause-regression', title: 'Finished', body: 'Done', kind: 'Turn finished' });
+  await wait(100);
+  await emptyHost.webContents.executeJavaScript(`window.petToast.pause(true)`);
+  toasts.dismiss(toasts.state.entries[0].id);
+  await emptyHost.webContents.executeJavaScript(`window.petToast.pause(false)`);
+  await wait(30);
+  const reusedHost = toasts.show({ threadId: 'replacement', title: 'Finished', body: 'Done', kind: 'Turn finished' });
+  checks.emptyStackResumes = reusedHost === emptyHost && toasts.state.entries[0].resumedAt !== null;
+  toasts.state.expire(Date.now() + 6000);
+  checks.emptyStackExpires = toasts.state.entries.length === 0;
+  toasts.clear();
   const notice = (threadId: string, kind = 'Turn finished') => ({ threadId, kind, title: kind, body: 'A finished chat' });
   const win = toasts.show(notice('one'));
   await enableMotion(win);
@@ -57,6 +106,9 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   await wait(650);
   const nativeBounds = win.getBounds();
   checks.singleWindow = win === same && new Set(toasts.windows.values()).size === 1;
+  await win.webContents.executeJavaScript(`window.repeatedAnnouncements=0;window.announcementObserver=new MutationObserver(records=>{window.repeatedAnnouncements+=records.length;});document.querySelectorAll('.title,.description').forEach(node=>window.announcementObserver.observe(node,{childList:true,characterData:true,subtree:true}));`);
+  toasts.publish(); await wait(50);
+  checks.stableAnnouncements = await win.webContents.executeJavaScript(`window.announcementObserver.disconnect();window.repeatedAnnouncements===0`);
   checks.collapsed = await win.webContents.executeJavaScript(`document.querySelectorAll('[data-behind]').length===2 && [...document.querySelectorAll('[data-behind]')].every(node=>node.inert)`);
   writeFileSync(join(directory, 'notification-collapsed.png'), (await win.webContents.capturePage()).toPNG());
   win.webContents.send('toast:pointer', true);

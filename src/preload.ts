@@ -3,8 +3,8 @@ import type { AppState, PetBridge } from './shared';
 
 const bridge: PetBridge = {
   onNotificationSound: listener => {
-    const handler = (_event: Electron.IpcRendererEvent, kind: unknown) => {
-      if (kind === 'completion' || kind === 'input') listener(kind);
+    const handler = (_event: Electron.IpcRendererEvent, kind: unknown, test: unknown) => {
+      if (kind === 'completion' || kind === 'input') listener(kind, test === true);
     };
     ipcRenderer.on('pet:notification-sound', handler);
     return () => ipcRenderer.removeListener('pet:notification-sound', handler);
@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('petMenu', {
   },
   size: (main: number, sub: number, top: number) => ipcRenderer.send('menu:size', main, sub, top),
   painted: (sequence: number, layout: string) => ipcRenderer.send('menu:painted', sequence, layout),
+  pointer: () => ipcRenderer.send('menu:pointer'),
   action: (action: string, mood?: string | null) => ipcRenderer.send('menu:action', action, mood),
   close: () => ipcRenderer.send('menu:close'),
 });

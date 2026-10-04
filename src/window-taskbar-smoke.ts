@@ -12,7 +12,8 @@ $count = 0
 foreach ($bar in $bars) {
   $items = $bar.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'Appid: dev.t3pet.companion'))
   foreach ($item in $items) {
-    if ($item.Current.Name -match '(\\d+) running window') { $count += [int]$Matches[1] }
+    # Match the standalone count, excluding the 3 in T3, in any shell language.
+    if ($item.Current.Name -match '\\b(\\d+)\\b') { $count += [int]$Matches[1] }
   }
 }
 $count`;

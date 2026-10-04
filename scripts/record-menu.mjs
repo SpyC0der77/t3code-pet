@@ -11,4 +11,4 @@ const app = spawn(resolve(packageDir,'win-unpacked/T3 Pet.exe'), ['--smoke-test'
 const code = await new Promise((resolve,reject)=>{app.once('exit',resolve);app.once('error',reject);});
 const videoCode = await recording;
 console.log(JSON.stringify({appExit:code,videoExit:videoCode}));
-if(code||videoCode) process.exitCode=1;
+if(code !== 0 || videoCode !== 0) process.exitCode=1;

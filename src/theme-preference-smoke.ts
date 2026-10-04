@@ -2,6 +2,7 @@ import type { BrowserWindow } from 'electron';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AppState } from './shared';
+import { resolveUiTheme } from './t3-theme';
 
 export async function runThemePreferenceSmoke(win: BrowserWindow, hover: BrowserWindow, directory: string,
   state: () => AppState, followed: (appearance: 'light' | 'dark', id: string) => Promise<void>) {
@@ -10,10 +11,11 @@ export async function runThemePreferenceSmoke(win: BrowserWindow, hover: Browser
   checks.default = await win.webContents.executeJavaScript(`document.getElementById('ui-theme').value==='follow-t3-code' && !document.getElementById('theme-appearance-field').hidden && document.querySelector('#theme-modes input').disabled`);
   checks.customPaletteIds = await win.webContents.executeJavaScript(`(() => {
     const root=document.documentElement, original=root.dataset.theme, errors=[];
+    const canvas=document.querySelector('.theme-wireframe-pane').style.getPropertyValue('--preview-canvas');
     const onError=event=>{errors.push(event.message);event.preventDefault();};window.addEventListener('error',onError);
     const safe=['constructor','__proto__','toString'].every(id=>{
       root.dataset.theme=id;document.getElementById('ui-theme').dispatchEvent(new Event('change',{bubbles:true}));
-      return document.querySelector('.theme-wireframe-pane').style.getPropertyValue('--preview-canvas')==='#fafafa';
+      return document.querySelector('.theme-wireframe-pane').style.getPropertyValue('--preview-canvas')===canvas;
     });
     root.dataset.theme=original;document.getElementById('ui-theme').dispatchEvent(new Event('change',{bubbles:true}));
     window.removeEventListener('error',onError);return safe && errors.length===0;
@@ -75,5 +77,16 @@ export async function runThemePreferenceSmoke(win: BrowserWindow, hover: Browser
   await save('follow-t3-code', 'system');
   checks.followRestored = state().theme.id === 'iris' && state().theme.appearance === 'dark' &&
     await win.webContents.executeJavaScript(`!document.getElementById('theme-appearance-field').hidden && document.querySelector('#theme-modes input').disabled`);
+  const custom = resolveUiTheme({ 't3code:theme': 'constructor', 't3code:theme-appearance-mode': 'dark',
+    't3code:themes:v1': JSON.stringify([{ id: 'constructor', appearance: 'light', colors: { canvas: '#faf0e0' },
+      variants: { dark: { canvas: '#112233', warningForeground: '#ccbbaa' } } }]) }, false);
+  win.webContents.send('pet:state', { ...state(), theme: custom });
+  await wait(80);
+  checks.customPreviews = await win.webContents.executeJavaScript(`(() => {
+    const canvas = mode => document.querySelector('#theme-modes input[value='+mode+']').parentElement.querySelector('.theme-wireframe-pane').style.getPropertyValue('--preview-canvas');
+    return canvas('light')==='#faf0e0' && canvas('dark')==='#112233' && document.documentElement.style.getPropertyValue('--warning')==='#ccbbaa';
+  })()`);
+  win.webContents.send('pet:state', state());
+  await wait(80);
   return checks;
 }

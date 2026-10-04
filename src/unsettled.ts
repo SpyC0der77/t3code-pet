@@ -1,9 +1,11 @@
 import type { ThreadStatus } from './shared';
 
-function settlementOwner(thread: ThreadStatus, byId: Map<string, ThreadStatus>) {
+export type SettlementMetadata = Pick<ThreadStatus, 'id' | 'parentThreadId' | 'settledOverride' | 'snoozedUntil'>;
+function settlementOwner(thread: SettlementMetadata, byId: Map<string, SettlementMetadata>): SettlementMetadata {
   let owner = thread;
   const seen = new Set([thread.id]);
-  while (owner.parentThreadId && !seen.has(owner.parentThreadId)) {
+  while (owner.parentThreadId) {
+    if (seen.has(owner.parentThreadId)) return thread;
     const parent = byId.get(owner.parentThreadId);
     if (!parent) break;
     seen.add(parent.id); owner = parent;
@@ -12,8 +14,8 @@ function settlementOwner(thread: ThreadStatus, byId: Map<string, ThreadStatus>) 
 }
 
 // Resolve this before chat filters remove parents from a snapshot.
-export function inheritSubagentSettlement(threads: ThreadStatus[]) {
-  const byId = new Map(threads.map(thread => [thread.id, thread]));
+export function inheritSubagentSettlement(threads: ThreadStatus[], ancestors: SettlementMetadata[] = threads) {
+  const byId = new Map(ancestors.map(thread => [thread.id, thread]));
   return threads.map(thread => {
     const owner = settlementOwner(thread, byId);
     return owner === thread ? thread : { ...thread, settledOverride: owner.settledOverride, snoozedUntil: owner.snoozedUntil };
