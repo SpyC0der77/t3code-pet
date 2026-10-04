@@ -8,7 +8,7 @@ import type { PetMenu, PetMenuView } from '../src/pet-menu';
 const source = buildSync({ entryPoints: ['src/pet-menu.ts'], bundle: true, write: false,
   platform: 'node', format: 'cjs', external: ['electron'] }).outputFiles[0].text;
 
-function fixture() {
+function fixture(platform = process.platform) {
   let menu: PetMenu;
   const windows: Window[] = [];
   const cursor = { x: 100, y: 100 };
@@ -16,6 +16,7 @@ function fixture() {
     skipTaskbar: boolean;
     focusable: boolean;
     focused = false;
+    visible = false;
     ignored = true;
     destroyed = false;
     calls: string[] = [];
@@ -40,8 +41,11 @@ function fixture() {
     getBounds() { return this.bounds; }
     setBounds(bounds: typeof this.bounds) { this.bounds = bounds; }
     async loadFile() {}
-    showInactive() { assert.equal(this.skipTaskbar, true, 'compositor warmup must skip taskbar'); }
+    isVisible() { return this.visible; }
+    showInactive() { this.visible = true; assert.equal(this.skipTaskbar, true, 'compositor warmup must skip taskbar'); }
+    hide() { this.visible = false; this.focused = false; }
     setFocusable(value: boolean) {
+      if (platform === 'linux') return;
       this.focusable = value;
       // Reproduce Electron's Windows side effect, rather than treating the
       // constructor's skipTaskbar option as a permanent guarantee.
@@ -55,6 +59,7 @@ function fixture() {
   const module = { exports: {} as { PetMenu: typeof PetMenu } };
   const require = createRequire(import.meta.url);
   runInNewContext(source, { module, exports: module.exports, __dirname: 'dist',
+    process: { platform },
     require: (name: string) => name === 'electron' ? { BrowserWindow: Window,
       screen: { getCursorScreenPoint: () => ({ ...cursor }),
         getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }) } } : require(name),
@@ -137,4 +142,19 @@ test('only visible menu panels capture native clicks', async t => {
   menu.resize(320, 0, 80);
   menu.checkPointer();
   assert.equal(win.ignored, true, 'closed submenu area passes through');
+});
+
+test('Linux menu starts focusable and hides its native canvas between openings', async t => {
+  const { menu, windows } = fixture('linux');
+  t.after(() => menu.dispose());
+  for (let opening = 0; opening < 2; opening++) {
+    await menu.show();
+    const win = windows[0];
+    assert.equal(win.focusable, true, 'Linux cannot change focusability after construction');
+    assert.equal(win.visible, true);
+    assert.equal(win.focused, true);
+    menu.hide();
+    assert.equal(win.visible, false, 'closed Linux menu cannot retain native focus');
+    assert.equal(win.ignored, true);
+  }
 });

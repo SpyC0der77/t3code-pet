@@ -135,7 +135,7 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
   checks.petEntry = menu.visible && await win.webContents.executeJavaScript(`!document.body.hasAttribute('data-closed')`);
   menu.hide();
   await wait(80);
-  checks.canvasClosed = win.isVisible() && !menu.visible && await win.webContents.executeJavaScript(`document.body.hasAttribute('data-closed')`);
+  checks.canvasClosed = win.isVisible() === (process.platform !== 'linux') && !menu.visible && await win.webContents.executeJavaScript(`document.body.hasAttribute('data-closed')`);
   if (petWasVisible) pet.showInactive(); else pet.hide();
   await wait(100);
   return checks;

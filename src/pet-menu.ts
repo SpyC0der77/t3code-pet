@@ -25,7 +25,9 @@ export class PetMenu {
     if (this.window && !this.window.isDestroyed()) return this.loading!;
     const win = this.window = new BrowserWindow({ width: 264, height: 320, frame: false, show: false,
       resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
-      skipTaskbar: true, alwaysOnTop: true, focusable: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
+      // Linux cannot change focusability after creation. Hide its native
+      // window between openings instead of leaving a focusable empty canvas.
+      skipTaskbar: true, alwaysOnTop: true, focusable: process.platform === 'linux', transparent: true, backgroundColor: '#00000000', hasShadow: false,
       webPreferences: { preload: join(__dirname, 'preload.cjs'), sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
     });
     win.setMenu(null); win.setAlwaysOnTop(true, 'pop-up-menu');
@@ -77,6 +79,7 @@ export class PetMenu {
     this.checkPointer();
     this.pointerTimer = setInterval(() => this.checkPointer(), 10);
     this.window.webContents.send('menu:visible', true);
+    if (!this.window.isVisible()) this.window.showInactive();
     this.window.focus();
     opening.resolve();
   }
@@ -117,6 +120,7 @@ export class PetMenu {
       this.window.setFocusable(false);
       this.window.setSkipTaskbar(true);
       this.window.setIgnoreMouseEvents(true, {forward:true});
+      if (process.platform === 'linux') this.window.hide();
     }
   }
   dispose() { this.hide(); this.window?.destroy(); }
