@@ -12,11 +12,12 @@ test('notification capture restores pass-through and never forwards competing cu
   const module = { exports: {} as { ToastWindows: new (...args: unknown[]) => ToastWindows } };
   const require = createRequire(import.meta.url);
   const cursor = { x: 50, y: 50 };
+  let cursorReads = 0;
   const calls: { ignore: boolean; options: unknown }[] = [];
   const hover: boolean[] = [];
   const sender = { send: (_channel: string, inside: boolean) => hover.push(inside) };
   runInNewContext(source, { module, exports: module.exports, __dirname: '.',
-    require: (name: string) => name === 'electron' ? { screen: { getCursorScreenPoint: () => cursor } } : require(name) });
+    require: (name: string) => name === 'electron' ? { screen: { getCursorScreenPoint: () => { cursorReads++; return cursor; } } } : require(name) });
   const toasts = new module.exports.ToastWindows(() => null, () => ({}), () => {}, () => {});
   Object.assign(toasts, { ready: true, window: {
     isDestroyed: () => false, getBounds: () => ({ x: 0, y: 0 }), webContents: sender,
@@ -37,9 +38,13 @@ test('notification capture restores pass-through and never forwards competing cu
   assert.deepEqual(calls.map(c => c.ignore), [false, true, false, true]);
   assert.deepEqual(hover, [true, false], 'Capture alone must not invent physical hover transitions.');
   toasts.pointerTracking = false;
+  const readsBeforeCapture = cursorReads;
   toasts.capture(wc, true);
+  assert.equal(cursorReads, readsBeforeCapture, 'Synthetic capture must not read the desktop cursor.');
   toasts.hitTest(wc, area);
+  assert.equal(cursorReads, readsBeforeCapture, 'Disabled pointer tracking must not read the desktop cursor.');
   toasts.capture(wc, false);
+  assert.equal(cursorReads, readsBeforeCapture, 'Synthetic capture release must not read the desktop cursor.');
   assert.deepEqual(calls.map(c => c.ignore), [false, true, false, true, false, true]);
   assert.deepEqual(hover, [true, false], 'Synthetic gestures must not sample the unrelated desktop pointer.');
   assert.ok(calls.every(c => c.options === undefined));
