@@ -58,6 +58,8 @@ try {
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+assert.ok(report.windowIcon.loaded && report.windowIcon.transparent && report.windowIcon.visible, 'Packaged taskbar icon failed to load with transparency.');
+if (process.platform === 'win32') assert.equal(report.windowIcon.path, join(dirname(executable), 'resources', 'icon.ico'), 'Windows taskbar icon must use the persistent shell resource.');
 assert.notEqual(report.hoverOpened, false, 'The first hover did not show the native chat-list window.');
 if (!testHover) assert.notEqual(report.hoverAfterMenu, false, 'Hover did not reopen after context-menu dismissal.');
 assert.ok(Object.values(report.hoverHierarchy).every(Boolean), 'Subagent hover ordering, labels, or layout failed.');
@@ -69,7 +71,7 @@ if (!testHover) {
   assert.ok(report.customNotifications.entryHeight, 'Notification entrance did not descend 32px from above its anchor.');
   assert.ok(report.customNotifications.audio, 'Packaged notification audio could not load or play.');
   for (const key of ['touchContent', 'touchScroll', 'stableAnnouncements', 'emptyStackResumes', 'emptyStackExpires', 'disabledAlertsSilent', 'testSound', 'mutedTestSilent']) assert.equal(report.customNotifications[key], true, `Notification ${key} failed.`);
-  for (const key of ['animatedDismiss', 'singleWindow', 'collapsed', 'expanded', 'stackPaused', 'reused', 'parallelExit', 'removed', 'collapses', 'keyboardExpands', 'dragHeld', 'returnAnimated', 'returned', 'inwardResisted', 'axisLocked', 'cancelled', 'waitsForRelease', 'swipeDismissed', 'nativeStable', 'bounded', 'clickThrough', 'reducedMotion', 'cleared']) assert.ok(report.customNotifications[key], `Notification ${key} failed.`);
+  for (const key of ['animatedDismiss', 'singleWindow', 'collapsed', 'expanded', 'stackPaused', 'reused', 'parallelExit', 'removed', 'collapses', 'keyboardExpands', 'dragHeld', 'returnAnimated', 'returned', 'inwardResisted', 'axisLocked', 'cancelled', 'swipeMoved', 'waitsForRelease', 'swipeDismissed', 'nativeStable', 'bounded', 'clickThrough', 'reducedMotion', 'cleared']) assert.ok(report.customNotifications[key], `Notification ${key} failed.`);
 }
 if (testToast) {
   const checks = report.customNotifications;

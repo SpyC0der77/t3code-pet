@@ -19,7 +19,7 @@ import { runSettingsUxSmoke } from './settings-ux-smoke';
 import { runMenuVideo } from './menu-video';
 import { allowedSnapshot } from './project-filter';
 import { inspectNotifications, migrateNotifications, closeT3, consentedSwitch } from './t3-notifications';
-import { nativeHelperPath, nativeWindowId } from './platform';
+import { appIconPath, nativeHelperPath, nativeWindowId } from './platform';
 import { linuxStartupCommand, setLinuxLoginStartup } from './login-startup';
 import { PREVIEW_DURATION_MS } from './shared';
 import type { AppState, NotificationSetup, PetMood, Preferences, Snapshot } from './shared';
@@ -63,6 +63,7 @@ if (smokeDirectory) setTimeout(() => {
 }, process.argv.some(arg => ['--menu-input-test', '--hover-input-test'].includes(arg)) ? 300_000 : 60_000).unref();
 app.setName('T3 Pet');
 app.setAppUserModelId('dev.t3pet.companion');
+const windowIcon = appIconPath(join(__dirname, '..'), process.resourcesPath, app.isPackaged);
 
 let petWindow: BrowserWindow | null = null;
 let testingHover = false;
@@ -174,7 +175,7 @@ async function createPet() {
   traceSmoke('creating pet');
   petWindow = new BrowserWindow({
     ...fitPosition(preferences.position), title: 'T3 Pet', transparent: true, frame: false,
-    icon: join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    icon: windowIcon,
     resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
     hasShadow: false, alwaysOnTop: true, skipTaskbar: true, show: false,
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
@@ -185,8 +186,16 @@ async function createPet() {
   petWindow.setMenu(null);
   petWindow.setAlwaysOnTop(true, 'floating');
   petWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
-  // Electron forwards ignored mouse movement only on Windows and macOS.
-  petWindow.setIgnoreMouseEvents(process.platform !== 'linux', { forward: true });
+  // Forwarded native mouse moves let click-through windows compete with the
+  // window under the cursor. Poll coordinates instead, without cursor events.
+  petWindow.setIgnoreMouseEvents(process.platform !== 'linux');
+  const pointerWindow = petWindow;
+  const pointerTimer = setInterval(() => {
+    if (pointerWindow.isDestroyed() || !pointerWindow.isVisible() || dragTimer) return;
+    const point = screen.getCursorScreenPoint(), bounds = pointerWindow.getBounds();
+    pointerWindow.webContents.send('pet:cursor', { x: point.x - bounds.x, y: point.y - bounds.y });
+  }, 16);
+  pointerWindow.once('closed', () => clearInterval(pointerTimer));
   const ready = new Promise<void>(resolve => {
     petWindow!.once('ready-to-show', () => {
       traceSmoke('pet ready to show');
@@ -241,10 +250,16 @@ function showSettings(onboarding = false, tab?: 'notifications', approved = fals
   settingsWindow = new BrowserWindow({
     width, height, minWidth: 470, minHeight: 500, title: onboarding ? 'Set up T3 Pet' : 'T3 Pet settings',
     backgroundColor: uiTheme.appearance === 'dark' ? '#0a0a0a' : '#fafafa', autoHideMenuBar: true, show: false,
-    icon: join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    icon: windowIcon,
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   lockWindow(settingsWindow);
+  if (process.platform === 'win32') settingsWindow.setAppDetails({
+    appId: 'dev.t3pet.companion', appIconPath: windowIcon, appIconIndex: 0,
+    ...(app.isPackaged && !smokeDirectory ? {
+      relaunchCommand: `"${process.execPath}"`, relaunchDisplayName: 'T3 Pet',
+    } : {}),
+  });
   const win = settingsWindow;
   win.on('close', event => {
     if (!quitting && !onboardingView && !approvedSettingsClose && !win.webContents.isLoadingMainFrame()) {
@@ -299,7 +314,7 @@ function showNotification(notice: ChatNotification, test = false, style = prefer
   if (smokeDirectory && !process.argv.includes('--notification-smoke-test')) { traceSmoke(`notification ${notice.title}`); return null; }
   const notification = new Notification({ title: `T3 Pet \u00b7 ${notice.title}`, body: notice.body,
     silent: true,
-    ...(process.platform === 'win32' ? {} : { icon: join(__dirname, '..', 'assets', 'icon.png') }) });
+    ...(process.platform === 'win32' ? {} : { icon: join(__dirname, '..', 'assets', 'icon-transparent.png') }) });
   activeNotifications.add(notification);
   notification.on('close', () => activeNotifications.delete(notification));
   notification.on('failed', (_event, error) => {
@@ -571,7 +586,7 @@ function registerIpc() {
   });
   ipcMain.on('pet:passthrough', (event, ignore: unknown) => {
     trusted(event);
-    if (event.sender === petWindow?.webContents && typeof ignore === 'boolean' && !dragTimer && process.platform !== 'linux') petWindow?.setIgnoreMouseEvents(ignore, { forward: true });
+    if (event.sender === petWindow?.webContents && typeof ignore === 'boolean' && !dragTimer && process.platform !== 'linux') petWindow?.setIgnoreMouseEvents(ignore);
   });
   ipcMain.on('pet:drag', (event, action: unknown) => {
     trusted(event);
@@ -598,6 +613,15 @@ async function runSmokeTest(directory: string) {
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   await wait(1200);
   const report: Record<string, unknown> = { electron: process.versions.electron, sqlite: process.versions.sqlite, connected: snapshot.connected, message: snapshot.message, threadCount: snapshot.threads.length, mood: pet.mood };
+  const icon = nativeImage.createFromPath(windowIcon);
+  const pixels = icon.toBitmap();
+  let transparent = false, visible = false;
+  for (let i = 3; i < pixels.length; i += 4) {
+    transparent ||= pixels[i] === 0;
+    visible ||= pixels[i] > 0;
+  }
+  report.windowIcon = { path: windowIcon, loaded: !icon.isEmpty(), transparent, visible, ...icon.getSize() };
+  if (!icon.isEmpty()) writeFileSync(join(directory, 'window-icon.png'), icon.toPNG());
   const { DatabaseSync } = await import('node:sqlite');
   const v2File = join(directory, 'statev2-fixture.sqlite');
   const v2Db = new DatabaseSync(v2File);
@@ -1408,7 +1432,7 @@ else {
         if (darkBackground !== dark) { darkBackground = dark; publish(); }
       });
     }
-    const trayImage = nativeImage.createFromPath(join(__dirname, '..', 'assets', process.platform === 'darwin' ? 'trayTemplate.png' : 'icon.png'))
+    const trayImage = nativeImage.createFromPath(join(__dirname, '..', 'assets', process.platform === 'darwin' ? 'trayTemplate.png' : 'icon-transparent.png'))
       .resize({ width: process.platform === 'darwin' ? 22 : 24, height: process.platform === 'darwin' ? 22 : 24 });
     if (process.platform === 'darwin') trayImage.setTemplateImage(true);
     tray = new Tray(trayImage);

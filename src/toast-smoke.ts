@@ -154,8 +154,32 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     return {x:Math.round(r.left+30), y:Math.round(r.top+r.height/2), left:r.left, top:r.top};
   })()`);
   const side = toasts.view(win.webContents).side === 'right' ? 1 : -1;
+  // A real mouse enters the native hit area before pressing. Injected input
+  // bypasses pass-through, so establish that native hover first rather than
+  // changing the X11 input region while Chromium is capturing the pointer.
+  const physicalCursor = screen.getCursorScreenPoint(), gestureHost = win.getBounds();
+  toasts.pointerTracking = true;
+  toasts.hitTest(win.webContents, [{ x: physicalCursor.x - gestureHost.x - 1, y: physicalCursor.y - gestureHost.y - 1, width: 2, height: 2 }]);
+  toasts.pointerTracking = false;
+  await wait(80);
+  // X11 may emit the real desktop cursor's position when native capture starts.
+  // sendInputEvent does not move that cursor. Keep those unrelated moves out
+  // of this injected gesture stream without changing the user's mouse position.
+  await win.webContents.executeJavaScript(`(() => {
+    const isolate=event=>{
+      const point=window.injectedMousePoint;
+      if(event.pointerType==='mouse' && point && (event.clientX!==point.x || event.clientY!==point.y)) event.stopImmediatePropagation();
+    };
+    window.addEventListener('pointermove',isolate,true);
+    window.stopGestureIsolation=()=>window.removeEventListener('pointermove',isolate,true);
+  })()`);
   const mouse = async (type: 'mouseDown' | 'mouseMove' | 'mouseUp', dx = 0, dy = 0) => {
-    win.webContents.sendInputEvent({ type, x: source.x + dx, y: source.y + dy, ...(type === 'mouseMove' ? {} : { button: 'left' as const, clickCount: 1 }) });
+    await win.webContents.executeJavaScript(`window.injectedMousePoint={x:${source.x + dx},y:${source.y + dy}};void 0;`);
+    win.webContents.sendInputEvent({
+      type, x: source.x + dx, y: source.y + dy, button: 'left',
+      modifiers: type === 'mouseUp' ? [] : ['leftbuttondown'],
+      ...(type === 'mouseMove' ? {} : { clickCount: 1 }),
+    });
     await wait(30);
   };
   await mouse('mouseDown'); await wait(180); await mouse('mouseMove', side * 20);
@@ -173,10 +197,31 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   await win.webContents.executeJavaScript(`document.querySelector('[data-id="${oldId}"]').dispatchEvent(new PointerEvent('pointercancel',{pointerId:1}))`);
   await mouse('mouseUp'); await wait(550);
   checks.cancelled = await win.webContents.executeJavaScript(`(() => {const n=document.querySelector('[data-id="${oldId}"]'),r=n.getBoundingClientRect();return !n.hasAttribute('data-dragging') && Math.abs(r.left-${source.left})<1 && Math.abs(r.top-${source.top})<1;})()`);
+  await win.webContents.executeJavaScript(`(() => {
+    window.swipeEvents=[];
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture','blur']) {
+      window.addEventListener(type,event=>{
+        const node=document.querySelector('[data-id="${oldId}"]'),rect=node?.getBoundingClientRect();
+        window.swipeEvents.push({type,time:performance.now(),x:event.clientX,y:event.clientY,target:event.target?.dataset?.id,
+          buttons:event.buttons,pointerId:event.pointerId,captured:node?.hasPointerCapture(event.pointerId),
+          dragging:node?.hasAttribute('data-dragging'),left:rect?.left,top:rect?.top,focused:document.hasFocus()});
+      },true);
+    }
+  })()`);
   await mouse('mouseDown'); await mouse('mouseMove', side * 45);
+  checks.swipeMoved = await win.webContents.executeJavaScript(`(() => {
+    const node=document.querySelector('[data-id="${oldId}"]'),r=node.getBoundingClientRect();
+    const move=window.swipeEvents.find(event=>event.type==='pointermove');
+    return move?.buttons===1 && node.hasPointerCapture(move.pointerId) && node.hasAttribute('data-dragging') && Math.abs(r.left-${source.left + side * 45})<1 && Math.abs(r.top-${source.top})<1;
+  })()`);
   checks.waitsForRelease = toasts.state.entries.some(entry => entry.id === oldId);
   await mouse('mouseUp', side * 45); await wait(550);
   checks.swipeDismissed = !toasts.state.entries.some(entry => entry.id === oldId);
+  writeFileSync(join(directory, 'notification-swipe-events.json'), JSON.stringify({
+    source, side, dismissed: checks.swipeDismissed,
+    events: await win.webContents.executeJavaScript('window.swipeEvents'),
+  }, null, 2));
+  await win.webContents.executeJavaScript('window.stopGestureIsolation();delete window.injectedMousePoint;');
   checks.nativeStable = JSON.stringify(nativeBounds) === JSON.stringify(win.getBounds());
   await win.webContents.executeJavaScript(`window.entryOrigins={};window.entryObserver=new MutationObserver(()=>{for(const node of document.querySelectorAll('.toast[data-entering]')){if(!window.entryOrigins[node.dataset.id]){const r=node.getBoundingClientRect();window.entryOrigins[node.dataset.id]={top:r.top,left:r.left};}}});window.entryObserver.observe(document.getElementById('stack'),{childList:true});undefined`);
   toasts.show(notice('four')); toasts.show(notice('five')); toasts.show(notice('six'));
@@ -188,6 +233,7 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   await win.webContents.executeJavaScript(`window.pointerDecisions=[];window.petToast.onPointer(inside=>window.pointerDecisions.push(inside));undefined`);
   toasts.pointerTracking = true;
   const cursor = screen.getCursorScreenPoint(), host = win.getBounds();
+  toasts.hitTest(win.webContents, []);
   toasts.hitTest(win.webContents, [{x:cursor.x-host.x-1,y:cursor.y-host.y-1,width:2,height:2}]);
   toasts.hitTest(win.webContents, []);
   toasts.pointerTracking = false;

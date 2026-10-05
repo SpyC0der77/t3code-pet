@@ -96,6 +96,7 @@ export interface PetBridge {
   showSettings(): void;
   preview(mood: PetMood | null): void;
   mousePassthrough(ignore: boolean): void;
+  onCursorPosition(listener: (point: { x: number; y: number }) => void): () => void;
   drag(action: 'start' | 'stop'): void;
   quit(): void;
 }

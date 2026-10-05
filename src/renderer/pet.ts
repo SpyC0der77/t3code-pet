@@ -86,13 +86,13 @@ function ignore(value: boolean) {
   passthrough = value;
   window.pet.mousePassthrough(value);
 }
-window.addEventListener('pointermove', event => {
-  const target = event.target as HTMLElement;
-  if (target !== cat) { cancelHover(); ignore(true); return; }
+/** Map native window coordinates to sprite alpha before changing click-through. */
+function checkPointer(point: { x: number; y: number }) {
+  if (dragging) return;
   // Pixels outside the pet and its outline pass clicks through to the desktop.
   const rect = cat.getBoundingClientRect();
-  const x = Math.floor((event.clientX - rect.left) * cat.width / rect.width);
-  const y = Math.floor((event.clientY - rect.top) * cat.height / rect.height);
+  const x = Math.floor((point.x - rect.left) * cat.width / rect.width);
+  const y = Math.floor((point.y - rect.top) * cat.height / rect.height);
   const opaque = x >= 0 && x < cat.width && y >= 0 && y < cat.height && cat.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 0;
   ignore(!opaque);
   if (opaque && !dragging) {
@@ -102,5 +102,5 @@ window.addEventListener('pointermove', event => {
       window.pet.hover();
     }, 150);
   } else cancelHover();
-});
-document.addEventListener('mouseleave', () => { cancelHover(); ignore(true); });
+}
+window.pet.onCursorPosition(checkPointer);

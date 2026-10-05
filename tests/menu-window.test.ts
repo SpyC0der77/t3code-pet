@@ -37,7 +37,10 @@ function fixture(platform: NodeJS.Platform = 'win32', shiftOnMap = false) {
       windows.push(this);
     }
     setMenu() {} setAlwaysOnTop() {} setVisibleOnAllWorkspaces() {}
-    setIgnoreMouseEvents(value: boolean) { this.ignored = value; this.calls.push(`ignored:${value}`); }
+    setIgnoreMouseEvents(value: boolean, options?: { forward?: boolean }) {
+      assert.notEqual(options?.forward, true, 'A transparent menu must not forward cursor events over other windows.');
+      this.ignored = value; this.calls.push(`ignored:${value}`);
+    }
     on(event: string, callback: () => void) { this.events.set(event, callback); }
     isDestroyed() { return this.destroyed; }
     isFocused() { return this.focused; }
