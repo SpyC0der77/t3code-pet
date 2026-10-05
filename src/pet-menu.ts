@@ -15,7 +15,7 @@ export class PetMenu {
   private requested = false;
   private ready = false;
   private sequence = 0;
-  private opening?: { sequence: number; resolve: () => void; timer: ReturnType<typeof setTimeout>; revealing?: boolean };
+  private opening?: { sequence: number; resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>; revealing?: boolean };
   private blurTimer?: ReturnType<typeof setTimeout>;
   private pointerTimer?: ReturnType<typeof setInterval>;
   private interactive = false;
@@ -65,7 +65,7 @@ export class PetMenu {
     if (!this.requested || !this.window || sequence !== this.sequence) return;
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => { if (this.opening?.sequence !== sequence) return; this.opening = undefined; this.hide(); reject(new Error('Menu layout did not become ready.')); }, 3000);
-      this.opening = { sequence, resolve, timer };
+      this.opening = { sequence, resolve, reject, timer };
       this.position(); this.publish();
     });
   }
@@ -86,15 +86,30 @@ export class PetMenu {
       win.focus();
       const deadline = Date.now() + 500;
       let stableSince = Date.now(), last = JSON.stringify(win.getBounds());
-      while (Date.now() - stableSince < 80 && Date.now() < deadline) {
+      let corrected = false;
+      while (Date.now() < deadline) {
         await new Promise(resolve => setTimeout(resolve, 20));
         if (win.isDestroyed() || this.opening !== opening || !this.requested) return;
         const bounds = JSON.stringify(win.getBounds());
-        if (bounds !== last || bounds !== JSON.stringify(this.view().layout.bounds)) stableSince = Date.now();
+        if (bounds !== last) stableSince = Date.now();
         last = bounds;
-        this.position();
+        if (Date.now() - stableSince < 80) continue;
+        if (bounds === JSON.stringify(this.view().layout.bounds)) {
+          if (win.isFocused()) break;
+        } else if (!corrected) {
+          // Correct placement once after native mapping has stopped moving.
+          // Give the window manager time to acknowledge that request.
+          corrected = true;
+          this.position();
+          last = JSON.stringify(win.getBounds()); stableSince = Date.now();
+        }
       }
-      if (!win.isFocused() || Date.now() - stableSince < 80 || JSON.stringify(win.getBounds()) !== JSON.stringify(this.view().layout.bounds)) { this.hide(); return; }
+      if (!win.isFocused() || Date.now() - stableSince < 80 || JSON.stringify(win.getBounds()) !== JSON.stringify(this.view().layout.bounds)) {
+        this.opening = undefined; clearTimeout(opening.timer);
+        this.hide();
+        opening.reject(new Error('Menu window did not settle or receive focus.'));
+        return;
+      }
     }
     if (this.opening !== opening || win.isDestroyed() || !this.requested) return;
     this.opening = undefined; clearTimeout(opening.timer);

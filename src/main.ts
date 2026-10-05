@@ -64,6 +64,7 @@ app.setAppUserModelId('dev.t3pet.companion');
 
 let petWindow: BrowserWindow | null = null;
 let testingHover = false;
+let testingNotificationTracking = false;
 let testingToasts = false;
 let darkBackground = false;
 let settingsWindow: BrowserWindow | null = null;
@@ -352,7 +353,7 @@ async function poll() {
       snapshot = next;
       const followed = allowedSnapshot(snapshot, preferences);
       pet = machine.update(followed, null);
-      for (const notice of notifications.update(followed, notificationSupported() && preferences.notificationsEnabled,
+      if (!testingNotificationTracking) for (const notice of notifications.update(followed, notificationSupported() && preferences.notificationsEnabled,
         null, visibility.fullscreen || !fullscreenCheckReady || previewMood !== null || !!smokeDirectory)) {
         showNotification(notice);
       }
@@ -1119,16 +1120,20 @@ async function runSmokeTest(directory: string) {
   (report.notificationModal as Record<string, boolean>).compact = await settingsWindow!.webContents.executeJavaScript(`(() => { const modal=document.getElementById('notification-dialog'); const action=document.getElementById('notification-apply').getBoundingClientRect(); return modal.scrollWidth <= modal.clientWidth && action.bottom <= innerHeight && action.top >= 0; })()`);
   writeFileSync(join(directory, 'notification-modal-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   const keptToast = customNotifications.show({threadId: '', title: 'Keep active alert', body: 'Setup must leave this visible', kind: 'test'}, true);
-  notifications.reset();
-  const trackingSnapshot = { ...snapshot, connected: true, threads: [{ ...fixtureThread, pendingApproval: 0, pendingInput: 0, turnState: 'running' }] };
-  notifications.update(trackingSnapshot, true, null, false);
-  const waitingSnapshot = { ...trackingSnapshot, threads: [{ ...trackingSnapshot.threads[0]!, pendingApproval: 1 }] };
-  notifications.update(waitingSnapshot, true, null, true);
-  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-apply').click()`);
-  await wait(150);
-  (report.notificationModal as Record<string, boolean>).keptActive = !keptToast.isDestroyed();
-  (report.notificationModal as Record<string, boolean>).keptTracking = notifications.update(waitingSnapshot, true, null, false).some(notice => notice.kind === 'Approval needed');
-  customNotifications.clear(); notifications.reset();
+  // Keep background status polling from replacing this synthetic tracking state.
+  testingNotificationTracking = true;
+  try {
+    notifications.reset();
+    const trackingSnapshot = { ...snapshot, connected: true, threads: [{ ...fixtureThread, pendingApproval: 0, pendingInput: 0, turnState: 'running' }] };
+    notifications.update(trackingSnapshot, true, null, false);
+    const waitingSnapshot = { ...trackingSnapshot, threads: [{ ...trackingSnapshot.threads[0]!, pendingApproval: 1 }] };
+    notifications.update(waitingSnapshot, true, null, true);
+    await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notification-apply').click()`);
+    await wait(150);
+    (report.notificationModal as Record<string, boolean>).keptActive = !keptToast.isDestroyed();
+    (report.notificationModal as Record<string, boolean>).keptTracking = notifications.update(waitingSnapshot, true, null, false).some(notice => notice.kind === 'Approval needed');
+    customNotifications.clear(); notifications.reset();
+  } finally { testingNotificationTracking = false; }
   (report.notificationModal as Record<string, boolean>).applied = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('notification-dialog').open && document.title === 'T3 Pet settings' && !document.getElementById('notification-setup').hidden`);
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);

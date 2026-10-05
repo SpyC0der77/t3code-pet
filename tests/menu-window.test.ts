@@ -194,3 +194,30 @@ test('cancelling a Linux opening during mapping cannot reveal it later', async t
   assert.equal(windows[0].contentVisible, false);
   assert.equal(windows[0].visible, false);
 });
+
+test('Linux reveal failure rejects while ordinary cancellation still resolves', async t => {
+  const { menu, windows } = fixture('linux');
+  t.after(() => menu.dispose());
+  await menu.show(); menu.hide();
+  windows[0].focus = () => {};
+  await assert.rejects(menu.show(), /Menu window did not settle or receive focus/);
+  assert.equal(menu.visible, false);
+  assert.equal(windows[0].contentVisible, false);
+  assert.equal(windows[0].visible, false);
+});
+
+test('Linux placement waits for mapping and sends only one delayed correction', async t => {
+  const { menu, windows } = fixture('linux', true);
+  t.after(() => menu.dispose());
+  await menu.show(); menu.hide();
+  const win = windows[0];
+  let requests = 0;
+  win.setBounds = bounds => {
+    requests++;
+    setTimeout(() => { win.bounds = bounds; }, 120);
+  };
+  await menu.show();
+  assert.equal(requests, 1, 'do not resend placement while native acknowledgement is pending');
+  assert.equal(win.contentVisible, true);
+  assert.deepEqual(win.getBounds(), menu.view().layout.bounds);
+});
