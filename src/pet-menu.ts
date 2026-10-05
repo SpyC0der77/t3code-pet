@@ -15,7 +15,7 @@ export class PetMenu {
   private requested = false;
   private ready = false;
   private sequence = 0;
-  private opening?: { sequence: number; resolve: () => void; timer: ReturnType<typeof setTimeout> };
+  private opening?: { sequence: number; resolve: () => void; timer: ReturnType<typeof setTimeout>; revealing?: boolean };
   private blurTimer?: ReturnType<typeof setTimeout>;
   private pointerTimer?: ReturnType<typeof setInterval>;
   private interactive = false;
@@ -70,17 +70,41 @@ export class PetMenu {
     });
   }
   painted(sequence: number, layout: string) {
-    if (!this.opening || this.opening.sequence !== sequence || !this.requested || !this.window || layout !== JSON.stringify(this.view().layout)) return;
-    const opening = this.opening; this.opening = undefined; clearTimeout(opening.timer);
-    this.window.setFocusable(true);
+    if (!this.opening || this.opening.revealing || this.opening.sequence !== sequence || !this.requested || !this.window || layout !== JSON.stringify(this.view().layout)) return;
+    const opening = this.opening, win = this.window;
+    opening.revealing = true;
+    void this.reveal(opening, win);
+  }
+  private async reveal(opening: NonNullable<PetMenu['opening']>, win: BrowserWindow) {
+    if (process.platform === 'linux') {
+      // X11 window managers can reposition a newly mapped window before
+      // acknowledging Electron's requested bounds. Keep the HTML hidden
+      // through mapping and focus, and reveal only after bounds settle.
+      if (!win.isVisible()) win.showInactive();
+      win.focus();
+      const deadline = Date.now() + 500;
+      let stableSince = Date.now(), last = JSON.stringify(win.getBounds());
+      while (Date.now() - stableSince < 80 && Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        if (win.isDestroyed() || this.opening !== opening || !this.requested) return;
+        const bounds = JSON.stringify(win.getBounds());
+        if (bounds !== last || bounds !== JSON.stringify(this.view().layout.bounds)) stableSince = Date.now();
+        last = bounds;
+        this.position();
+      }
+      if (!win.isFocused() || Date.now() - stableSince < 80 || JSON.stringify(win.getBounds()) !== JSON.stringify(this.view().layout.bounds)) { this.hide(); return; }
+    }
+    if (this.opening !== opening || win.isDestroyed() || !this.requested) return;
+    this.opening = undefined; clearTimeout(opening.timer);
+    win.setFocusable(true);
     // On Windows, changing focusability resets the native taskbar policy.
     // Restore it before focusing so keyboard navigation has no taskbar entry.
-    this.window.setSkipTaskbar(true);
+    win.setSkipTaskbar(true);
     this.checkPointer();
     this.pointerTimer = setInterval(() => this.checkPointer(), 10);
-    this.window.webContents.send('menu:visible', true);
-    if (!this.window.isVisible()) this.window.showInactive();
-    this.window.focus();
+    win.webContents.send('menu:visible', true);
+    if (!win.isVisible()) win.showInactive();
+    if (process.platform !== 'linux') win.focus();
     opening.resolve();
   }
   isSender(sender: WebContents) { return !!this.window && !this.window.isDestroyed() && this.window.webContents === sender; }
