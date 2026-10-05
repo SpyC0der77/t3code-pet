@@ -154,7 +154,19 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     return {x:Math.round(r.left+30), y:Math.round(r.top+r.height/2), left:r.left, top:r.top};
   })()`);
   const side = toasts.view(win.webContents).side === 'right' ? 1 : -1;
+  // X11 may emit the real desktop cursor's position when native capture starts.
+  // sendInputEvent does not move that cursor. Keep those unrelated moves out
+  // of this injected gesture stream without changing the user's mouse position.
+  await win.webContents.executeJavaScript(`(() => {
+    const isolate=event=>{
+      const point=window.injectedMousePoint;
+      if(event.pointerType==='mouse' && point && (event.clientX!==point.x || event.clientY!==point.y)) event.stopImmediatePropagation();
+    };
+    window.addEventListener('pointermove',isolate,true);
+    window.stopGestureIsolation=()=>window.removeEventListener('pointermove',isolate,true);
+  })()`);
   const mouse = async (type: 'mouseDown' | 'mouseMove' | 'mouseUp', dx = 0, dy = 0) => {
+    await win.webContents.executeJavaScript(`window.injectedMousePoint={x:${source.x + dx},y:${source.y + dy}};void 0;`);
     win.webContents.sendInputEvent({ type, x: source.x + dx, y: source.y + dy, ...(type === 'mouseMove' ? {} : { button: 'left' as const, clickCount: 1 }) });
     await wait(30);
   };
@@ -184,6 +196,10 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     }
   })()`);
   await mouse('mouseDown'); await mouse('mouseMove', side * 45);
+  checks.swipeMoved = await win.webContents.executeJavaScript(`(() => {
+    const node=document.querySelector('[data-id="${oldId}"]'),r=node.getBoundingClientRect();
+    return node.hasAttribute('data-dragging') && Math.abs(r.left-${source.left + side * 45})<1 && Math.abs(r.top-${source.top})<1;
+  })()`);
   checks.waitsForRelease = toasts.state.entries.some(entry => entry.id === oldId);
   await mouse('mouseUp', side * 45); await wait(550);
   checks.swipeDismissed = !toasts.state.entries.some(entry => entry.id === oldId);
@@ -191,6 +207,7 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     source, side, dismissed: checks.swipeDismissed,
     events: await win.webContents.executeJavaScript('window.swipeEvents'),
   }, null, 2));
+  await win.webContents.executeJavaScript('window.stopGestureIsolation();delete window.injectedMousePoint;');
   checks.nativeStable = JSON.stringify(nativeBounds) === JSON.stringify(win.getBounds());
   await win.webContents.executeJavaScript(`window.entryOrigins={};window.entryObserver=new MutationObserver(()=>{for(const node of document.querySelectorAll('.toast[data-entering]')){if(!window.entryOrigins[node.dataset.id]){const r=node.getBoundingClientRect();window.entryOrigins[node.dataset.id]={top:r.top,left:r.left};}}});window.entryObserver.observe(document.getElementById('stack'),{childList:true});undefined`);
   toasts.show(notice('four')); toasts.show(notice('five')); toasts.show(notice('six'));

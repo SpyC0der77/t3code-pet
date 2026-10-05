@@ -71,7 +71,7 @@ if (!testHover) {
   assert.ok(report.customNotifications.entryHeight, 'Notification entrance did not descend 32px from above its anchor.');
   assert.ok(report.customNotifications.audio, 'Packaged notification audio could not load or play.');
   for (const key of ['touchContent', 'touchScroll', 'stableAnnouncements', 'emptyStackResumes', 'emptyStackExpires', 'disabledAlertsSilent', 'testSound', 'mutedTestSilent']) assert.equal(report.customNotifications[key], true, `Notification ${key} failed.`);
-  for (const key of ['animatedDismiss', 'singleWindow', 'collapsed', 'expanded', 'stackPaused', 'reused', 'parallelExit', 'removed', 'collapses', 'keyboardExpands', 'dragHeld', 'returnAnimated', 'returned', 'inwardResisted', 'axisLocked', 'cancelled', 'waitsForRelease', 'swipeDismissed', 'nativeStable', 'bounded', 'clickThrough', 'reducedMotion', 'cleared']) assert.ok(report.customNotifications[key], `Notification ${key} failed.`);
+  for (const key of ['animatedDismiss', 'singleWindow', 'collapsed', 'expanded', 'stackPaused', 'reused', 'parallelExit', 'removed', 'collapses', 'keyboardExpands', 'dragHeld', 'returnAnimated', 'returned', 'inwardResisted', 'axisLocked', 'cancelled', 'swipeMoved', 'waitsForRelease', 'swipeDismissed', 'nativeStable', 'bounded', 'clickThrough', 'reducedMotion', 'cleared']) assert.ok(report.customNotifications[key], `Notification ${key} failed.`);
 }
 if (testToast) {
   const checks = report.customNotifications;
