@@ -167,7 +167,11 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   })()`);
   const mouse = async (type: 'mouseDown' | 'mouseMove' | 'mouseUp', dx = 0, dy = 0) => {
     await win.webContents.executeJavaScript(`window.injectedMousePoint={x:${source.x + dx},y:${source.y + dy}};void 0;`);
-    win.webContents.sendInputEvent({ type, x: source.x + dx, y: source.y + dy, ...(type === 'mouseMove' ? {} : { button: 'left' as const, clickCount: 1 }) });
+    win.webContents.sendInputEvent({
+      type, x: source.x + dx, y: source.y + dy, button: 'left',
+      modifiers: type === 'mouseUp' ? [] : ['leftbuttondown'],
+      ...(type === 'mouseMove' ? {} : { clickCount: 1 }),
+    });
     await wait(30);
   };
   await mouse('mouseDown'); await wait(180); await mouse('mouseMove', side * 20);
@@ -191,6 +195,7 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
       window.addEventListener(type,event=>{
         const node=document.querySelector('[data-id="${oldId}"]'),rect=node?.getBoundingClientRect();
         window.swipeEvents.push({type,time:performance.now(),x:event.clientX,y:event.clientY,target:event.target?.dataset?.id,
+          buttons:event.buttons,pointerId:event.pointerId,captured:node?.hasPointerCapture(event.pointerId),
           dragging:node?.hasAttribute('data-dragging'),left:rect?.left,top:rect?.top,focused:document.hasFocus()});
       },true);
     }
@@ -198,7 +203,8 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   await mouse('mouseDown'); await mouse('mouseMove', side * 45);
   checks.swipeMoved = await win.webContents.executeJavaScript(`(() => {
     const node=document.querySelector('[data-id="${oldId}"]'),r=node.getBoundingClientRect();
-    return node.hasAttribute('data-dragging') && Math.abs(r.left-${source.left + side * 45})<1 && Math.abs(r.top-${source.top})<1;
+    const move=window.swipeEvents.find(event=>event.type==='pointermove');
+    return move?.buttons===1 && node.hasPointerCapture(move.pointerId) && node.hasAttribute('data-dragging') && Math.abs(r.left-${source.left + side * 45})<1 && Math.abs(r.top-${source.top})<1;
   })()`);
   checks.waitsForRelease = toasts.state.entries.some(entry => entry.id === oldId);
   await mouse('mouseUp', side * 45); await wait(550);
