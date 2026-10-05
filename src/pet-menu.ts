@@ -45,7 +45,7 @@ export class PetMenu {
       }, 150);
     });
     win.on('closed', () => { this.hide(); this.window = null; this.ready = false; this.loading = undefined; });
-    win.setIgnoreMouseEvents(true, {forward:true});
+    win.setIgnoreMouseEvents(true);
     this.loading = win.loadFile(join(__dirname, 'renderer', 'menu.html')).then(async () => {
       this.ready = true;
       // Warm the native compositor with an empty, non-interactive canvas.
@@ -133,7 +133,7 @@ export class PetMenu {
     const inside = panels.some(rect => rect && x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height);
     if (inside === this.interactive) return;
     this.interactive = inside;
-    this.window.setIgnoreMouseEvents(!inside, { forward: true });
+    this.window.setIgnoreMouseEvents(!inside);
   }
   view(): PetMenuView { return { ...this.data(), layout: menuPlacement(this.area, this.point, this.heights), sequence: this.sequence }; }
   resize(main: number, sub: number, top: number) {
@@ -160,7 +160,7 @@ export class PetMenu {
       if(this.ready) this.window.webContents.send('menu:visible', false);
       this.window.setFocusable(false);
       this.window.setSkipTaskbar(true);
-      this.window.setIgnoreMouseEvents(true, {forward:true});
+      this.window.setIgnoreMouseEvents(true);
       if (process.platform === 'linux') this.window.hide();
     }
   }

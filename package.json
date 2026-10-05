@@ -16,7 +16,8 @@
     "package:win": "npm run build && electron-builder --win nsis --x64 --publish never",
     "package:mac": "npm run build && electron-builder --mac dmg --arm64 --x64 --publish never",
     "package:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
-    "test:packaged": "node scripts/smoke-packaged.mjs"
+    "test:packaged": "node scripts/smoke-packaged.mjs",
+    "export:icons": "node scripts/export-icons.mjs"
   },
   "devDependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
@@ -40,8 +41,9 @@
     },
     "files": [
       "dist/**/*",
-      "assets/icon.png",
-      "assets/icon.ico",
+      "assets/icon-*.png",
+      "assets/icon-transparent.ico",
+      "assets/icon-*.svg",
       "assets/trayTemplate*.png",
       "docs/T3-THEME-LICENSE.txt",
       "package.json",
@@ -49,11 +51,11 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico",
+      "icon": "assets/icon-transparent.ico",
       "signAndEditExecutable": true,
       "extraResources": [
         {
-          "from": "assets/icon.ico",
+          "from": "assets/icon-transparent.ico",
           "to": "icon.ico"
         },
         {
@@ -78,7 +80,7 @@
     "mac": {
       "target": "dmg",
       "category": "public.app-category.utilities",
-      "icon": "assets/icon.png",
+      "icon": "assets/icon-transparent.png",
       "extraResources": [
         {
           "from": "dist/native/t3-close",
@@ -96,7 +98,7 @@
         "deb"
       ],
       "category": "Utility",
-      "icon": "assets/icon.png",
+      "icon": "assets/icon-transparent.png",
       "executableName": "t3-pet",
       "maintainer": "Carter Stach <carter.stach@gmail.com>",
       "syncDesktopName": true,

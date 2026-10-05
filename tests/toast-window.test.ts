@@ -8,6 +8,35 @@ import type { ToastWindows } from '../src/toast-windows';
 const source = buildSync({ entryPoints: ['src/toast-windows.ts'], bundle: true, write: false,
   platform: 'node', format: 'cjs', external: ['electron'] }).outputFiles[0].text;
 
+test('notification capture restores pass-through and never forwards competing cursor events', () => {
+  const module = { exports: {} as { ToastWindows: new (...args: unknown[]) => ToastWindows } };
+  const require = createRequire(import.meta.url);
+  const cursor = { x: 50, y: 50 };
+  const calls: { ignore: boolean; options: unknown }[] = [];
+  const sender = { send() {} };
+  runInNewContext(source, { module, exports: module.exports, __dirname: '.',
+    require: (name: string) => name === 'electron' ? { screen: { getCursorScreenPoint: () => cursor } } : require(name) });
+  const toasts = new module.exports.ToastWindows(() => null, () => ({}), () => {}, () => {});
+  Object.assign(toasts, { ready: true, window: {
+    isDestroyed: () => false, getBounds: () => ({ x: 0, y: 0 }), webContents: sender,
+    setIgnoreMouseEvents: (ignore: boolean, options?: unknown) => calls.push({ ignore, options }),
+  } });
+  const wc = sender as unknown as Parameters<ToastWindows['hitTest']>[0];
+  const area = [{ x: 40, y: 40, width: 20, height: 20 }];
+  for (let i = 0; i < 20; i++) toasts.hitTest(wc, area);
+  assert.deepEqual(calls.map(c => c.ignore), [false]);
+  cursor.x = 100;
+  toasts.capture(wc, true);
+  toasts.hitTest(wc, []);
+  assert.deepEqual(calls.map(c => c.ignore), [false]);
+  toasts.capture(wc, false);
+  assert.deepEqual(calls.map(c => c.ignore), [false, true]);
+  toasts.capture(wc, true);
+  toasts.capture(wc, false);
+  assert.deepEqual(calls.map(c => c.ignore), [false, true, false, true]);
+  assert.ok(calls.every(c => c.options === undefined));
+});
+
 test('display changes reposition notifications safely after the pet is destroyed', () => {
   const area = { x: 0, y: 0, width: 1280, height: 900 };
   const module = { exports: {} as { ToastWindows: new (...args: unknown[]) => ToastWindows } };

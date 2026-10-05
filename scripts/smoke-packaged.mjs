@@ -58,6 +58,8 @@ try {
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+assert.ok(report.windowIcon.loaded && report.windowIcon.transparent && report.windowIcon.visible, 'Packaged taskbar icon failed to load with transparency.');
+if (process.platform === 'win32') assert.equal(report.windowIcon.path, join(dirname(executable), 'resources', 'icon.ico'), 'Windows taskbar icon must use the persistent shell resource.');
 assert.notEqual(report.hoverOpened, false, 'The first hover did not show the native chat-list window.');
 if (!testHover) assert.notEqual(report.hoverAfterMenu, false, 'Hover did not reopen after context-menu dismissal.');
 assert.ok(Object.values(report.hoverHierarchy).every(Boolean), 'Subagent hover ordering, labels, or layout failed.');

@@ -42,6 +42,11 @@ const bridge: PetBridge = {
   showSettings: () => ipcRenderer.send('pet:settings'),
   preview: mood => ipcRenderer.send('pet:preview', mood),
   mousePassthrough: ignore => ipcRenderer.send('pet:passthrough', ignore),
+  onCursorPosition: listener => {
+    const handler = (_event: Electron.IpcRendererEvent, point: { x: number; y: number }) => listener(point);
+    ipcRenderer.on('pet:cursor', handler);
+    return () => ipcRenderer.removeListener('pet:cursor', handler);
+  },
   drag: action => ipcRenderer.send('pet:drag', action),
   quit: () => ipcRenderer.send('pet:quit'),
 };

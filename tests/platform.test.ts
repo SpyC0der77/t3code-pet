@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { nativeHelperName, nativeWindowId } from '../src/platform';
+import { appIconPath, nativeHelperName, nativeWindowId } from '../src/platform';
 import { desktopExecArgument, linuxStartupCommand, setLinuxLoginStartup } from '../src/login-startup';
 import { isT3Executable } from '../src/t3-notifications';
 
@@ -15,6 +15,15 @@ test('native paths and window identities work for HWND, NSView, and XID sizes', 
   assert.equal(nativeWindowId(xid), String(0xff000012));
   const hwnd = Buffer.alloc(8); hwnd.writeBigUInt64LE(0x100000012n);
   assert.equal(nativeWindowId(hwnd), String(0x100000012n));
+});
+
+test('packaged Windows icons use the persistent shell resource outside ASAR', () => {
+  const root = join('resources', 'app.asar');
+  assert.equal(appIconPath(root, 'resources', true, 'win32'), join('resources', 'icon.ico'));
+  assert.equal(appIconPath('source', 'resources', false, 'win32'), join('source', 'assets', 'icon-transparent.ico'));
+  for (const platform of ['linux', 'darwin'] as const) {
+    assert.equal(appIconPath(root, 'resources', true, platform), join(root, 'assets', 'icon-transparent.png'));
+  }
 });
 
 test('process detection matches only T3 executable names, including macOS bundle paths', () => {

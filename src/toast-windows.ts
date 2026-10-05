@@ -63,7 +63,7 @@ export class ToastWindows {
     win.setMenu(null);
     win.setAlwaysOnTop(true, 'floating');
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
-    win.setIgnoreMouseEvents(true, { forward: true });
+    win.setIgnoreMouseEvents(true);
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', event => event.preventDefault());
     win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
@@ -113,18 +113,17 @@ export class ToastWindows {
   capture(sender: WebContents, active: boolean) {
     if (!this.isSender(sender)) return;
     this.captured = active;
-    if (active) this.window!.setIgnoreMouseEvents(false);
-    else this.checkPointer();
+    this.checkPointer(true);
   }
-  private checkPointer() {
+  private checkPointer(force = false) {
     const win = this.window;
-    if (this.captured || !this.pointerTracking || !win || win.isDestroyed() || !this.ready) return;
+    if ((!this.pointerTracking && !force) || !win || win.isDestroyed() || !this.ready) return;
     const point = screen.getCursorScreenPoint(), bounds = win.getBounds();
-    const inside = this.hitAreas.some(r => point.x >= bounds.x + r.x && point.x < bounds.x + r.x + r.width &&
+    const inside = this.captured || this.hitAreas.some(r => point.x >= bounds.x + r.x && point.x < bounds.x + r.x + r.width &&
       point.y >= bounds.y + r.y && point.y < bounds.y + r.y + r.height);
     if (inside === this.inside) return;
     this.inside = inside;
-    win.setIgnoreMouseEvents(!inside, { forward: true });
+    win.setIgnoreMouseEvents(!inside);
     win.webContents.send('toast:pointer', inside);
   }
   publish() {
