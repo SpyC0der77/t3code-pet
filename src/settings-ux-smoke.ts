@@ -2,7 +2,8 @@ import type { BrowserWindow } from 'electron';
 import { join } from 'node:path';
 import { writeFileSync } from 'node:fs';
 
-export async function runSettingsUxSmoke(win: BrowserWindow, directory: string) {
+export async function runSettingsUxSmoke(win: BrowserWindow, directory: string,
+  saves: { saveRequests(): number; settleSaves(): Promise<void> }) {
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const until = async (expression: string) => {
     const deadline = Date.now() + 5000;
@@ -14,23 +15,27 @@ export async function runSettingsUxSmoke(win: BrowserWindow, directory: string) 
     throw new Error(`Settings did not reach ${expression}`);
   };
   const checks: Record<string, boolean> = {};
+  const initialLogin = await win.webContents.executeJavaScript(`(async () => (await window.pet.getState()).preferences.launchAtLogin)()`);
   checks.draftMarkers = await win.webContents.executeJavaScript(`(() => {
     document.getElementById('general-tab').click();
     document.getElementById('login').click();
     document.getElementById('pet-tab').click();
     return document.getElementById('general-tab').textContent.includes('*') && !document.getElementById('save').disabled;
   })()`);
-  checks.connectionCheckBlocksSave = await win.webContents.executeJavaScript(`(() => {
+  const requestsBeforeCheck = saves.saveRequests();
+  const controlsBlocked = await win.webContents.executeJavaScript(`(() => {
     document.getElementById('connection-retry').click();
     const blocked = document.getElementById('save').disabled && document.getElementById('discard').disabled;
     document.getElementById('settings-form').dispatchEvent(new Event('submit', {bubbles:true,cancelable:true}));
     return blocked;
   })()`);
   await until(`!document.getElementById('connection-retry').disabled`);
+  await saves.settleSaves();
+  checks.connectionCheckBlocksSave = controlsBlocked && saves.saveRequests() === requestsBeforeCheck + 1;
   checks.connectionCheckPreservesDraft = await win.webContents.executeJavaScript(`(async () => {
     const state = await window.pet.getState();
     const login = document.getElementById('login');
-    return state.preferences.launchAtLogin !== login.checked && !document.getElementById('save').disabled && login.disabled === !state.supportsLoginStartup;
+    return state.preferences.launchAtLogin === ${JSON.stringify(initialLogin)} && login.checked === ${JSON.stringify(!initialLogin)} && !document.getElementById('save').disabled && login.disabled === !state.supportsLoginStartup;
   })()`);
   win.close(); await until(`document.getElementById('unsaved-dialog').open && document.activeElement.id==='unsaved-cancel'`);
   checks.closeGuard = !win.isDestroyed() && await win.webContents.executeJavaScript(`document.getElementById('unsaved-dialog').open && document.activeElement.id==='unsaved-cancel'`);

@@ -44,6 +44,8 @@ const smokeIndex = process.argv.indexOf(fullscreenTest ? '--fullscreen-test' : '
 const smokeDirectory = smokeIndex >= 0 ? process.argv[smokeIndex + 1] : undefined;
 let smokeStateDelay = 0;
 let smokeSaveDelay = 0;
+let smokeSaveRequests = 0;
+const smokePendingSaves = new Set<Promise<void>>();
 let smokeSetupDelay = 0;
 let smokeStateFailures = 0;
 if (smokeDirectory) app.setPath('userData', join(smokeDirectory, 'user-data'));
@@ -491,7 +493,12 @@ function registerIpc() {
   });
   ipcMain.handle('pet:save', async (event, raw: unknown) => {
     trusted(event);
-    if (smokeDirectory && smokeSaveDelay) await new Promise(resolve => setTimeout(resolve, smokeSaveDelay));
+    if (smokeDirectory) smokeSaveRequests++;
+    if (smokeDirectory && smokeSaveDelay) {
+      const delay = new Promise<void>(resolve => setTimeout(resolve, smokeSaveDelay));
+      smokePendingSaves.add(delay);
+      try { await delay; } finally { smokePendingSaves.delete(delay); }
+    }
     if (raw && typeof raw === 'object' && 'onboardingCompleted' in raw) throw new Error('Use onboarding to finish notification setup.');
     if (migrating) throw new Error('Finish the notification switch before changing settings.');
     const next = validatePreferences(raw, preferences);
@@ -1058,7 +1065,12 @@ async function runSmokeTest(directory: string) {
   const originalPreferences = { ...preferences };
   smokeSaveDelay = 300;
   let uxResult: Awaited<ReturnType<typeof runSettingsUxSmoke>>;
-  try { uxResult = await runSettingsUxSmoke(settingsWindow!, directory); }
+  try {
+    uxResult = await runSettingsUxSmoke(settingsWindow!, directory, {
+      saveRequests: () => smokeSaveRequests,
+      settleSaves: async () => { while (smokePendingSaves.size) await Promise.all([...smokePendingSaves]); },
+    });
+  }
   finally { smokeSaveDelay = 0; }
   traceSmoke(`settings UX checked: ${JSON.stringify(uxResult)}`);
   if (!uxResult.checks.saveClosesWindow) throw new Error('Saving from the exit dialog did not close settings.');
