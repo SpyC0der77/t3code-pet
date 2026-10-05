@@ -96,7 +96,9 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   toasts.capture(touchWin.webContents, false); toasts.clear();
   // Resume updates must still reach the compositor during its empty exit delay.
   const emptyHost = toasts.show({ threadId: 'pause-regression', title: 'Finished', body: 'Done', kind: 'Turn finished' });
-  await wait(100);
+  const readyDeadline = Date.now() + 5000;
+  while (Date.now() < readyDeadline && (!emptyHost.isVisible() || emptyHost.webContents.isLoadingMainFrame())) await wait(20);
+  if (!emptyHost.isVisible() || emptyHost.webContents.isLoadingMainFrame() || !await emptyHost.webContents.executeJavaScript(`typeof window.petToast?.pause==='function'`)) throw new Error('Notification renderer did not become ready.');
   await emptyHost.webContents.executeJavaScript(`window.petToast.pause(true)`);
   toasts.dismiss(toasts.state.entries[0].id);
   await emptyHost.webContents.executeJavaScript(`window.petToast.pause(false)`);

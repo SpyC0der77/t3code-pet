@@ -51,6 +51,7 @@ function setBusy(value: boolean) {
   for (const control of document.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select')) control.disabled = blocked;
   themeControls.update(blocked);
   login.disabled = blocked || !state?.supportsLoginStartup;
+  button('retry-initialization').disabled = busy || initialized;
   actionLabel();
   renderSetup();
   updateStepControls();
@@ -97,6 +98,7 @@ function render(value: AppState) {
     login.checked = value.preferences.launchAtLogin;
     notificationChoices.reset(value.preferences.notificationStyle);
     updatePet(); initialized = true;
+    button('retry-initialization').hidden = true;
     setBusy(busy);
   }
   login.disabled = busy || !value.supportsLoginStartup;
@@ -107,7 +109,14 @@ function render(value: AppState) {
 window.pet.onState(render);
 element('ui-theme').addEventListener('change', () => { themeControls.update(busy); syncDropdowns(); });
 setBusy(false);
-void window.pet.getState().then(async value => { render(value); await checkSetup(); }).catch(showError);
+async function initialize() {
+  clearError(); button('retry-initialization').hidden = true; setBusy(true);
+  try { render(await window.pet.getState()); await checkSetup(); }
+  catch (error) { showError(error); button('retry-initialization').hidden = initialized; }
+  finally { setBusy(false); }
+}
+button('retry-initialization').addEventListener('click', () => { if (!busy && !initialized) void initialize(); });
+void initialize();
 void loadSprites().then(() => {
   const start = performance.now();
   const canvases = ['preview-pet'].map(id => element(id) as HTMLCanvasElement);

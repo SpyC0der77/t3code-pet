@@ -21,7 +21,9 @@ function fixture() {
     constructor() { windows.push(this); }
     setMenu() {}
     on(event: string, callback: () => void) { this.events.set(event, callback); }
-    once(event: string, callback: () => void) { this.events.set(event, callback); }
+    once(event: string, callback: () => void) {
+      this.events.set(event, () => { this.events.delete(event); callback(); });
+    }
     loadFile() { return new Promise<void>(resolve => { finishLoading = resolve; }); }
     isDestroyed() { return this.destroyed; }
     isVisible() { return this.visible; }
@@ -82,6 +84,16 @@ test('ready-to-show retries a first hover ignored before native initialization',
   assert.equal(win.visible, false);
   win.events.get('ready-to-show')?.();
   assert.equal(win.visible, true);
-  panel.hide(); win.events.get('ready-to-show')?.();
-  assert.equal(win.visible, false, 'a cancelled hover stays hidden');
+  assert.equal(win.events.has('ready-to-show'), false, 'ready-to-show listener is consumed once');
+});
+
+test('a hover cancelled before ready-to-show stays hidden', async t => {
+  const { panel, windows, finish } = fixture();
+  t.after(() => panel.dispose());
+  panel.show(); panel.hide();
+  windows[0].events.get('ready-to-show')?.();
+  assert.equal(windows[0].visible, false);
+  assert.equal(windows[0].events.has('ready-to-show'), false);
+  finish(); await panel.prepare();
+  assert.equal(windows[0].visible, false, 'load fallback also honors cancellation');
 });

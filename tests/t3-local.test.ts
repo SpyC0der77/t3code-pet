@@ -102,6 +102,7 @@ test('v2 extracts subagent lineage metadata, inherits settlement, and keeps fork
   }
   db.prepare('UPDATE orchestration_v2_projection_threads SET payload_json=? WHERE thread_id=?')
     .run(JSON.stringify({ archivedAt: '2026-10-03', snoozedUntil: '2099-01-01T00:00:00Z' }), 'a');
+  db.exec("INSERT INTO orchestration_v2_projection_threads VALUES('unrelated-history','p','Old','any','', '2026-10-03',NULL,'not-json')");
   const snoozed = new Map(readThreads(file).map(thread => [thread.id, thread]));
   assert.equal(snoozed.has('a'), false);
   assert.equal(snoozed.get('nested')?.snoozedUntil, '2099-01-01T00:00:00Z');

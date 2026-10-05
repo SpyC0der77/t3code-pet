@@ -72,12 +72,21 @@ function readV2Threads(db: DatabaseSync): ThreadStatus[] {
   `).all() as unknown as (Omit<ThreadStatus, 'sessionStatus' | 'turnState'> & { runStatus: string | null })[];
   // Archived/deleted ancestors still own settlement. Read only lineage and
   // settlement metadata; they must not become display rows.
-  const ancestors = db.prepare(`SELECT thread_id AS id,
-    json_extract(payload_json, '$.settledOverride') AS settledOverride,
-    json_extract(payload_json, '$.snoozedUntil') AS snoozedUntil,
-    CASE WHEN json_extract(payload_json, '$.lineage.relationshipToParent') = 'subagent'
-      THEN json_extract(payload_json, '$.lineage.parentThreadId') END AS parentThreadId
-    FROM orchestration_v2_projection_threads`).all() as unknown as SettlementMetadata[];
+  const parents = [...new Set(rows.flatMap(row => row.parentThreadId ? [row.parentThreadId] : []))];
+  const ancestors = parents.length ? db.prepare(`WITH RECURSIVE ancestors(id) AS (
+    SELECT value FROM json_each(?)
+    UNION
+    SELECT json_extract(t.payload_json, '$.lineage.parentThreadId')
+    FROM orchestration_v2_projection_threads t JOIN ancestors a ON t.thread_id = a.id
+    WHERE json_extract(t.payload_json, '$.lineage.relationshipToParent') = 'subagent'
+      AND json_extract(t.payload_json, '$.lineage.parentThreadId') IS NOT NULL
+  ) SELECT t.thread_id AS id,
+    json_extract(t.payload_json, '$.settledOverride') AS settledOverride,
+    json_extract(t.payload_json, '$.snoozedUntil') AS snoozedUntil,
+    CASE WHEN json_extract(t.payload_json, '$.lineage.relationshipToParent') = 'subagent'
+      THEN json_extract(t.payload_json, '$.lineage.parentThreadId') END AS parentThreadId
+    FROM ancestors a JOIN orchestration_v2_projection_threads t ON t.thread_id = a.id
+  `).all(JSON.stringify(parents)) as unknown as SettlementMetadata[] : [];
   return inheritSubagentSettlement(rows.map(({ runStatus, ...thread }) => {
     const active = ['preparing', 'starting', 'running', 'waiting'].includes(runStatus ?? '');
     return { ...thread,

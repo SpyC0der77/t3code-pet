@@ -41,6 +41,7 @@ const fixtureDirectory = fixtureIndex >= 0 ? process.argv[fixtureIndex + 1] : un
 const smokeIndex = process.argv.indexOf(fullscreenTest ? '--fullscreen-test' : '--smoke-test');
 const smokeDirectory = smokeIndex >= 0 ? process.argv[smokeIndex + 1] : undefined;
 let smokeStateDelay = 0;
+let smokeStateFailures = 0;
 if (smokeDirectory) app.setPath('userData', join(smokeDirectory, 'user-data'));
 if (fixtureDirectory) app.setPath('userData', join(fixtureDirectory, 'fixture-user-data'));
 if (closeFixtureDirectory) app.setPath('userData', join(closeFixtureDirectory, 'close-fixture-user-data'));
@@ -113,7 +114,10 @@ function state(): AppState {
 
 function publish() {
   const value = state();
-  for (const win of [petWindow, settingsWindow]) if (win && !win.isDestroyed()) win.webContents.send('pet:state', value);
+  for (const win of [petWindow, settingsWindow]) {
+    if (smokeStateDelay && win === settingsWindow) continue;
+    if (win && !win.isDestroyed()) win.webContents.send('pet:state', value);
+  }
   tray?.setToolTip(`T3 Pet \u00b7 ${value.pet.label}`);
   contextMenu.publish();
   if (!testingHover) hoverPanel.publish();
@@ -427,7 +431,11 @@ function registerIpc() {
   });
   ipcMain.handle('pet:state', event => {
     if (event.sender !== hoverPanel.window?.webContents || event.senderFrame !== event.sender.mainFrame) trusted(event);
-    return smokeStateDelay ? new Promise(resolve => setTimeout(() => resolve(state()), smokeStateDelay)) : state();
+    return smokeStateDelay ? new Promise((resolve, reject) => setTimeout(() => {
+      if (event.sender === settingsWindow?.webContents && smokeStateFailures > 0) {
+        smokeStateFailures--; reject(new Error('Settings could not be loaded. Try again.'));
+      } else resolve(state());
+    }, smokeStateDelay)) : state();
   });
   ipcMain.on('pet:hover', event => {
     trusted(event);
@@ -1061,10 +1069,11 @@ async function runSmokeTest(directory: string) {
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);
   const onboardingReopened = new Promise<void>(resolve => settingsWindow!.webContents.once('did-finish-load', () => resolve()));
-  smokeStateDelay = 750;
+  smokeStateDelay = 750; smokeStateFailures = 1;
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('reopen-onboarding').click()`);
   await onboardingReopened;
   const beforeInitialization = JSON.stringify(preferences);
+  publish(); // Deliberately exercise a state push while the invoke is delayed.
   report.onboardingInitialization = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const disabled=document.getElementById('continue').disabled && document.getElementById('skip').disabled;
     document.getElementById('onboarding-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
@@ -1072,7 +1081,14 @@ async function runSmokeTest(directory: string) {
   })()`);
   await wait(80);
   report.onboardingInitialization = report.onboardingInitialization && beforeInitialization === JSON.stringify(preferences);
+  await wait(850);
+  report.onboardingInitializationRetry = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const retry=document.getElementById('retry-initialization');
+    const failed=!retry.hidden && !retry.disabled && document.getElementById('continue').disabled && !document.getElementById('setup-error').hidden;
+    retry.click(); return failed;
+  })()`);
   await wait(850); smokeStateDelay = 0;
+  report.onboardingInitializationRetry = report.onboardingInitializationRetry && await settingsWindow!.webContents.executeJavaScript(`document.getElementById('retry-initialization').hidden && !document.getElementById('continue').disabled && document.getElementById('ui-theme').value==='follow-t3-code'`);
   report.onboardingGeneral = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const visible = !document.getElementById('general-step').hidden;
     const first = document.querySelector('.steps button').dataset.step === '0';

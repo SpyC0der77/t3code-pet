@@ -91,6 +91,7 @@ if (testHover) {
 assert.ok(Object.values(report.notificationChoice).every(Boolean), 'Notification choice did not save or discard correctly.');
 assert.ok(Object.values(report.themePreferences).every(Boolean), 'Independent theme save, discard, live updates, or follow behavior failed.');
 assert.equal(report.onboardingInitialization, true, 'Onboarding submitted unhydrated preferences.');
+assert.equal(report.onboardingInitializationRetry, true, 'Onboarding did not recover from a failed state load.');
 assert.ok(Object.values(report.settingsDropdowns).every(Boolean), 'Custom settings dropdown accessibility, keyboard, bounds, or draft behavior failed.');
 assert.ok(Object.values(report.notificationTestPending).every(Boolean), 'A settings update re-enabled a pending test notification.');
 assert.ok(Object.values(report.onboardingDropdowns).every(Boolean), 'Custom onboarding dropdown selection or bounds failed.');
