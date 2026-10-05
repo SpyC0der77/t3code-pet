@@ -154,6 +154,14 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
     return {x:Math.round(r.left+30), y:Math.round(r.top+r.height/2), left:r.left, top:r.top};
   })()`);
   const side = toasts.view(win.webContents).side === 'right' ? 1 : -1;
+  // A real mouse enters the native hit area before pressing. Injected input
+  // bypasses pass-through, so establish that native hover first rather than
+  // changing the X11 input region while Chromium is capturing the pointer.
+  const physicalCursor = screen.getCursorScreenPoint(), gestureHost = win.getBounds();
+  toasts.pointerTracking = true;
+  toasts.hitTest(win.webContents, [{ x: physicalCursor.x - gestureHost.x - 1, y: physicalCursor.y - gestureHost.y - 1, width: 2, height: 2 }]);
+  toasts.pointerTracking = false;
+  await wait(80);
   // X11 may emit the real desktop cursor's position when native capture starts.
   // sendInputEvent does not move that cursor. Keep those unrelated moves out
   // of this injected gesture stream without changing the user's mouse position.
@@ -225,6 +233,7 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   await win.webContents.executeJavaScript(`window.pointerDecisions=[];window.petToast.onPointer(inside=>window.pointerDecisions.push(inside));undefined`);
   toasts.pointerTracking = true;
   const cursor = screen.getCursorScreenPoint(), host = win.getBounds();
+  toasts.hitTest(win.webContents, []);
   toasts.hitTest(win.webContents, [{x:cursor.x-host.x-1,y:cursor.y-host.y-1,width:2,height:2}]);
   toasts.hitTest(win.webContents, []);
   toasts.pointerTracking = false;
