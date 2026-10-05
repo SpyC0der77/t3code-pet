@@ -256,7 +256,7 @@ button('browse').addEventListener('click', async () => {
 });
 select('preview').addEventListener('change', updatePreview);
 input('reduced-motion').addEventListener('change', updatePreview);
-const notificationModal = createNotificationModal(() => current, render);
+const notificationModal = createNotificationModal(() => current, render, processExit);
 enhanceDropdowns();
 button('notification-setup').addEventListener('click', () => { if (!dirty()) void notificationModal.open(); });
 button('reopen-onboarding').addEventListener('click', () => { if (!saving) window.pet.showOnboarding(); });
@@ -293,20 +293,29 @@ async function saveChanges(): Promise<boolean> {
     saving = false; button('save').disabled = !dirty(); button('discard').disabled = false; button('notification-setup').disabled = dirty();
     updateControls(element('save-result').textContent ?? undefined);
     renderSelectors();
+    processExit();
   }
   return success;
 }
 element('settings-form').addEventListener('submit', event => { event.preventDefault(); void saveChanges(); });
 const exitDialog = element('unsaved-dialog') as HTMLDialogElement;
 let pendingExit: 'close' | 'onboarding' | undefined;
+let deferredExit: 'close' | 'onboarding' | undefined;
 window.pet.onSettingsExit(action => {
-  if (saving || (element('notification-dialog') as HTMLDialogElement).open) return;
-  if (!dirty()) { window.pet.completeSettingsExit(action); return; }
   if (exitDialog.open) return;
+  deferredExit = action;
+  processExit();
+});
+function processExit() {
+  if (!deferredExit || saving || exitDialog.open) return;
+  if ((element('notification-dialog') as HTMLDialogElement).open && !notificationModal.requestClose()) return;
+  const action = deferredExit;
+  deferredExit = undefined;
+  if (!dirty()) { window.pet.completeSettingsExit(action); return; }
   pendingExit = action;
   element('unsaved-error').hidden = true;
   exitDialog.showModal(); button('unsaved-cancel').focus();
-});
+}
 button('unsaved-cancel').addEventListener('click', () => exitDialog.close());
 exitDialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
 exitDialog.addEventListener('close', () => { if (!exitDialog.open) pendingExit = undefined; });

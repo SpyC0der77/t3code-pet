@@ -21,6 +21,7 @@ import { allowedSnapshot } from './project-filter';
 import { inspectNotifications, migrateNotifications, closeT3, consentedSwitch } from './t3-notifications';
 import { nativeHelperPath, nativeWindowId } from './platform';
 import { linuxStartupCommand, setLinuxLoginStartup } from './login-startup';
+import { PREVIEW_DURATION_MS } from './shared';
 import type { AppState, NotificationSetup, PetMood, Preferences, Snapshot } from './shared';
 import { pets, petAnimation } from './pets';
 import { moodAnimation } from './animations';
@@ -42,6 +43,8 @@ const fixtureDirectory = fixtureIndex >= 0 ? process.argv[fixtureIndex + 1] : un
 const smokeIndex = process.argv.indexOf(fullscreenTest ? '--fullscreen-test' : '--smoke-test');
 const smokeDirectory = smokeIndex >= 0 ? process.argv[smokeIndex + 1] : undefined;
 let smokeStateDelay = 0;
+let smokeSaveDelay = 0;
+let smokeSetupDelay = 0;
 let smokeStateFailures = 0;
 if (smokeDirectory) app.setPath('userData', join(smokeDirectory, 'user-data'));
 if (fixtureDirectory) app.setPath('userData', join(fixtureDirectory, 'fixture-user-data'));
@@ -208,6 +211,10 @@ function showSettings(onboarding = false, tab?: 'notifications', approved = fals
   const width = 768;
   const height = Math.min(600, screen.getPrimaryDisplay().workArea.height - 32);
   if (settingsWindow && !settingsWindow.isDestroyed()) {
+    if (onboardingView && !onboarding && !approved) {
+      activateSettingsWindow(settingsWindow);
+      return;
+    }
     if (onboarding && !onboardingView && !approved) {
       activateSettingsWindow(settingsWindow);
       settingsWindow.webContents.send('pet:settings-exit', 'onboarding');
@@ -320,7 +327,7 @@ function setPreview(mood: PetMood | null) {
   if (previewTimer) clearTimeout(previewTimer);
   previewMood = mood;
   publish();
-  if (mood) previewTimer = setTimeout(() => { previewMood = null; publish(); }, 10_000);
+  if (mood) previewTimer = setTimeout(() => { previewMood = null; publish(); }, PREVIEW_DURATION_MS);
 }
 
 function stopDrag() {
@@ -364,7 +371,11 @@ function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) {
 }
 
 function registerIpc() {
-  ipcMain.handle('pet:notification-setup', event => { trusted(event); return setupState(); });
+  ipcMain.handle('pet:notification-setup', async event => {
+    trusted(event);
+    if (smokeDirectory && smokeSetupDelay) await new Promise(resolve => setTimeout(resolve, smokeSetupDelay));
+    return setupState();
+  });
   ipcMain.handle('pet:finish-onboarding', async (event, choice: unknown, requestedStyle: unknown) => {
     trusted(event);
     if (event.sender !== settingsWindow?.webContents) throw new Error('Open notification setup to change notification ownership.');
@@ -372,7 +383,7 @@ function registerIpc() {
     if (requestedStyle !== undefined && requestedStyle !== 'os' && requestedStyle !== 'custom') throw new Error('Invalid notification style.');
     const style = choice === 'keep' ? preferences.notificationStyle : requestedStyle ?? preferences.notificationStyle;
     if (migrating) throw new Error('The switch is in progress. Please wait.');
-    if (choice !== 'keep' && !notificationSupported(style)) throw new Error('OS notifications are unavailable on this system. Choose Custom notifications.');
+    if (choice !== 'keep' && !notificationSupported(style)) throw new Error('System notifications are unavailable on this system. Choose Beside the pet.');
     if (choice === 'migrate' && inspectNotifications(preferences.dataDirectory).status === 'unknown') throw new Error('Check the T3 Code data folder before switching notifications.');
     if (choice === 'enable' && inspectNotifications(preferences.dataDirectory).status !== 'off') throw new Error('Check T3 Code notifications first. Use Switch to T3 Pet if its alerts are on.');
     if (choice === 'migrate') {
@@ -477,8 +488,9 @@ function registerIpc() {
     if (event.sender !== hoverPanel.window?.webContents || event.senderFrame !== event.sender.mainFrame) return;
     if (typeof height === 'number' && Number.isFinite(height)) hoverPanel.resize(height);
   });
-  ipcMain.handle('pet:save', (event, raw: unknown) => {
+  ipcMain.handle('pet:save', async (event, raw: unknown) => {
     trusted(event);
+    if (smokeDirectory && smokeSaveDelay) await new Promise(resolve => setTimeout(resolve, smokeSaveDelay));
     if (raw && typeof raw === 'object' && 'onboardingCompleted' in raw) throw new Error('Use onboarding to finish notification setup.');
     if (migrating) throw new Error('Finish the notification switch before changing settings.');
     const next = validatePreferences(raw, preferences);
@@ -543,7 +555,7 @@ function registerIpc() {
     if (action === 'preview' && mood !== null && !moods.includes(mood as PetMood)) return;
     contextMenu.activate(action as MenuAction, action === 'preview' ? mood as PetMood | null : null);
   });
-  ipcMain.on('pet:settings', event => { trusted(event); showSettings(); });
+  ipcMain.on('pet:settings', event => { trusted(event); showSettings(false, undefined, event.sender === settingsWindow?.webContents && onboardingView); });
   ipcMain.on('pet:quit', event => { trusted(event); app.quit(); });
   ipcMain.on('pet:preview', (event, mood: unknown) => {
     trusted(event);
@@ -1043,7 +1055,10 @@ async function runSmokeTest(directory: string) {
   writeFileSync(join(directory, 'settings-missing-chat.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`window.pet.savePreferences({followThreadId: null})`);
   const originalPreferences = { ...preferences };
-  const uxResult = await runSettingsUxSmoke(settingsWindow!, directory);
+  smokeSaveDelay = 300;
+  let uxResult: Awaited<ReturnType<typeof runSettingsUxSmoke>>;
+  try { uxResult = await runSettingsUxSmoke(settingsWindow!, directory); }
+  finally { smokeSaveDelay = 0; }
   traceSmoke(`settings UX checked: ${JSON.stringify(uxResult)}`);
   if (!uxResult.checks.saveClosesWindow) throw new Error('Saving from the exit dialog did not close settings.');
   report.settingsUx = { ...uxResult.checks, savedOnClose: preferences.launchAtLogin === uxResult.expected };
@@ -1051,6 +1066,19 @@ async function runSmokeTest(directory: string) {
     showSettings(); settingsWindow!.webContents.once('did-finish-load', () => resolve());
   });
   await settingsReloaded; await wait(150);
+  smokeSetupDelay = 300;
+  const modalWindow = settingsWindow!;
+  const modalClosed = new Promise<void>(resolve => modalWindow.once('closed', resolve));
+  await modalWindow.webContents.executeJavaScript(`document.getElementById('notifications-tab').click();document.getElementById('notification-setup').click()`);
+  modalWindow.close();
+  await Promise.race([modalClosed, wait(5000)]);
+  smokeSetupDelay = 0;
+  (report.settingsUx as Record<string, boolean>).closeDuringNotificationSetup = modalWindow.isDestroyed();
+  if (!modalWindow.isDestroyed()) throw new Error('Closing during notification setup did not finish.');
+  await new Promise<void>(resolve => {
+    showSettings(); settingsWindow!.webContents.once('did-finish-load', () => resolve());
+  });
+  await settingsWindow!.webContents.executeJavaScript(`(async () => {for(let i=0;i<200 && document.getElementById('notification-setup').disabled;i++) await new Promise(r=>setTimeout(r,25));})()`);
   const fixture = join(directory, 't3-fixture');
   mkdirSync(fixture, { recursive: true });
   const fixtureSettings = join(fixture, 'client-settings.json');
@@ -1207,6 +1235,8 @@ async function runSmokeTest(directory: string) {
   await wait(200);
   (report.onboardingPet as Record<string, boolean>).draftRetained = await settingsWindow!.webContents.executeJavaScript(`document.querySelector('#pet-gallery input[value=miso]').checked && document.getElementById('pet-size').value === '96' && document.getElementById('pet-still').checked`);
   (report.onboardingPet as Record<string, boolean>).themeDraftRetained = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('ui-theme').value==='ember' && document.getElementById('theme-appearance').value==='dark' && !document.getElementById('theme-appearance-field').hidden`);
+  showSettings(false, 'notifications');
+  (report.onboardingPet as Record<string, boolean>).menuPreservesDraft = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('pet-step').hidden && document.querySelector('#pet-gallery input[value=miso]').checked && document.getElementById('ui-theme').value==='ember'`);
   await captureOnboarding('pet');
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);

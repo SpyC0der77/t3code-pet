@@ -82,8 +82,7 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
     while (Date.now() < deadline) {
       const current = settingsWindow();
       if (current && !current.isDestroyed() && !menu.visible && current.isVisible() && current.isFocused() && !current.isMinimized() && !current.webContents.isLoadingMainFrame()) {
-        await wait(100);
-        return current.isVisible() && current.isFocused() && current.getTitle() === 'T3 Pet settings' && (action === 'settings' || await current.webContents.executeJavaScript(`document.getElementById('notifications-tab').getAttribute('aria-selected')==='true'`));
+        if (current.getTitle() === 'T3 Pet settings' && (action === 'settings' || await current.webContents.executeJavaScript(`document.getElementById('notifications-tab')?.getAttribute('aria-selected')==='true'`))) return true;
       }
       await wait(25);
     }

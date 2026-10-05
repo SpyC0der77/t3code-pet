@@ -1,3 +1,5 @@
+export const PREVIEW_DURATION_MS = 10_000;
+
 export type PetMood = 'offline' | 'idle' | 'working' | 'waiting' | 'done' | 'error';
 
 export interface ThreadStatus {

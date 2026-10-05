@@ -55,15 +55,15 @@ function fixture(platform: NodeJS.Platform = 'win32', shiftOnMap = false) {
     }
     hide() { this.visible = false; this.focused = false; }
     setFocusable(value: boolean) {
-      if (platform === 'linux') return;
       this.focusable = value;
+      if (platform === 'linux') { if (!value) this.focused = false; return; }
       // Reproduce Electron's Windows side effect, rather than treating the
       // constructor's skipTaskbar option as a permanent guarantee.
       this.skipTaskbar = !value;
       this.calls.push(`focusable:${value}`);
     }
     setSkipTaskbar(value: boolean) { this.skipTaskbar = value; this.calls.push(`skipTaskbar:${value}`); }
-    focus() { this.focused = true; if (platform !== 'linux') assert.equal(this.ignored, false, 'first native click must be accepted before focus'); assert.equal(this.skipTaskbar, true, 'menu must skip taskbar before taking focus'); this.calls.push('focus'); }
+    focus() { assert.equal(this.focusable, true, 'restore focusability before requesting native focus'); this.focused = true; if (platform !== 'linux') assert.equal(this.ignored, false, 'first native click must be accepted before focus'); assert.equal(this.skipTaskbar, true, 'menu must skip taskbar before taking focus'); this.calls.push('focus'); }
     destroy() { this.destroyed = true; this.events.get('closed')?.(); }
   }
   const module = { exports: {} as { PetMenu: typeof PetMenu } };
@@ -160,7 +160,7 @@ test('Linux menu starts focusable and hides its native canvas between openings',
   for (let opening = 0; opening < 2; opening++) {
     await menu.show();
     const win = windows[0];
-    assert.equal(win.focusable, true, 'Linux cannot change focusability after construction');
+    assert.equal(win.focusable, true, 'Linux opening restores focusability');
     assert.equal(win.visible, true);
     assert.equal(win.focused, true);
     menu.hide();

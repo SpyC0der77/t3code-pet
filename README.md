@@ -52,7 +52,7 @@ If T3 Code's desktop alerts are on, setup offers **Switch to T3 Pet**. T3 Pet as
 
 Cancelling or failing to close T3 Code leaves notification settings unchanged. Your sound preference carries over, and T3 Code's in-app and mobile notices stay as they are.
 
-Pet notifications start off. Enable them during setup and use **Preview notification** in notification settings to check that your system allows them. Alerts pause during fullscreen use where detection is supported. Click an alert to open its chat.
+Pet notifications start off. Enable them during setup and use **Preview notification** in notification settings to confirm alerts appear. For System notifications, allow T3 Pet in your system notification settings. Alerts pause during fullscreen use where detection is supported. Click an alert to open its chat.
 
 ## Make it yours
 
@@ -93,7 +93,7 @@ This is an independent companion that uses T3 Code's local data format. Remote T
 | The pet is offline | Open T3 Code and check the data folder in Settings. It should contain `statev2.sqlite` or `state.sqlite`. |
 | A chat is missing | Check both lists under Filters, including Advanced chat filters. Empty whitelists exclude all chats. Settled chats disappear from the hover list. |
 | Opening a chat asks for pairing | Complete pairing in your browser, then click the chat again. Chats open in T3 Code's local browser interface. |
-| Notifications don't appear | Enable desktop notifications in Pet settings, send a test, and check your system's notification settings. Leave fullscreen before testing. |
+| Notifications don't appear | Enable desktop notifications in Pet settings, use Preview notification, and check your system's notification settings. Leave fullscreen before testing. |
 | Both apps send alerts | Run notification setup and choose **Switch to T3 Pet**. |
 | Switching notifications fails | Finish any quit confirmation in T3 Code, then retry. On native Wayland, quit T3 Code yourself first. |
 

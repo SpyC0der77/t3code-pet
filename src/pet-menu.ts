@@ -25,8 +25,8 @@ export class PetMenu {
     if (this.window && !this.window.isDestroyed()) return this.loading!;
     const win = this.window = new BrowserWindow({ width: 264, height: 320, frame: false, show: false,
       resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
-      // Linux cannot change focusability after creation. Hide its native
-      // window between openings instead of leaving a focusable empty canvas.
+      // Linux needs a focusable native window at creation. Hide it between
+      // openings instead of leaving a focusable empty canvas.
       skipTaskbar: true, alwaysOnTop: true, focusable: process.platform === 'linux', transparent: true, backgroundColor: '#00000000', hasShadow: false,
       webPreferences: { preload: join(__dirname, 'preload.cjs'), sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
     });
@@ -80,6 +80,8 @@ export class PetMenu {
       // X11 window managers can reposition a newly mapped window before
       // acknowledging Electron's requested bounds. Keep the HTML hidden
       // through mapping and focus, and reveal only after bounds settle.
+      win.setFocusable(true);
+      win.setSkipTaskbar(true);
       if (!win.isVisible()) win.showInactive();
       win.focus();
       const deadline = Date.now() + 500;
