@@ -12,8 +12,8 @@ export function createNotificationChoices(host: HTMLElement) {
         <label class="notification-option"><input type="radio" name="notification-choice" value="keep" checked><span><strong id="keep-label">Keep my current setup</strong><span id="keep-detail">Leave notification settings unchanged.</span></span></label>
       </fieldset>
       <fieldset id="notification-appearance" hidden><legend>How should Pet show notifications?</legend>
-        <label class="notification-option"><input type="radio" name="notification-appearance" value="os" checked><span><strong>OS notifications</strong><span id="os-notification-detail">Use your system's notification style and notification center.</span></span></label>
-        <label class="notification-option"><input type="radio" name="notification-appearance" value="custom"><span><strong>Custom notifications</strong><span>Use your T3 Code theme and show alerts beside the pet.</span></span></label>
+        <label class="notification-option"><input type="radio" name="notification-appearance" value="os" checked><span><strong>System notifications</strong><span id="os-notification-detail">Use your system's notification style and notification center.</span></span></label>
+        <label class="notification-option"><input type="radio" name="notification-appearance" value="custom"><span><strong>Beside the pet</strong><span>Show alerts beside the pet using its theme. These alerts do not follow system Do Not Disturb.</span></span></label>
       </fieldset>
       <p class="help">T3 Code's in-app and mobile notices stay unchanged. Alerts pause during fullscreen use where supported.</p>`;
   const element = (id: string) => host.querySelector<HTMLElement>('#' + id)!;
@@ -36,7 +36,7 @@ export function createNotificationChoices(host: HTMLElement) {
       radio('os').disabled = busy || !osSupported;
       radio('custom').disabled = busy;
       if (!osSupported && radio('os').checked) radio('custom').checked = true;
-      element('os-notification-detail').textContent = osSupported ? "Use your system's notification style and notification center." : 'Unavailable on this system. Choose Custom notifications.';
+      element('os-notification-detail').textContent = osSupported ? "Use your system's notification style and notification center." : 'Unavailable on this system. Choose Beside the pet.';
       if (!busy && ((migrate.checked && migrate.disabled) || (enable.checked && enable.disabled))) radio('keep').checked = true;
       element('keep-detail').textContent = enabled ? 'Keep your existing Pet and T3 Code notification preferences.' : 'Leave T3 Code as it is. Pet notifications will stay off.';
       showAppearance();

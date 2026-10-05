@@ -38,9 +38,11 @@
 .advanced-settings { padding-top: 12px; flex-shrink: 0; }
 .advanced-settings summary { cursor: pointer; font-size: 0.9286rem; font-weight: 500; padding: 4px 0; }
 .advanced-settings .field-group { margin: 10px 0 0; }
-.filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.filter-heading { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
 .filter-heading label { margin: 0; }
 .filter-heading select { width: 150px; }
+.filter-heading .custom-select { width: 100%; }
+.filter-heading .select-value { white-space: normal; overflow: visible; }
 .filter-help { margin: 6px 0 10px; }
 .advanced-settings .filter-heading { margin-top: 12px; }
 .chat-filter-list { max-height: 160px; }
@@ -79,3 +81,7 @@
 .modal-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; flex-shrink: 0; }
 .modal-error { color: var(--error); margin-top: 12px; }
 @media (max-width: 540px) { .window-header { padding: 20px 16px 12px; } .settings-tabs { margin-left: 16px; margin-right: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); } .settings-tabs button { padding: 8px 4px; font-size: 0.8571rem; } .tab-panel { padding: 20px 16px 0; } .settings-actions { padding: 16px; gap: 8px; } .project-toolbar { flex-wrap: wrap; } .header-detail { display: none; } .pet-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.unsaved-dialog { width: min(440px, calc(100% - 32px)); }
+.unsaved-dialog > div { width: 100%; }
+.unsaved-dialog .modal-actions { justify-content: flex-end; }

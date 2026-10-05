@@ -8,7 +8,7 @@ import type { PetMenu, PetMenuView } from '../src/pet-menu';
 const source = buildSync({ entryPoints: ['src/pet-menu.ts'], bundle: true, write: false,
   platform: 'node', format: 'cjs', external: ['electron'] }).outputFiles[0].text;
 
-function fixture(platform: NodeJS.Platform = 'win32') {
+function fixture(platform: NodeJS.Platform = 'win32', shiftOnMap = false) {
   let menu: PetMenu;
   const windows: Window[] = [];
   const cursor = { x: 100, y: 100 };
@@ -19,14 +19,17 @@ function fixture(platform: NodeJS.Platform = 'win32') {
     visible = false;
     ignored = true;
     destroyed = false;
+    contentVisible = false;
+    shiftedWhileVisible = false;
     calls: string[] = [];
     bounds = { x: 0, y: 0, width: 264, height: 320 };
     events = new Map<string, () => void>();
     webContents = {
       setWindowOpenHandler() {}, on() {},
       session: { setPermissionRequestHandler() {} },
-      send: (channel: string, value: PetMenuView) => {
-        if (channel === 'menu:update') queueMicrotask(() => menu.painted(value.sequence, JSON.stringify(value.layout)));
+      send: (channel: string, value: PetMenuView | boolean) => {
+        if (channel === 'menu:update') { const view = value as PetMenuView; queueMicrotask(() => menu.painted(view.sequence, JSON.stringify(view.layout))); }
+        if (channel === 'menu:visible') this.contentVisible = value === true;
       },
     };
     constructor(options: { skipTaskbar: boolean; focusable: boolean }) {
@@ -42,18 +45,25 @@ function fixture(platform: NodeJS.Platform = 'win32') {
     setBounds(bounds: typeof this.bounds) { this.bounds = bounds; }
     async loadFile() {}
     isVisible() { return this.visible; }
-    showInactive() { this.visible = true; assert.equal(this.skipTaskbar, true, 'compositor warmup must skip taskbar'); }
+    showInactive() {
+      this.visible = true; assert.equal(this.skipTaskbar, true, 'compositor warmup must skip taskbar');
+      if (shiftOnMap) setTimeout(() => {
+        if (this.destroyed) return;
+        this.shiftedWhileVisible ||= this.contentVisible;
+        this.bounds = { ...this.bounds, x: this.bounds.x - 120 };
+      }, 30);
+    }
     hide() { this.visible = false; this.focused = false; }
     setFocusable(value: boolean) {
-      if (platform === 'linux') return;
       this.focusable = value;
+      if (platform === 'linux') { if (!value) this.focused = false; return; }
       // Reproduce Electron's Windows side effect, rather than treating the
       // constructor's skipTaskbar option as a permanent guarantee.
       this.skipTaskbar = !value;
       this.calls.push(`focusable:${value}`);
     }
     setSkipTaskbar(value: boolean) { this.skipTaskbar = value; this.calls.push(`skipTaskbar:${value}`); }
-    focus() { this.focused = true; assert.equal(this.ignored, false, 'first native click must be accepted before focus'); assert.equal(this.skipTaskbar, true, 'menu must skip taskbar before taking focus'); this.calls.push('focus'); }
+    focus() { assert.equal(this.focusable, true, 'restore focusability before requesting native focus'); this.focused = true; if (platform !== 'linux') assert.equal(this.ignored, false, 'first native click must be accepted before focus'); assert.equal(this.skipTaskbar, true, 'menu must skip taskbar before taking focus'); this.calls.push('focus'); }
     destroy() { this.destroyed = true; this.events.get('closed')?.(); }
   }
   const module = { exports: {} as { PetMenu: typeof PetMenu } };
@@ -150,11 +160,64 @@ test('Linux menu starts focusable and hides its native canvas between openings',
   for (let opening = 0; opening < 2; opening++) {
     await menu.show();
     const win = windows[0];
-    assert.equal(win.focusable, true, 'Linux cannot change focusability after construction');
+    assert.equal(win.focusable, true, 'Linux opening restores focusability');
     assert.equal(win.visible, true);
     assert.equal(win.focused, true);
     menu.hide();
     assert.equal(win.visible, false, 'closed Linux menu cannot retain native focus');
     assert.equal(win.ignored, true);
   }
+});
+
+test('Linux mapping movement settles before menu content is revealed', async t => {
+  const { menu, windows } = fixture('linux', true);
+  t.after(() => menu.dispose());
+  for (let opening = 0; opening < 2; opening++) {
+    await menu.show();
+    const win = windows[0];
+    assert.equal(win.contentVisible, true);
+    assert.equal(win.shiftedWhileVisible, false, 'mapping corrections must happen behind hidden content');
+    assert.deepEqual(win.getBounds(), menu.view().layout.bounds);
+    menu.hide();
+    assert.equal(win.contentVisible, false);
+  }
+});
+
+test('cancelling a Linux opening during mapping cannot reveal it later', async t => {
+  const { menu, windows } = fixture('linux');
+  t.after(() => menu.dispose());
+  await menu.show(); menu.hide();
+  const opening = menu.show();
+  await new Promise(resolve => setTimeout(resolve, 30));
+  menu.hide(); await opening;
+  await new Promise(resolve => setTimeout(resolve, 120));
+  assert.equal(windows[0].contentVisible, false);
+  assert.equal(windows[0].visible, false);
+});
+
+test('Linux reveal failure rejects while ordinary cancellation still resolves', async t => {
+  const { menu, windows } = fixture('linux');
+  t.after(() => menu.dispose());
+  await menu.show(); menu.hide();
+  windows[0].focus = () => {};
+  await assert.rejects(menu.show(), /Menu window did not settle or receive focus/);
+  assert.equal(menu.visible, false);
+  assert.equal(windows[0].contentVisible, false);
+  assert.equal(windows[0].visible, false);
+});
+
+test('Linux placement waits for mapping and sends only one delayed correction', async t => {
+  const { menu, windows } = fixture('linux', true);
+  t.after(() => menu.dispose());
+  await menu.show(); menu.hide();
+  const win = windows[0];
+  let requests = 0;
+  win.setBounds = bounds => {
+    requests++;
+    setTimeout(() => { win.bounds = bounds; }, 120);
+  };
+  await menu.show();
+  assert.equal(requests, 1, 'do not resend placement while native acknowledgement is pending');
+  assert.equal(win.contentVisible, true);
+  assert.deepEqual(win.getBounds(), menu.view().layout.bounds);
 });

@@ -1,7 +1,7 @@
 import type { AppState, NotificationSetup } from '../shared';
 import { createNotificationChoices, notificationAction } from './notification-choices';
 
-export function createNotificationModal(state: () => AppState, updated: (state: AppState) => void) {
+export function createNotificationModal(state: () => AppState, updated: (state: AppState) => void, settled = () => {}) {
   const dialog = document.getElementById('notification-dialog') as HTMLDialogElement;
   const choicesHost = document.getElementById('notification-choices')!;
   const choices = createNotificationChoices(choicesHost);
@@ -12,6 +12,12 @@ export function createNotificationModal(state: () => AppState, updated: (state: 
   let busy = false;
   let checking = false;
   let setup: NotificationSetup | null = null;
+  let closing = false;
+  function finishOperation() {
+    busy = false; render();
+    if (closing) { closing = false; dialog.close(); }
+    settled();
+  }
   function showError(value: unknown) {
     error.textContent = value instanceof Error ? value.message.replace(/^Error invoking remote method '[^']+': Error: /, '') : 'Could not update notifications. Try again.';
     error.hidden = false;
@@ -27,7 +33,7 @@ export function createNotificationModal(state: () => AppState, updated: (state: 
     busy = true; checking = true; error.hidden = true; render();
     try { setup = await window.pet.notificationSetup(); }
     catch (value) { showError(value); }
-    finally { busy = false; checking = false; render(); }
+    finally { checking = false; finishOperation(); }
   }
   function close() { if (!busy) dialog.close(); }
   document.getElementById('notification-close')!.addEventListener('click', close);
@@ -45,9 +51,13 @@ export function createNotificationModal(state: () => AppState, updated: (state: 
       updated(await window.pet.getState());
       dialog.close();
     } catch (value) { showError(value); }
-    finally { busy = false; render(); }
+    finally { finishOperation(); }
   });
   return {
+    requestClose() {
+      if (busy) { closing = true; return false; }
+      dialog.close(); return true;
+    },
     async open() {
       if (dialog.open) return;
       setup = null; choices.reset(state().preferences.notificationStyle); error.hidden = true;

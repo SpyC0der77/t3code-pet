@@ -8,7 +8,7 @@ export async function runThemePreferenceSmoke(win: BrowserWindow, hover: Browser
   state: () => AppState, followed: (appearance: 'light' | 'dark', id: string) => Promise<void>) {
   const checks: Record<string, boolean> = {};
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  checks.default = await win.webContents.executeJavaScript(`document.getElementById('ui-theme').value==='follow-t3-code' && !document.getElementById('theme-appearance-field').hidden && document.querySelector('#theme-modes input').disabled`);
+  checks.default = await win.webContents.executeJavaScript(`document.getElementById('ui-theme').value==='follow-t3-code' && !document.getElementById('theme-appearance-field').hidden && document.querySelector('#theme-modes input').disabled && document.querySelector('#theme-styles input').disabled`);
   checks.customPaletteIds = await win.webContents.executeJavaScript(`(() => {
     const root=document.documentElement, original=root.dataset.theme, errors=[];
     const canvas=document.querySelector('.theme-wireframe-pane').style.getPropertyValue('--preview-canvas');
@@ -31,6 +31,7 @@ export async function runThemePreferenceSmoke(win: BrowserWindow, hover: Browser
         }
       }
       else {
+        if (follow.checked) follow.click();
         document.querySelector('#theme-styles input[value="'+${JSON.stringify(theme)}+'"]').click();
         document.querySelector('#theme-modes input[value="'+${JSON.stringify(appearance)}+'"]').click();
       }

@@ -20,7 +20,7 @@ let initialized = false;
 let state: AppState;
 let setup: NotificationSetup | null = null;
 let checkGeneration = 0;
-const steps = ['general-step', 'connect-step', 'pet-step', 'notifications-step', 'finish-step'];
+const steps = ['connect-step', 'pet-step', 'notifications-step', 'finish-step'];
 let selectedPet = 'lfg';
 const petSize = element('pet-size') as HTMLSelectElement;
 const login = element('login') as HTMLInputElement;
@@ -38,11 +38,11 @@ function showError(error: unknown) { element('setup-error').textContent = errorT
 function clearError() { element('setup-error').hidden = true; }
 function actionLabel() {
   const choice = notificationChoices.choice();
-  element('action-label').textContent = busy ? step === 3 ? 'Applying…' : step === 0 || step === 2 ? 'Saving…' : 'Checking…' : step === 4 ? 'Open settings' : step === 3 ? notificationAction(choice) : 'Continue';
+  element('action-label').textContent = busy ? step === 2 ? 'Applying\u2026' : 'Saving\u2026' : step === 3 ? 'Done' : step === 2 ? notificationAction(choice) : 'Continue';
 }
 function updateStepControls() {
   document.querySelectorAll<HTMLButtonElement>('.steps button').forEach((control, i) => {
-    control.disabled = busy || !initialized || step === 4 || i >= step;
+    control.disabled = busy || !initialized || step === 3 || i >= step;
   });
 }
 function setBusy(value: boolean) {
@@ -68,8 +68,9 @@ function showStep(value: number) {
     if (i < value) number.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 8 2.5 2.5L12 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     else number.textContent = String(i + 1);
   });
-  element('back').hidden = value === 0 || value === 4;
-  element('skip').hidden = value === 4;
+  element('back').hidden = value === 0 || value === 3;
+  element('skip').hidden = value === 3;
+  element('open-settings').hidden = value !== 3;
   actionLabel();
   updateStepControls();
   element(steps[value]).querySelector<HTMLElement>('h1')!.focus();
@@ -88,6 +89,7 @@ async function checkSetup() {
 function render(value: AppState) {
   applyUiTheme(value.theme);
   themeControls.update(busy || !initialized, value.theme);
+  const wasConnected = state?.snapshot.connected;
   state = value;
   if (!initialized) {
     themeControls.hydrate(value.preferences);
@@ -105,6 +107,9 @@ function render(value: AppState) {
   login.closest('label')!.title = value.supportsLoginStartup ? '' : 'Login startup is unavailable on this system.';
   element('connection').textContent = value.snapshot.connected ? 'Connected to T3 Code' : 'T3 Code is not connected';
   element('connection-detail').textContent = value.snapshot.message;
+  element('detected-folder').textContent = 'Data folder: ' + value.preferences.dataDirectory;
+  element('connection-recovery').hidden = value.snapshot.connected;
+  if (!value.snapshot.connected && wasConnected !== false) (element('connection-settings') as HTMLDetailsElement).open = true;
 }
 window.pet.onState(render);
 element('ui-theme').addEventListener('change', () => { themeControls.update(busy); syncDropdowns(); });
@@ -137,6 +142,13 @@ void loadSprites().then(() => {
 button('browse').addEventListener('click', async () => {
   try { const path = await window.pet.chooseDirectory(); if (path) directory.value = path; } catch (error) { showError(error); }
 });
+button('open-settings').addEventListener('click', () => window.pet.showSettings());
+button('connection-retry').addEventListener('click', async () => {
+  if (busy || !initialized) return;
+  clearError(); setBusy(true);
+  try { render(await window.pet.savePreferences({ dataDirectory: directory.value.trim() })); await checkSetup(); }
+  catch (error) { showError(error); } finally { setBusy(false); }
+});
 button('back').addEventListener('click', () => showStep(step - 1));
 petStill.addEventListener('change', updatePet);
 document.querySelectorAll<HTMLButtonElement>('.steps button').forEach(control => {
@@ -159,15 +171,13 @@ element('onboarding-form').addEventListener('submit', async event => {
   const previousStep = step;
   try {
     if (step === 0) {
-      render(await window.pet.savePreferences({ ...themeControls.read(), launchAtLogin: login.checked }));
-      showStep(1);
-    } else if (step === 1) {
       render(await window.pet.savePreferences({ dataDirectory: directory.value.trim() }));
+      await checkSetup(); showStep(1);
+    } else if (step === 1) {
+      render(await window.pet.savePreferences({ petId: selectedPet, size: Number(petSize.value), reducedMotion: petStill.checked,
+        ...themeControls.read(), launchAtLogin: login.checked }));
       await checkSetup(); showStep(2);
     } else if (step === 2) {
-      render(await window.pet.savePreferences({ petId: selectedPet, size: Number(petSize.value), reducedMotion: petStill.checked }));
-      await checkSetup(); showStep(3);
-    } else if (step === 3) {
       const choice = notificationChoices.choice();
       const result = await window.pet.finishOnboarding(choice, notificationChoices.style());
       setup = result; renderSetup();
@@ -177,8 +187,8 @@ element('onboarding-form').addEventListener('submit', async event => {
         ? 'T3 Pet notifications are on. Your pet will alert you when a chat needs attention, finishes, or fails.'
         : 'Your pet is following local chat status. Your notification settings have not changed.';
       element('test-row').hidden = !state.preferences.notificationsEnabled;
-      showStep(4);
-    } else window.pet.showSettings();
+      showStep(3);
+    } else window.pet.closeSetup();
   } catch (error) { showError(error); } finally {
     setBusy(false);
     if (step !== previousStep) element(steps[step]).querySelector<HTMLElement>('h1')!.focus();

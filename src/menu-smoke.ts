@@ -31,7 +31,7 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
     checks.canvasReady = win.isVisible();
     checks[appearance] = await win.webContents.executeJavaScript(`(() => {
       const panel=document.getElementById('primary'), r=panel.getBoundingClientRect(), text=panel.textContent;
-      return !document.getElementById('status') && !document.getElementById('thread') && panel.firstElementChild.dataset.action==='visibility' && document.documentElement.style.colorScheme==='${appearance}' && r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight && !/[\u00c2\u00c3]/.test(text) && document.querySelector('[data-action=settings]').textContent.trim()==='Settings' && document.querySelector('[data-action=notifications]').textContent.trim()==='Set up notifications';
+      return !document.getElementById('status') && !document.getElementById('thread') && panel.firstElementChild.dataset.action==='settings' && document.documentElement.style.colorScheme==='${appearance}' && r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight && !/[\u00c2\u00c3]/.test(text) && document.querySelector('[data-action=settings]').textContent.trim()==='Settings\u2026' && document.querySelector('[data-action=notifications]').textContent.trim()==='Notifications\u2026';
     })()`);
     writeFileSync(join(directory, `context-menu-${appearance}.png`), (await win.webContents.capturePage()).toPNG());
     await win.webContents.executeJavaScript(`document.getElementById('preview').focus()`);
@@ -82,8 +82,7 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
     while (Date.now() < deadline) {
       const current = settingsWindow();
       if (current && !current.isDestroyed() && !menu.visible && current.isVisible() && current.isFocused() && !current.isMinimized() && !current.webContents.isLoadingMainFrame()) {
-        await wait(100);
-        return current.isVisible() && current.isFocused() && current.getTitle() === (action === 'settings' ? 'T3 Pet settings' : 'Set up T3 Pet');
+        if (current.getTitle() === 'T3 Pet settings' && (action === 'settings' || await current.webContents.executeJavaScript(`document.getElementById('notifications-tab')?.getAttribute('aria-selected')==='true'`))) return true;
       }
       await wait(25);
     }

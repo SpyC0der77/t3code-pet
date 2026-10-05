@@ -99,14 +99,33 @@ function dirty() {
 function updateControls(message?: string) {
   themeControls.update(saving);
   const changed = dirty();
+  const value = draft();
+  for (const tab of tabs) {
+    const panel = element(tab.getAttribute('aria-controls')!);
+    const keys: Record<string, (keyof ReturnType<typeof draft>)[]> = {
+      'general-panel': ['theme', 'themeAppearance', 'launchAtLogin'], 'chats-panel': ['dataDirectory'],
+      'projects-panel': ['projectFilter', 'chatFilter'], 'pet-panel': ['petId', 'size', 'reducedMotion'],
+      'notifications-panel': ['notificationsEnabled', 'notificationSound', 'notificationStyle'],
+    };
+    const edited = saved && keys[panel.id].some(key => JSON.stringify(value[key]) !== JSON.stringify(
+      key === 'projectFilter' || key === 'chatFilter' ? { ...saved![key], selected: sorted(saved![key].selected) } : saved![key]));
+    tab.textContent = tab.dataset.label! + (edited ? ' *' : '');
+    tab.setAttribute('aria-label', tab.dataset.label! + (edited ? ', unsaved changes' : ''));
+  }
+  updateFilterResult();
+  input('login').disabled = saving || !current?.supportsLoginStartup;
   button('save').disabled = saving || !changed; button('discard').hidden = !changed; button('discard').disabled = saving;
   button('notification-setup').disabled = saving || changed;
   button('notification-setup').title = changed ? 'Save or discard your changes before opening setup.' : '';
-  button('reopen-onboarding').disabled = saving || changed;
-  button('reopen-onboarding').title = changed ? 'Save or discard your changes before reopening onboarding.' : '';
+  button('reopen-onboarding').disabled = saving;
   updateNotificationControls();
   if (message) text('save-result', message);
   else { element('save-result').classList.remove('error'); text('save-result', changed ? 'Unsaved changes' : 'Changes apply after saving.'); }
+}
+function updateFilterResult() {
+  if (!current) return;
+  const count = allowedThreads(current.snapshot.threads, { ...current.preferences, ...draft() }).length;
+  text('filter-result', current.snapshot.connected ? `${count} of ${current.snapshot.threads.length} loaded chats will be followed after saving.` : 'Connect to T3 Code to see how many chats these filters will follow.');
 }
 function updateNotificationControls() {
   const supported = select('notification-style').value === 'custom' || !!current?.notificationsSupported;
@@ -114,7 +133,7 @@ function updateNotificationControls() {
   input('notification-sound').disabled = saving || !supported || !input('notifications').checked;
   select('notification-style').disabled = saving;
   button('test-notification').disabled = saving || testingNotification || !supported;
-  text('notification-style-help', select('notification-style').value === 'custom' ? "Custom alerts use your pet's theme and appear beside the pet." : supported ? 'OS alerts use your system notification settings and notification center.' : 'OS notifications are unavailable on this system. Choose Custom to receive alerts.');
+  text('notification-style-help', select('notification-style').value === 'custom' ? "Alerts beside the pet use its theme and do not follow system Do Not Disturb." : supported ? 'System alerts use your notification settings and notification center.' : 'System notifications are unavailable on this system. Choose Beside the pet to receive alerts.');
   syncDropdowns();
 }
 function renderSelector(kind: Kind) {
@@ -181,6 +200,7 @@ function hydrate(p: Preferences) {
   renderSelectors();updateControls();updatePreview();
 }
 const tabs = [...document.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+tabs.forEach(tab => { tab.dataset.label = tab.textContent!; });
 function showTab(index: number, focus = false) {
   closeDropdowns();
   tabs.forEach((tab, i) => { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; element(tab.getAttribute('aria-controls')!).hidden = i !== index; });
@@ -196,19 +216,23 @@ tabs.forEach((tab, index) => {
 function render(state: AppState) {
   applyUiTheme(state.theme);
   themeControls.update(saving, state.theme);
+  const wasConnected = current?.snapshot.connected;
   const changed = dirty(); current = state;
-  button('notification-setup').hidden = state.preferences.onboardingCompleted;
   if (!saved || (!changed && JSON.stringify(saved) !== JSON.stringify(state.preferences))) hydrate(state.preferences);
   renderSelectors();
+  updateFilterResult();
   renderActivity();
   text('connection', state.snapshot.connected ? 'Connected to T3 Code' : 'Not connected');
   text('connection-detail', state.snapshot.connected ? 'Agent status updates automatically.' : state.snapshot.message);
+  element('connection-recovery').hidden = state.snapshot.connected;
+  if (!state.snapshot.connected && wasConnected !== false) (element('data-folder') as HTMLDetailsElement).open = true;
   text('version', `v${state.version}`); text('chat-count', `${state.snapshot.threads.length} ${state.snapshot.threads.length === 1 ? 'chat' : 'chats'}`);
-  input('login').disabled = saving || !state.supportsLoginStartup;
   input('login').closest('label')!.title = state.supportsLoginStartup ? '' : 'Login startup is unavailable on this system.';
   updateNotificationControls();
 }
 window.pet.onState(render); void window.pet.getState().then(render);
+window.pet.onSettingsTab(() => showTab(tabs.findIndex(tab => tab.id === 'notifications-tab')));
+if (new URLSearchParams(location.search).get('tab') === 'notifications') showTab(tabs.findIndex(tab => tab.id === 'notifications-tab'));
 input('activity-search').addEventListener('input', () => { if (current) renderActivity(); });
 element('settings-form').addEventListener('change', event => { if ((event.target as HTMLElement).id !== 'preview') updateControls(); });
 input('directory').addEventListener('input', () => updateControls());
@@ -232,10 +256,27 @@ button('browse').addEventListener('click', async () => {
 });
 select('preview').addEventListener('change', updatePreview);
 input('reduced-motion').addEventListener('change', updatePreview);
-const notificationModal = createNotificationModal(() => current, render);
+const notificationModal = createNotificationModal(() => current, render, processExit);
 enhanceDropdowns();
 button('notification-setup').addEventListener('click', () => { if (!dirty()) void notificationModal.open(); });
-button('reopen-onboarding').addEventListener('click', () => { if (!saving && !dirty()) window.pet.showOnboarding(); });
+button('reopen-onboarding').addEventListener('click', () => { if (!saving) window.pet.showOnboarding(); });
+button('connection-retry').addEventListener('click', async () => {
+  if (saving) return;
+  button('connection-retry').disabled = true;
+  try {
+    if (input('directory').value.trim() !== saved?.dataDirectory) {
+      text('connection-detail', 'Save your selected data folder before checking the connection.');
+      button('save').focus();
+    } else {
+      saving = true; updateControls();
+      render(await window.pet.savePreferences({ dataDirectory: input('directory').value.trim() }));
+    }
+  } catch (error) { text('connection-detail', errorText(error)); }
+  finally {
+    saving = false; button('connection-retry').disabled = false;
+    updateControls(); renderSelectors(); processExit();
+  }
+});
 button('test-notification').addEventListener('click', async () => {
   if (testingNotification) return;
   testingNotification = true; updateNotificationControls();
@@ -243,18 +284,57 @@ button('test-notification').addEventListener('click', async () => {
   catch (error) { text('notification-status', errorText(error)); }
   finally { testingNotification = false; updateControls(); }
 });
-element('settings-form').addEventListener('submit', async event => {
-  event.preventDefault(); if (saving || !dirty()) return;
+async function saveChanges(): Promise<boolean> {
+  if (saving) return false;
+  if (!dirty()) return true;
+  let success = false;
   saving = true; updateControls('Saving…');
   const controls = [...document.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('.tab-panel input,.tab-panel select,.tab-panel button')];
   const disabled = controls.map(control => control.disabled);
   controls.forEach(control => { control.disabled = true; });
-  try { const next = await window.pet.savePreferences(draft()); current = next; hydrate(next.preferences); render(next); updateControls('Saved'); }
+  try { const next = await window.pet.savePreferences(draft()); current = next; hydrate(next.preferences); render(next); updateControls('Saved'); success = true; }
   catch (error) { element('save-result').classList.add('error'); text('save-result', errorText(error)); }
   finally {
     controls.forEach((control, index) => { control.disabled = disabled[index]; });
     saving = false; button('save').disabled = !dirty(); button('discard').disabled = false; button('notification-setup').disabled = dirty();
     updateControls(element('save-result').textContent ?? undefined);
     renderSelectors();
+    processExit();
   }
+  return success;
+}
+element('settings-form').addEventListener('submit', event => { event.preventDefault(); void saveChanges(); });
+const exitDialog = element('unsaved-dialog') as HTMLDialogElement;
+let pendingExit: 'close' | 'onboarding' | undefined;
+let deferredExit: 'close' | 'onboarding' | undefined;
+window.pet.onSettingsExit(action => {
+  if (exitDialog.open) return;
+  deferredExit = action;
+  processExit();
+});
+function processExit() {
+  if (!deferredExit || saving || exitDialog.open) return;
+  if ((element('notification-dialog') as HTMLDialogElement).open && !notificationModal.requestClose()) return;
+  const action = deferredExit;
+  deferredExit = undefined;
+  if (!dirty()) { window.pet.completeSettingsExit(action); return; }
+  pendingExit = action;
+  element('unsaved-error').hidden = true;
+  exitDialog.showModal(); button('unsaved-cancel').focus();
+}
+button('unsaved-cancel').addEventListener('click', () => exitDialog.close());
+exitDialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
+exitDialog.addEventListener('close', () => { if (!exitDialog.open) pendingExit = undefined; });
+function finishExit() {
+  const action = pendingExit;
+  exitDialog.close();
+  if (action) window.pet.completeSettingsExit(action);
+}
+button('unsaved-discard').addEventListener('click', () => { if (saved) hydrate(saved); finishExit(); });
+button('unsaved-save').addEventListener('click', async () => {
+  for (const id of ['unsaved-save', 'unsaved-discard', 'unsaved-cancel']) button(id).disabled = true;
+  const success = await saveChanges();
+  for (const id of ['unsaved-save', 'unsaved-discard', 'unsaved-cancel']) button(id).disabled = false;
+  if (success) finishExit();
+  else { text('unsaved-error', element('save-result').textContent ?? 'Could not save. Try again.'); element('unsaved-error').hidden = false; }
 });

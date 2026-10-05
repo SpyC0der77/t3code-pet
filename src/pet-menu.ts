@@ -15,7 +15,7 @@ export class PetMenu {
   private requested = false;
   private ready = false;
   private sequence = 0;
-  private opening?: { sequence: number; resolve: () => void; timer: ReturnType<typeof setTimeout> };
+  private opening?: { sequence: number; resolve: () => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>; revealing?: boolean };
   private blurTimer?: ReturnType<typeof setTimeout>;
   private pointerTimer?: ReturnType<typeof setInterval>;
   private interactive = false;
@@ -25,8 +25,8 @@ export class PetMenu {
     if (this.window && !this.window.isDestroyed()) return this.loading!;
     const win = this.window = new BrowserWindow({ width: 264, height: 320, frame: false, show: false,
       resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
-      // Linux cannot change focusability after creation. Hide its native
-      // window between openings instead of leaving a focusable empty canvas.
+      // Linux needs a focusable native window at creation. Hide it between
+      // openings instead of leaving a focusable empty canvas.
       skipTaskbar: true, alwaysOnTop: true, focusable: process.platform === 'linux', transparent: true, backgroundColor: '#00000000', hasShadow: false,
       webPreferences: { preload: join(__dirname, 'preload.cjs'), sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
     });
@@ -65,22 +65,63 @@ export class PetMenu {
     if (!this.requested || !this.window || sequence !== this.sequence) return;
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => { if (this.opening?.sequence !== sequence) return; this.opening = undefined; this.hide(); reject(new Error('Menu layout did not become ready.')); }, 3000);
-      this.opening = { sequence, resolve, timer };
+      this.opening = { sequence, resolve, reject, timer };
       this.position(); this.publish();
     });
   }
   painted(sequence: number, layout: string) {
-    if (!this.opening || this.opening.sequence !== sequence || !this.requested || !this.window || layout !== JSON.stringify(this.view().layout)) return;
-    const opening = this.opening; this.opening = undefined; clearTimeout(opening.timer);
-    this.window.setFocusable(true);
+    if (!this.opening || this.opening.revealing || this.opening.sequence !== sequence || !this.requested || !this.window || layout !== JSON.stringify(this.view().layout)) return;
+    const opening = this.opening, win = this.window;
+    opening.revealing = true;
+    void this.reveal(opening, win);
+  }
+  private async reveal(opening: NonNullable<PetMenu['opening']>, win: BrowserWindow) {
+    if (process.platform === 'linux') {
+      // X11 window managers can reposition a newly mapped window before
+      // acknowledging Electron's requested bounds. Keep the HTML hidden
+      // through mapping and focus, and reveal only after bounds settle.
+      win.setFocusable(true);
+      win.setSkipTaskbar(true);
+      if (!win.isVisible()) win.showInactive();
+      win.focus();
+      const deadline = Date.now() + 500;
+      let stableSince = Date.now(), last = JSON.stringify(win.getBounds());
+      let corrected = false;
+      while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        if (win.isDestroyed() || this.opening !== opening || !this.requested) return;
+        const bounds = JSON.stringify(win.getBounds());
+        if (bounds !== last) stableSince = Date.now();
+        last = bounds;
+        if (Date.now() - stableSince < 80) continue;
+        if (bounds === JSON.stringify(this.view().layout.bounds)) {
+          if (win.isFocused()) break;
+        } else if (!corrected) {
+          // Correct placement once after native mapping has stopped moving.
+          // Give the window manager time to acknowledge that request.
+          corrected = true;
+          this.position();
+          last = JSON.stringify(win.getBounds()); stableSince = Date.now();
+        }
+      }
+      if (!win.isFocused() || Date.now() - stableSince < 80 || JSON.stringify(win.getBounds()) !== JSON.stringify(this.view().layout.bounds)) {
+        this.opening = undefined; clearTimeout(opening.timer);
+        this.hide();
+        opening.reject(new Error('Menu window did not settle or receive focus.'));
+        return;
+      }
+    }
+    if (this.opening !== opening || win.isDestroyed() || !this.requested) return;
+    this.opening = undefined; clearTimeout(opening.timer);
+    win.setFocusable(true);
     // On Windows, changing focusability resets the native taskbar policy.
     // Restore it before focusing so keyboard navigation has no taskbar entry.
-    this.window.setSkipTaskbar(true);
+    win.setSkipTaskbar(true);
     this.checkPointer();
     this.pointerTimer = setInterval(() => this.checkPointer(), 10);
-    this.window.webContents.send('menu:visible', true);
-    if (!this.window.isVisible()) this.window.showInactive();
-    this.window.focus();
+    win.webContents.send('menu:visible', true);
+    if (!win.isVisible()) win.showInactive();
+    if (process.platform !== 'linux') win.focus();
     opening.resolve();
   }
   isSender(sender: WebContents) { return !!this.window && !this.window.isDestroyed() && this.window.webContents === sender; }

@@ -1,5 +1,6 @@
 import { applyUiTheme } from './theme';
 import type { MenuAction, PetMenuView } from '../pet-menu';
+import { PREVIEW_DURATION_MS } from '../shared';
 import type { PetMood } from '../shared';
 import { headingToSubmenu } from '../menu-pointer';
 
@@ -15,7 +16,8 @@ const primary = document.getElementById('primary')!;
 const submenu = document.getElementById('animations')!;
 const trigger = document.getElementById('preview') as HTMLButtonElement;
 const back = document.getElementById('back')!;
-const moods: [PetMood | null, string][] = [['idle', 'Resting'], ['working', 'Working'], ['waiting', 'Approval needed'], ['done', 'Turn finished'], ['error', 'A chat hit an error'], ['offline', 'T3 Code offline'], [null, 'Follow T3 Code']];
+document.getElementById('preview-label')!.textContent = `Preview animation · ${PREVIEW_DURATION_MS / 1000}s`;
+const moods: [PetMood | null, string][] = [['idle', 'Resting'], ['working', 'Working'], ['waiting', 'Needs attention'], ['done', 'Finished'], ['error', 'Error'], ['offline', 'Offline'], [null, 'Follow T3 Code']];
 let view: PetMenuView | undefined;
 let open = false;
 let sequence = -1;

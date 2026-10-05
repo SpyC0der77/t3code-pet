@@ -2,6 +2,20 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { AppState, PetBridge } from './shared';
 
 const bridge: PetBridge = {
+  onSettingsExit: listener => {
+    const handler = (_event: Electron.IpcRendererEvent, action: unknown) => {
+      if (action === 'close' || action === 'onboarding') listener(action);
+    };
+    ipcRenderer.on('pet:settings-exit', handler);
+    return () => ipcRenderer.removeListener('pet:settings-exit', handler);
+  },
+  completeSettingsExit: action => ipcRenderer.send('pet:settings-exit-complete', action),
+  onSettingsTab: listener => {
+    const handler = (_event: Electron.IpcRendererEvent, tab: unknown) => { if (tab === 'notifications') listener(tab); };
+    ipcRenderer.on('pet:settings-tab', handler);
+    return () => ipcRenderer.removeListener('pet:settings-tab', handler);
+  },
+  closeSetup: () => ipcRenderer.send('pet:close-setup'),
   onNotificationSound: listener => {
     const handler = (_event: Electron.IpcRendererEvent, kind: unknown, test: unknown) => {
       if (kind === 'completion' || kind === 'input') listener(kind, test === true);
