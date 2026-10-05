@@ -267,9 +267,15 @@ button('connection-retry').addEventListener('click', async () => {
     if (input('directory').value.trim() !== saved?.dataDirectory) {
       text('connection-detail', 'Save your selected data folder before checking the connection.');
       button('save').focus();
-    } else render(await window.pet.savePreferences({ dataDirectory: input('directory').value.trim() }));
+    } else {
+      saving = true; updateControls();
+      render(await window.pet.savePreferences({ dataDirectory: input('directory').value.trim() }));
+    }
   } catch (error) { text('connection-detail', errorText(error)); }
-  finally { button('connection-retry').disabled = false; }
+  finally {
+    saving = false; button('connection-retry').disabled = false;
+    updateControls(); renderSelectors(); processExit();
+  }
 });
 button('test-notification').addEventListener('click', async () => {
   if (testingNotification) return;

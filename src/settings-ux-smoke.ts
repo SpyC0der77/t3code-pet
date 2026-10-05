@@ -20,6 +20,17 @@ export async function runSettingsUxSmoke(win: BrowserWindow, directory: string) 
     document.getElementById('pet-tab').click();
     return document.getElementById('general-tab').textContent.includes('*') && !document.getElementById('save').disabled;
   })()`);
+  checks.connectionCheckBlocksSave = await win.webContents.executeJavaScript(`(() => {
+    document.getElementById('connection-retry').click();
+    const blocked = document.getElementById('save').disabled && document.getElementById('discard').disabled;
+    document.getElementById('settings-form').dispatchEvent(new Event('submit', {bubbles:true,cancelable:true}));
+    return blocked;
+  })()`);
+  await until(`!document.getElementById('connection-retry').disabled`);
+  checks.connectionCheckPreservesDraft = await win.webContents.executeJavaScript(`(async () => {
+    const saved = (await window.pet.getState()).preferences.launchAtLogin;
+    return saved !== document.getElementById('login').checked && !document.getElementById('save').disabled;
+  })()`);
   win.close(); await until(`document.getElementById('unsaved-dialog').open && document.activeElement.id==='unsaved-cancel'`);
   checks.closeGuard = !win.isDestroyed() && await win.webContents.executeJavaScript(`document.getElementById('unsaved-dialog').open && document.activeElement.id==='unsaved-cancel'`);
   writeFileSync(join(directory, 'settings-unsaved.png'), (await win.webContents.capturePage()).toPNG());
