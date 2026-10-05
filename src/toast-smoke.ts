@@ -173,10 +173,24 @@ export async function runToastSmoke(toasts: ToastWindows, pet: BrowserWindow, di
   await win.webContents.executeJavaScript(`document.querySelector('[data-id="${oldId}"]').dispatchEvent(new PointerEvent('pointercancel',{pointerId:1}))`);
   await mouse('mouseUp'); await wait(550);
   checks.cancelled = await win.webContents.executeJavaScript(`(() => {const n=document.querySelector('[data-id="${oldId}"]'),r=n.getBoundingClientRect();return !n.hasAttribute('data-dragging') && Math.abs(r.left-${source.left})<1 && Math.abs(r.top-${source.top})<1;})()`);
+  await win.webContents.executeJavaScript(`(() => {
+    window.swipeEvents=[];
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture','blur']) {
+      window.addEventListener(type,event=>{
+        const node=document.querySelector('[data-id="${oldId}"]'),rect=node?.getBoundingClientRect();
+        window.swipeEvents.push({type,time:performance.now(),x:event.clientX,y:event.clientY,target:event.target?.dataset?.id,
+          dragging:node?.hasAttribute('data-dragging'),left:rect?.left,top:rect?.top,focused:document.hasFocus()});
+      },true);
+    }
+  })()`);
   await mouse('mouseDown'); await mouse('mouseMove', side * 45);
   checks.waitsForRelease = toasts.state.entries.some(entry => entry.id === oldId);
   await mouse('mouseUp', side * 45); await wait(550);
   checks.swipeDismissed = !toasts.state.entries.some(entry => entry.id === oldId);
+  writeFileSync(join(directory, 'notification-swipe-events.json'), JSON.stringify({
+    source, side, dismissed: checks.swipeDismissed,
+    events: await win.webContents.executeJavaScript('window.swipeEvents'),
+  }, null, 2));
   checks.nativeStable = JSON.stringify(nativeBounds) === JSON.stringify(win.getBounds());
   await win.webContents.executeJavaScript(`window.entryOrigins={};window.entryObserver=new MutationObserver(()=>{for(const node of document.querySelectorAll('.toast[data-entering]')){if(!window.entryOrigins[node.dataset.id]){const r=node.getBoundingClientRect();window.entryOrigins[node.dataset.id]={top:r.top,left:r.left};}}});window.entryObserver.observe(document.getElementById('stack'),{childList:true});undefined`);
   toasts.show(notice('four')); toasts.show(notice('five')); toasts.show(notice('six'));
