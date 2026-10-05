@@ -42,7 +42,9 @@ Linux uses X11 or XWayland. Native Wayland fullscreen windows aren't detected, a
    If you choose T3 Pet, select OS notifications or custom alerts beside the pet. Keeping your current setup leaves the style unchanged.
 4. Drag your pet into place. Hover over it to see chats, or right-click to open its controls.
 
-You can skip setup and return to it through **Set up notifications** in the tray menu or settings.
+Setup starts with Connect, then Pet, Notifications, and Finish. Appearance and login startup are optional controls on the Pet step. Finish with **Done** to return to your pet, or choose **Open settings**.
+
+You can skip setup and run it again from General settings. **Notifications…** in the pet or tray menu opens notification settings directly; **Configure notification source…** stays available after setup.
 
 ### Switching notifications
 
@@ -50,7 +52,7 @@ If T3 Code's desktop alerts are on, setup offers **Switch to T3 Pet**. T3 Pet as
 
 Cancelling or failing to close T3 Code leaves notification settings unchanged. Your sound preference carries over, and T3 Code's in-app and mobile notices stay as they are.
 
-Pet notifications start off. Enable them during setup and use **Send a test** in notification settings to check that your system allows them. Alerts pause during fullscreen use where detection is supported. Click an alert to open its chat.
+Pet notifications start off. Enable them during setup and use **Preview notification** in notification settings to check that your system allows them. Alerts pause during fullscreen use where detection is supported. Click an alert to open its chat.
 
 ## Make it yours
 
@@ -58,17 +60,17 @@ Open **Settings** from the pet's right-click menu or tray icon:
 
 Both open a compact custom menu that uses the pet's theme and T3 Code's font. Use arrow keys or type a label to navigate; Escape closes the preview submenu, then the menu. Enter, Space, Shift+F10, or the Context Menu key also opens it from the focused pet.
 
-- **General** opens first, with visual Theme and Theme style selectors plus login startup. Theme defaults to **Follow T3 Code**; other themes apply only to T3 Pet.
-- **Chats** shows the local connection and lets you change the data folder.
-- **Filters** has searchable project and chat lists. Each can be a blocklist or whitelist. Expand **Advanced chat filters** beneath the projects to choose chats.
+- **General** opens first, with Appearance and Color theme selectors plus login startup. **Follow T3 Code** is on by default; turn it off to choose independent appearance settings. **Run setup again…** is available here.
+- **Activity** shows the local connection and lets you change the data folder.
+- **Filters** has searchable project and chat lists. Choose **Follow everything except selected** or **Follow only selected** for each list. The result shows how many loaded chats will be followed after saving. Expand **Advanced chat filters** beneath the projects to choose chats.
 - **Pet** shows a responsive grid of character previews. Choose the preview state, select a character, then save to apply it to the desktop. Size and still poses are also available here.
-- **Notifications** controls desktop alerts, Custom or OS style, and sound, with setup and test buttons. Custom alerts use the pet's theme and appear beside it. Send a test previews the selected style before saving.
+- **Notifications** controls desktop alerts, Beside the pet or System notifications, and sound. Configure the notification source at any time. Preview notification uses the selected style before saving and the saved sound preference. Alerts beside the pet use its theme and do not follow system Do Not Disturb.
 
 Hovering over the pet groups subagents under their parent chats, including nested subagents. Child rows name their parent. Each group takes its position from its most urgent chat. Subagents follow their parent's settlement and snooze state.
 
-A blocklist excludes checked items. A whitelist follows only checked items. Chats must pass both filters.
+Follow everything except selected excludes checked items. Follow only selected follows checked items. Chats must pass both filters.
 
-Click **Save changes** to apply your changes. The grid's preview state stays selected while you browse and does not change the desktop pet's live activity.
+Click **Save changes** to apply your changes. Edited tabs show an asterisk. Closing settings or running setup again with unsaved edits offers Save, Discard, and Cancel; a failed save keeps the draft open. The grid's preview state stays selected while you browse and does not change the desktop pet's live activity.
 
 Custom notifications form a compact pile beside the pet, with the newest alert in front. Hover or keyboard focus expands the pile into readable rows and pauses timed alerts. Moving between rows keeps it open. Alerts slide in, slide out, and move smoothly as the stack changes. Updates for the same chat keep the existing card. Completion alerts last five seconds. Approval and input alerts remain until handled or dismissed; error alerts and test previews last ten seconds. The pile remains limited to the three newest alerts.
 

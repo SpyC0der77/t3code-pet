@@ -6,10 +6,10 @@
 <body>
 <!-- Shared visual styles with onboarding; settings retain tabs and Save/Discard. -->
 <main class="window-shell settings">
-  <header class="window-header"><img class="app-mark" src="../../assets/icon.png" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><div class="header-end"><span id="version"></span><button id="reopen-onboarding" type="button">Reopen onboarding</button></div></header>
+  <header class="window-header"><img class="app-mark" src="../../assets/icon.png" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><div class="header-end"><span id="version"></span></div></header>
   <nav class="settings-tabs" role="tablist" aria-label="Settings">
     <button id="general-tab" type="button" role="tab" aria-selected="true" aria-controls="general-panel">General</button>
-    <button id="chats-tab" type="button" role="tab" aria-selected="false" aria-controls="chats-panel" tabindex="-1">Chats</button>
+    <button id="chats-tab" type="button" role="tab" aria-selected="false" aria-controls="chats-panel" tabindex="-1">Activity</button>
     <button id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-panel" tabindex="-1">Filters</button>
     <button id="pet-tab" type="button" role="tab" aria-selected="false" aria-controls="pet-panel" tabindex="-1">Pet</button>
     <button id="notifications-tab" type="button" role="tab" aria-selected="false" aria-controls="notifications-panel" tabindex="-1">Notifications</button>
@@ -19,32 +19,33 @@
       <h1 class="panel-title">General</h1>
       <div class="theme-controls">
         <label class="theme-follow"><span>Follow T3 Code</span><input id="follow-t3-theme" type="checkbox"></label>
-        <select id="ui-theme" data-custom-dropdown="visual" data-theme-control hidden tabindex="-1" aria-label="Theme style"></select>
-        <select id="theme-appearance" data-custom-dropdown="visual" data-theme-control hidden tabindex="-1" aria-label="Theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
-        <fieldset id="theme-appearance-field"><legend>Theme</legend><div id="theme-modes" class="theme-modes"></div></fieldset>
-        <fieldset><legend>Theme style</legend><div id="theme-styles" class="theme-styles"></div></fieldset>
+        <select id="ui-theme" data-custom-dropdown="visual" data-theme-control hidden tabindex="-1" aria-label="Color theme"></select>
+        <select id="theme-appearance" data-custom-dropdown="visual" data-theme-control hidden tabindex="-1" aria-label="Appearance"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
+        <fieldset id="theme-appearance-field"><legend>Appearance</legend><div id="theme-modes" class="theme-modes"></div></fieldset>
+        <fieldset><legend>Color theme</legend><div id="theme-styles" class="theme-styles"></div></fieldset>
       </div>
       <label class="preference-row"><span>Start when I sign in<span class="help">Launch T3 Pet automatically.</span></span><input id="login" type="checkbox"></label>
+      <button id="reopen-onboarding" type="button">Run setup again…</button>
     </section>
     <section id="chats-panel" class="tab-panel" role="tabpanel" aria-labelledby="chats-tab" hidden>
       <h1 class="panel-title">Chat activity</h1>
       <p class="panel-description">Your pet follows your local agents.</p>
       <div class="connection-status"><div><strong id="connection">Looking for T3 Code...</strong><p id="connection-detail" role="status">Checking your local connection.</p></div><span id="chat-count">0 chats</span></div>
       <input id="activity-search" type="search" aria-label="Search chat activity" placeholder="Search chats" autocomplete="off" spellcheck="false" aria-controls="chat-activity">
-      <p id="activity-error" class="help" role="status" hidden></p>
+      <button id="connection-retry" type="button">Check connection</button><p id="connection-recovery" class="help" hidden>Open T3 Code, or choose its data folder below, then check again.</p><p id="activity-error" class="help" role="status" hidden></p>
       <ul id="chat-activity" class="chat-activity" aria-label="Chat activity"></ul>
       <p id="activity-empty" class="filter-empty" role="status">Checking your local connection.</p>
       <details class="data-folder" id="data-folder"><summary>Connection settings</summary><div class="field-group"><label for="directory">T3 Code data folder</label><div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div><p class="help" id="folder-help">Choose the userdata folder containing statev2.sqlite or state.sqlite.</p></div></details>
     </section>
     <section id="projects-panel" class="tab-panel projects-panel" role="tabpanel" aria-labelledby="projects-tab" hidden>
       <h1 class="panel-title">Filters</h1><p class="panel-description">Choose which activity your pet follows. Chats must pass both filters.</p>
-      <div class="filter-heading"><label for="project-mode">Projects</label><select id="project-mode" aria-describedby="blocked-help"><option value="blocklist">Blocklist</option><option value="whitelist">Whitelist</option></select></div>
+      <p id="filter-result" class="help" role="status"></p><div class="filter-heading"><label for="project-mode">Projects</label><select id="project-mode" aria-describedby="blocked-help"><option value="blocklist">Follow everything except selected</option><option value="whitelist">Follow only selected</option></select></div>
       <p class="help filter-help" id="blocked-help">Checked projects are excluded.</p>
       <input class="project-search" id="project-search" type="search" aria-label="Search projects" placeholder="Search projects…" autocomplete="off" spellcheck="false" aria-controls="blocked-projects">
       <div class="project-toolbar"><span id="project-summary" role="status">0 selected</span><div class="project-toolbar-actions"><button class="text-button" id="ignore-all" type="button">Select all</button><button class="text-button" id="allow-all" type="button">Select none</button></div></div>
       <div class="project-list" id="blocked-projects" aria-describedby="blocked-help"></div>
       <details class="advanced-settings" id="advanced-settings"><summary>Advanced chat filters</summary>
-        <div class="filter-heading"><label for="chat-mode">Chats</label><select id="chat-mode" aria-describedby="chat-filter-help"><option value="blocklist">Blocklist</option><option value="whitelist">Whitelist</option></select></div>
+        <div class="filter-heading"><label for="chat-mode">Chats</label><select id="chat-mode" aria-describedby="chat-filter-help"><option value="blocklist">Follow everything except selected</option><option value="whitelist">Follow only selected</option></select></div>
         <p class="help filter-help" id="chat-filter-help">Checked chats are excluded.</p>
         <input class="project-search" id="chat-search" type="search" aria-label="Search chats" placeholder="Search chats…" autocomplete="off" spellcheck="false" aria-controls="selected-chats">
         <div class="project-toolbar"><span id="chat-summary" role="status">0 selected</span><div class="project-toolbar-actions"><button class="text-button" id="select-chats" type="button">Select all</button><button class="text-button" id="clear-chats" type="button">Select none</button></div></div>
@@ -62,11 +63,11 @@
     <section id="notifications-panel" class="tab-panel" role="tabpanel" aria-labelledby="notifications-tab" hidden>
       <h1 class="panel-title">Desktop notifications</h1><p class="panel-description">Get an alert when a chat needs you, finishes, or fails.</p>
       <label class="preference-row"><span>Notifications from T3 Pet<span class="help">Click an alert to open its chat.</span></span><input id="notifications" type="checkbox" aria-describedby="notification-status"></label>
-      <div class="field-group"><label for="notification-style">Notification style</label><select id="notification-style" aria-describedby="notification-style-help"><option value="custom">Custom</option><option value="os">OS notifications</option></select></div>
-      <p class="help" id="notification-style-help">Custom alerts use your pet's theme and appear beside the pet.</p>
+      <div class="field-group"><label for="notification-style">Notification style</label><select id="notification-style" aria-describedby="notification-style-help"><option value="custom">Beside the pet</option><option value="os">System notifications</option></select></div>
+      <p class="help" id="notification-style-help">Alerts beside the pet use its theme and do not follow system Do Not Disturb.</p>
       <label class="preference-row"><span>Play sounds<span class="help">Include sound with your alerts.</span></span><input id="notification-sound" type="checkbox"></label>
-      <div class="notification-settings"><button id="notification-setup" type="button" hidden>Set up notifications…</button><button id="test-notification" type="button">Send a test</button></div>
-      <p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>
+      <div class="notification-settings"><button id="notification-setup" type="button">Configure notification source…</button><button id="test-notification" type="button">Preview notification</button></div>
+      <p class="help">Preview uses the selected style without saving. Sound uses your saved preference.</p><p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>
     </section>
     <footer class="settings-actions"><span id="save-result" role="status">Changes apply after saving.</span><button class="text-button" id="discard" type="button" hidden>Discard</button><button class="primary" type="submit" id="save" disabled>Save changes</button></footer>
   </form>
@@ -79,4 +80,5 @@
     <footer class="modal-actions"><button id="notification-cancel" class="text-button" type="button">Cancel</button><button id="notification-apply" class="primary" type="submit"><span id="notification-action-label">Continue</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></footer>
   </form>
 </dialog>
+<dialog id="unsaved-dialog" class="notification-dialog unsaved-dialog" aria-labelledby="unsaved-title"><div><strong id="unsaved-title">Save your changes?</strong><p class="help">You have unsaved settings. Save them before leaving, or discard them.</p><p id="unsaved-error" class="help error" role="alert" hidden></p><div class="modal-actions"><button id="unsaved-cancel" type="button">Cancel</button><button id="unsaved-discard" type="button">Discard</button><button id="unsaved-save" class="primary" type="button">Save</button></div></div></dialog>
 <script src="settings.js"></script></body></html>

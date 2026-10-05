@@ -74,6 +74,10 @@ export interface AppState {
 }
 
 export interface PetBridge {
+  onSettingsExit(listener: (action: 'close' | 'onboarding') => void): () => void;
+  completeSettingsExit(action: 'close' | 'onboarding'): void;
+  onSettingsTab(listener: (tab: 'notifications') => void): () => void;
+  closeSetup(): void;
   onNotificationSound(listener: (kind: 'completion' | 'input', test: boolean) => void): () => void;
   notificationSetup(): Promise<NotificationSetup>;
   finishOnboarding(choice: 'keep' | 'enable' | 'migrate', style?: Preferences['notificationStyle']): Promise<NotificationSetup>;

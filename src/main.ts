@@ -15,6 +15,7 @@ import { runToastSmoke } from './toast-smoke';
 import { PetMenu, type MenuAction } from './pet-menu';
 import { runMenuSmoke } from './menu-smoke';
 import { activateSettingsWindow } from './settings-window';
+import { runSettingsUxSmoke } from './settings-ux-smoke';
 import { runMenuVideo } from './menu-video';
 import { allowedSnapshot } from './project-filter';
 import { inspectNotifications, migrateNotifications, closeT3, consentedSwitch } from './t3-notifications';
@@ -97,11 +98,11 @@ let snapshot: Snapshot = { connected: false, message: 'Looking for T3 Code\u2026
 const machine = new PetStateMachine();
 let pet = machine.update(snapshot, null);
 const moods: PetMood[] = ['idle', 'working', 'waiting', 'done', 'error', 'offline'];
-const labels: Record<PetMood, string> = { idle: 'Resting', working: 'Working', waiting: 'Approval needed', done: 'Turn finished', error: 'A chat hit an error', offline: 'T3 Code offline' };
+const labels: Record<PetMood, string> = { idle: 'Resting', working: 'Working', waiting: 'Needs attention', done: 'Finished', error: 'Error', offline: 'Offline' };
 const contextMenu = new PetMenu(() => ({ state: state(), hidden: visibility.manualHidden, previewMood }), (action, mood) => {
   if (action === 'visibility') { visibility.manualHidden = !visibility.manualHidden; applyVisibility(); publish(); }
   else if (action === 'settings') showSettings();
-  else if (action === 'notifications') showSettings(true);
+  else if (action === 'notifications') showSettings(false, 'notifications');
   else if (action === 'preview') setPreview(mood);
   else if (action === 'reset') resetPosition();
   else if (action === 'quit') app.quit();
@@ -197,7 +198,8 @@ async function createPet() {
   await hoverPanel.prepare();
 }
 
-function showSettings(onboarding = false) {
+let approvedSettingsClose = false;
+function showSettings(onboarding = false, tab?: 'notifications', approved = false) {
   traceSmoke('show settings requested');
   contextMenu.hide();
   if (migrating) { if (settingsWindow) activateSettingsWindow(settingsWindow); return; }
@@ -206,11 +208,22 @@ function showSettings(onboarding = false) {
   const width = 768;
   const height = Math.min(600, screen.getPrimaryDisplay().workArea.height - 32);
   if (settingsWindow && !settingsWindow.isDestroyed()) {
+    if (onboarding && !onboardingView && !approved) {
+      activateSettingsWindow(settingsWindow);
+      settingsWindow.webContents.send('pet:settings-exit', 'onboarding');
+      return;
+    }
     if (onboardingView !== onboarding) {
       onboardingView = onboarding;
       settingsWindow.setSize(width, height);
       settingsWindow.setTitle(onboarding ? 'Set up T3 Pet' : 'T3 Pet settings');
-      void settingsWindow.loadFile(join(__dirname, 'renderer', file));
+      void settingsWindow.loadFile(join(__dirname, 'renderer', file), { query: tab ? { tab } : {} });
+    }
+    else if (tab) {
+      const win = settingsWindow;
+      const selectTab = () => { if (!win.isDestroyed()) win.webContents.send('pet:settings-tab', tab); };
+      if (win.webContents.isLoadingMainFrame()) win.webContents.once('did-finish-load', selectTab);
+      else selectTab();
     }
     activateSettingsWindow(settingsWindow); return;
   }
@@ -223,12 +236,18 @@ function showSettings(onboarding = false) {
   });
   lockWindow(settingsWindow);
   const win = settingsWindow;
+  win.on('close', event => {
+    if (!quitting && !onboardingView && !approvedSettingsClose && !win.webContents.isLoadingMainFrame()) {
+      event.preventDefault();
+      win.webContents.send('pet:settings-exit', 'close');
+    }
+  });
   // Keep both signals: Windows can finish loading before the native window
   // accepts its first show, while ready-to-show is not guaranteed on every path.
   win.once('ready-to-show', () => activateSettingsWindow(win));
-  settingsWindow.on('closed', () => { settingsWindow = null; });
+  settingsWindow.on('closed', () => { settingsWindow = null; approvedSettingsClose = false; });
   settingsWindow.setMenu(null);
-  void settingsWindow.loadFile(join(__dirname, 'renderer', file)).then(() => {
+  void settingsWindow.loadFile(join(__dirname, 'renderer', file), { query: tab ? { tab } : {} }).then(() => {
     traceSmoke('settings loaded');
     activateSettingsWindow(win);
     if (smokeDirectory) setTimeout(() => traceSmoke(`settings activation visible=${!win.isDestroyed() && win.isVisible()} focused=${!win.isDestroyed() && win.isFocused()}`), 300);
@@ -419,6 +438,15 @@ function registerIpc() {
     customNotifications.hitTest(event.sender, areas);
   });
   ipcMain.on('pet:onboarding', event => { trusted(event); showSettings(true); });
+  ipcMain.on('pet:settings-exit-complete', (event, action: unknown) => {
+    if (event.sender !== settingsWindow?.webContents || event.senderFrame !== event.sender.mainFrame || onboardingView || migrating) return;
+    if (action === 'onboarding') showSettings(true, undefined, true);
+    else if (action === 'close') { approvedSettingsClose = true; settingsWindow.close(); }
+  });
+  ipcMain.on('pet:close-setup', event => {
+    traceSmoke(`close setup requested: sender=${event.sender === settingsWindow?.webContents} frame=${event.senderFrame === event.sender.mainFrame} onboarding=${onboardingView} migrating=${migrating}`);
+    if (event.sender === settingsWindow?.webContents && event.senderFrame === event.sender.mainFrame && onboardingView && !migrating) settingsWindow.close();
+  });
   ipcMain.handle('pet:open-chat', async (event, threadId: unknown) => {
     if (event.sender !== hoverPanel.window?.webContents || event.senderFrame !== event.sender.mainFrame) throw new Error('Unknown window.');
     if (typeof threadId !== 'string' || !snapshot.connected || !snapshot.threads.some(thread => thread.id === threadId)) {
@@ -900,7 +928,7 @@ async function runSmokeTest(directory: string) {
     });
     trigger.click(); key('Home'); key('Escape');
     const escaped = source.value === initial && trigger.getAttribute('aria-expanded')==='false';
-    key('c');
+    key('b');
     const typed = document.getElementById(trigger.getAttribute('aria-activedescendant'))?.dataset.value === 'custom';
     key('Tab');
     const tabClosed = trigger.getAttribute('aria-expanded')==='false';
@@ -1015,6 +1043,14 @@ async function runSmokeTest(directory: string) {
   writeFileSync(join(directory, 'settings-missing-chat.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`window.pet.savePreferences({followThreadId: null})`);
   const originalPreferences = { ...preferences };
+  const uxResult = await runSettingsUxSmoke(settingsWindow!, directory);
+  traceSmoke(`settings UX checked: ${JSON.stringify(uxResult)}`);
+  if (!uxResult.checks.saveClosesWindow) throw new Error('Saving from the exit dialog did not close settings.');
+  report.settingsUx = { ...uxResult.checks, savedOnClose: preferences.launchAtLogin === uxResult.expected };
+  const settingsReloaded = new Promise<void>(resolve => {
+    showSettings(); settingsWindow!.webContents.once('did-finish-load', () => resolve());
+  });
+  await settingsReloaded; await wait(150);
   const fixture = join(directory, 't3-fixture');
   mkdirSync(fixture, { recursive: true });
   const fixtureSettings = join(fixture, 'client-settings.json');
@@ -1045,8 +1081,8 @@ async function runSmokeTest(directory: string) {
     for (let i=0;i<40 && document.getElementById('notification-apply').disabled;i++) await new Promise(r=>setTimeout(r,25));
     const reset = document.querySelector('input[value=keep]').checked;
     const setupVisible = !document.getElementById('notification-setup').hidden;
-    const globalOnboarding = !document.getElementById('reopen-onboarding').closest('[role=tabpanel]');
-    return {opened, styleHidden, styleShown, action, cancelled, closed, reset, setupVisible, globalOnboarding};
+    const setupInGeneral = document.getElementById('reopen-onboarding').closest('[role=tabpanel]').id==='general-panel';
+    return {opened, styleHidden, styleShown, action, cancelled, closed, reset, setupVisible, setupInGeneral};
   })()`);
   await wait(80);
   writeFileSync(join(directory, 'notification-modal.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
@@ -1065,13 +1101,21 @@ async function runSmokeTest(directory: string) {
   (report.notificationModal as Record<string, boolean>).keptActive = !keptToast.isDestroyed();
   (report.notificationModal as Record<string, boolean>).keptTracking = notifications.update(waitingSnapshot, true, null, false).some(notice => notice.kind === 'Approval needed');
   customNotifications.clear(); notifications.reset();
-  (report.notificationModal as Record<string, boolean>).applied = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('notification-dialog').open && document.title === 'T3 Pet settings' && document.getElementById('notification-setup').hidden`);
+  (report.notificationModal as Record<string, boolean>).applied = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('notification-dialog').open && document.title === 'T3 Pet settings' && !document.getElementById('notification-setup').hidden`);
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);
   const onboardingReopened = new Promise<void>(resolve => settingsWindow!.webContents.once('did-finish-load', () => resolve()));
+  const setupLogin = preferences.launchAtLogin;
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('general-tab').click();document.getElementById('login').click()`);
   smokeStateDelay = 750; smokeStateFailures = 1;
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('reopen-onboarding').click()`);
+  await wait(100);
+  (report.settingsUx as Record<string, boolean>).discardBeforeSetup = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const dialog=document.getElementById('unsaved-dialog'); const guarded=dialog.open;
+    document.getElementById('unsaved-discard').click(); return guarded;
+  })()`);
   await onboardingReopened;
+  (report.settingsUx as Record<string, boolean>).discardDidNotSave = preferences.launchAtLogin === setupLogin;
   const beforeInitialization = JSON.stringify(preferences);
   publish(); // Deliberately exercise a state push while the invoke is delayed.
   report.onboardingInitialization = await settingsWindow!.webContents.executeJavaScript(`(() => {
@@ -1089,19 +1133,8 @@ async function runSmokeTest(directory: string) {
   })()`);
   await wait(850); smokeStateDelay = 0;
   report.onboardingInitializationRetry = report.onboardingInitializationRetry && await settingsWindow!.webContents.executeJavaScript(`document.getElementById('retry-initialization').hidden && !document.getElementById('continue').disabled && document.getElementById('ui-theme').value==='follow-t3-code'`);
-  report.onboardingGeneral = await settingsWindow!.webContents.executeJavaScript(`(() => {
-    const visible = !document.getElementById('general-step').hidden;
-    const first = document.querySelector('.steps button').dataset.step === '0';
-    const defaultTheme = document.getElementById('ui-theme').value === 'follow-t3-code';
-    document.querySelector('#theme-styles input[value=ember]').click();
-    document.querySelector('#theme-modes input[value=dark]').click();
-    return {visible, first, defaultTheme};
-  })()`);
-  writeFileSync(join(directory, 'onboarding-general.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  report.onboardingConnectionFirst = await settingsWindow!.webContents.executeJavaScript(`!document.getElementById('connect-step').hidden && document.querySelectorAll('.steps button').length===4 && document.getElementById('detected-folder').textContent.includes('t3-fixture')`);
   report.onboardingProgressInitial = await settingsWindow!.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.steps button')).every(control => control.disabled)`);
-  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
-  await wait(200);
-  (report.onboardingGeneral as Record<string, boolean>).persisted = preferences.theme === 'ember' && preferences.themeAppearance === 'dark';
   report.onboardingConnect = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('connect-step').hidden, overflow: document.documentElement.scrollWidth > innerWidth, bridge: typeof window.pet.finishOnboarding === 'function'})`);
   settingsWindow!.setSize(470, 500);
   await settingsWindow!.webContents.executeJavaScript(`(() => {document.documentElement.style.setProperty('--ui-font-size','24px');const error=document.getElementById('setup-error');error.hidden=false;error.textContent='Could not connect. Check the selected folder and try again. This multi-line error must remain readable.';})()`);
@@ -1150,6 +1183,16 @@ async function runSmokeTest(directory: string) {
     trigger.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
     return {allCustom,fits,keyboard:source.value==='96' && trigger.textContent.includes('Small'),closed:trigger.getAttribute('aria-expanded')==='false'};
   })()`);
+  report.onboardingCustomization = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const optional=document.getElementById('customization');
+    const collapsed=!optional.open; optional.open=true;
+    const follow=document.getElementById('follow-t3-theme');
+    const locked=document.querySelector('#theme-styles input').disabled;
+    if(follow.checked) follow.click();
+    document.querySelector('#theme-styles input[value=ember]').click();
+    document.querySelector('#theme-modes input[value=dark]').click();
+    return {collapsed,locked};
+  })()`);
   report.onboardingPet = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const visible = !document.getElementById('pet-step').hidden;
     const choices = document.querySelectorAll('#pet-gallery input[name=character]').length === 4;
@@ -1190,10 +1233,10 @@ async function runSmokeTest(directory: string) {
   })()`);
   report.onboardingProgressBack = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const controls = document.querySelectorAll('.steps button');
-    const backEnabled = !controls[0].disabled && !controls[1].disabled && !controls[2].disabled && controls[3].disabled && controls[4].disabled;
-    controls[2].click();
+    const backEnabled = !controls[0].disabled && !controls[1].disabled && controls[2].disabled && controls[3].disabled;
+    controls[1].click();
     return { backEnabled, returned: !document.getElementById('pet-step').hidden,
-      current: controls[2].getAttribute('aria-current') === 'step', folder: document.getElementById('directory').value === ${JSON.stringify(fixture)}, pet: document.querySelector('#pet-gallery input[value=miso]').checked };
+      current: controls[1].getAttribute('aria-current') === 'step', folder: document.getElementById('directory').value === ${JSON.stringify(fixture)}, pet: document.querySelector('#pet-gallery input[value=miso]').checked };
   })()`);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
@@ -1226,7 +1269,7 @@ async function runSmokeTest(directory: string) {
   writeFileSync(join(directory, 'onboarding-notification-style.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(150);
-  report.onboardingFinish = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('finish-step').hidden, test: !document.getElementById('test-row').hidden, text: document.getElementById('finish-detail').textContent, overflow: document.documentElement.scrollWidth > innerWidth})`);
+  report.onboardingFinish = await settingsWindow!.webContents.executeJavaScript(`({done: document.getElementById('action-label').textContent==='Done', secondarySettings: !document.getElementById('open-settings').hidden, visible: !document.getElementById('finish-step').hidden, test: !document.getElementById('test-row').hidden, text: document.getElementById('finish-detail').textContent, overflow: document.documentElement.scrollWidth > innerWidth})`);
   (report.onboardingPet as Record<string, boolean>).finishPreview = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('preview-pet').dataset.pet === 'miso'`);
   report.onboardingProgressFinished = await settingsWindow!.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.steps button')).every(control => control.disabled)`);
   await captureOnboarding('finish');
@@ -1242,6 +1285,14 @@ async function runSmokeTest(directory: string) {
     const saved=(await window.pet.getState()).preferences.notificationStyle==='os';
     await window.pet.finishOnboarding('enable','custom');return saved;
   })()`);
+  const setupClosed = new Promise<void>(resolve => settingsWindow!.once('closed', () => resolve()));
+  traceSmoke(`finish action: ${JSON.stringify(await settingsWindow!.webContents.executeJavaScript(`({disabled:document.getElementById('continue').disabled,valid:document.getElementById('onboarding-form').checkValidity(),label:document.getElementById('action-label').textContent})`))}`);
+  // Closing the renderer can destroy the evaluation context before Chromium
+  // acknowledges the click. The native closed event is the completion signal.
+  void settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`).catch(() => {});
+  await Promise.race([setupClosed, wait(2000)]);
+  if (settingsWindow !== null) throw new Error('Done did not close onboarding.');
+  (report.onboardingFinish as Record<string, unknown>).doneClosesSetup = settingsWindow === null;
   if (process.argv.includes('--notification-smoke-test')) {
     const notice = showNotification({ threadId: '', title: 'Test notification', body: 'Packaged T3 Pet notification check.', kind: 'test' }, true, 'os') as Notification;
     const shown = await new Promise<string>(resolve => {

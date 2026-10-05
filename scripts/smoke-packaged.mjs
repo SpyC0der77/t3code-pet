@@ -125,6 +125,7 @@ assert.equal(report.projectBlocklist.waitingCount, 0);
 assert.equal(report.projectBlocklist.workingCount, 1);
 assert.ok(report.projectBlocklist.footerFits);
 assert.ok(Object.values(report.settingsDraft).every(Boolean), 'Search, draft retention, or discard failed.');
+assert.ok(Object.values(report.settingsUx).every(Boolean), 'Settings exit guard, failed-save recovery, or save-on-close failed.');
 assert.ok(Object.values(report.chatActivity).every(Boolean), 'Chat activity did not load or search correctly.');
 assert.ok(Object.values(report.selectionFilters).every(Boolean), 'Project/chat filter modes, search, intersection, or discard failed.');
 assert.ok(!report.advancedCompact.overflow && report.advancedCompact.footerFits && report.advancedCompact.chatControlsVisible, 'Advanced filters are inaccessible in the compact window.');
@@ -132,7 +133,7 @@ assert.ok(!report.settingsCompact.overflow && report.settingsCompact.footerFits,
 assert.ok(report.ui.hasBridge && !report.ui.overflow);
 assert.ok(report.animation.opaquePixels > 0);
 assert.ok(report.hoverEmpty && report.hoverIdle && report.hoverDisconnected && report.chatNavigation.rejectedUnknown, 'Idle, empty, or disconnected hover content failed.');
-assert.ok(Object.values(report.onboardingGeneral).every(Boolean), 'General onboarding default, order or persistence failed.');
+assert.ok(report.onboardingConnectionFirst && Object.values(report.onboardingCustomization).every(Boolean), 'Connection-first onboarding or optional customization failed.');
 assert.ok(report.onboardingConnect.bridge && !report.onboardingConnect.overflow);
 assert.ok(Object.values(report.notificationModal).every(Boolean), 'Settings notification modal, cancellation, compact layout, or apply failed.');
 assert.ok(Object.values(report.onboardingPet).every(Boolean), 'Onboarding pet selection, navigation, persistence, or finish preview failed.');
@@ -140,12 +141,12 @@ assert.ok(report.onboardingNotifications.visible && !report.onboardingNotificati
 assert.ok(report.onboardingCancellation.cancelled && report.onboardingCancellation.unchanged && report.onboardingCancelFileUnchanged);
 assert.equal(report.fixtureMigration, 'complete');
 assert.equal(report.fixtureMigratedSettings.notificationMode, 'off');
-assert.ok(report.onboardingFinish.visible && !report.onboardingFinish.overflow);
+assert.ok(report.onboardingFinish.visible && report.onboardingFinish.done && report.onboardingFinish.doneClosesSetup && report.onboardingFinish.secondarySettings && !report.onboardingFinish.overflow);
 assert.ok(report.onboardingProgressInitial && report.onboardingProgressFinished, 'Setup navigation allowed skipping a required stage or repeating completed migration.');
 assert.ok(Object.values(report.onboardingProgressBack).every(Boolean), 'Completed-step navigation lost the folder or current-step state.');
 assert.ok(report.onboardingActionIcon, 'Changing notification action removed its label or arrow.');
 for (const stage of ['connect', 'connection-folder', 'pet', 'notifications', 'finish']) {
   const layout = report['onboardingCompact' + stage];
-  assert.ok(!layout.overflow && layout.footerFits && layout.progressCount === 5 && layout.currentCount === 1, `Compact ${stage} onboarding overflowed or lost its progress/action controls.`);
+  assert.ok(!layout.overflow && layout.footerFits && layout.progressCount === 4 && layout.currentCount === 1, `Compact ${stage} onboarding overflowed or lost its progress/action controls.`);
 }
 console.log(`Packaged ${process.platform} smoke test passed. Report: ${directory}`);

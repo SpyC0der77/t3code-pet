@@ -4,7 +4,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 .wizard-header { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 12px; flex-shrink: 0; }
 .wizard-identity { display: flex; align-items: center; gap: 6px; min-height: 32px; color: var(--muted); font-size: 1.7143rem; font-weight: 500; letter-spacing: -.025em; }
 .wizard-identity img { width: 24px; height: 24px; border-radius: 4px; }
-.steps { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.steps { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .steps li { min-width: 0; }
 .steps button { width: 100%; min-width: 0; justify-content: flex-start; padding: 8px 10px; border-color: transparent; background: transparent; color: var(--muted); text-align: left; }
 .steps button:disabled { opacity: 1; }
@@ -63,3 +63,6 @@ h1:focus { outline: none; }
   .pet-preview canvas { width: 64px; height: 64px; }
   .instructions-list div { grid-template-columns: 1fr; gap: 2px; font-size: 0.9286rem; }
 }
+
+#detected-folder { margin: 12px 0 8px; overflow-wrap: anywhere; }
+#connection-recovery { margin-top: 8px; }

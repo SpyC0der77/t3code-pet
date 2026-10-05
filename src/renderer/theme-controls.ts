@@ -82,7 +82,7 @@ export function createThemeControls() {
     if (!following) independent = theme.value as Preferences['theme'];
     follow.checked = following; follow.disabled = busy;
     theme.disabled = busy; appearance.disabled = busy || following;
-    for (const input of styles) { input.checked = input.value === theme.value; input.disabled = busy; }
+    for (const input of styles) { input.checked = input.value === theme.value; input.disabled = busy || following; }
     for (const { input } of modes) { input.checked = input.value === appearance.value; input.disabled = busy || following; }
     const id = following ? document.documentElement.dataset.theme ?? 'default' : theme.value;
     const colors = (mode: Mode) => following && resolved
