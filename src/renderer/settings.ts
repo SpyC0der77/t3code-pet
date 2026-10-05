@@ -113,6 +113,7 @@ function updateControls(message?: string) {
     tab.setAttribute('aria-label', tab.dataset.label! + (edited ? ', unsaved changes' : ''));
   }
   updateFilterResult();
+  input('login').disabled = saving || !current?.supportsLoginStartup;
   button('save').disabled = saving || !changed; button('discard').hidden = !changed; button('discard').disabled = saving;
   button('notification-setup').disabled = saving || changed;
   button('notification-setup').title = changed ? 'Save or discard your changes before opening setup.' : '';
@@ -226,7 +227,6 @@ function render(state: AppState) {
   element('connection-recovery').hidden = state.snapshot.connected;
   if (!state.snapshot.connected && wasConnected !== false) (element('data-folder') as HTMLDetailsElement).open = true;
   text('version', `v${state.version}`); text('chat-count', `${state.snapshot.threads.length} ${state.snapshot.threads.length === 1 ? 'chat' : 'chats'}`);
-  input('login').disabled = saving || !state.supportsLoginStartup;
   input('login').closest('label')!.title = state.supportsLoginStartup ? '' : 'Login startup is unavailable on this system.';
   updateNotificationControls();
 }

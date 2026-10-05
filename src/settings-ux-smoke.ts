@@ -28,8 +28,9 @@ export async function runSettingsUxSmoke(win: BrowserWindow, directory: string) 
   })()`);
   await until(`!document.getElementById('connection-retry').disabled`);
   checks.connectionCheckPreservesDraft = await win.webContents.executeJavaScript(`(async () => {
-    const saved = (await window.pet.getState()).preferences.launchAtLogin;
-    return saved !== document.getElementById('login').checked && !document.getElementById('save').disabled;
+    const state = await window.pet.getState();
+    const login = document.getElementById('login');
+    return state.preferences.launchAtLogin !== login.checked && !document.getElementById('save').disabled && login.disabled === !state.supportsLoginStartup;
   })()`);
   win.close(); await until(`document.getElementById('unsaved-dialog').open && document.activeElement.id==='unsaved-cancel'`);
   checks.closeGuard = !win.isDestroyed() && await win.webContents.executeJavaScript(`document.getElementById('unsaved-dialog').open && document.activeElement.id==='unsaved-cancel'`);
