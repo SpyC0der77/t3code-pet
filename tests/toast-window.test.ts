@@ -13,7 +13,8 @@ test('notification capture restores pass-through and never forwards competing cu
   const require = createRequire(import.meta.url);
   const cursor = { x: 50, y: 50 };
   const calls: { ignore: boolean; options: unknown }[] = [];
-  const sender = { send() {} };
+  const hover: boolean[] = [];
+  const sender = { send: (_channel: string, inside: boolean) => hover.push(inside) };
   runInNewContext(source, { module, exports: module.exports, __dirname: '.',
     require: (name: string) => name === 'electron' ? { screen: { getCursorScreenPoint: () => cursor } } : require(name) });
   const toasts = new module.exports.ToastWindows(() => null, () => ({}), () => {}, () => {});
@@ -34,6 +35,13 @@ test('notification capture restores pass-through and never forwards competing cu
   toasts.capture(wc, true);
   toasts.capture(wc, false);
   assert.deepEqual(calls.map(c => c.ignore), [false, true, false, true]);
+  assert.deepEqual(hover, [true, false], 'Capture alone must not invent physical hover transitions.');
+  toasts.pointerTracking = false;
+  toasts.capture(wc, true);
+  toasts.hitTest(wc, area);
+  toasts.capture(wc, false);
+  assert.deepEqual(calls.map(c => c.ignore), [false, true, false, true, false, true]);
+  assert.deepEqual(hover, [true, false], 'Synthetic gestures must not sample the unrelated desktop pointer.');
   assert.ok(calls.every(c => c.options === undefined));
 });
 

@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 
+/** Resolve the icon location supported by each platform's native shell APIs. */
 export function appIconPath(root: string, resources: string, packaged: boolean, platform = process.platform) {
   // Windows taskbar and shell APIs need a persistent file outside app.asar.
   if (platform === 'win32' && packaged) return join(resources, 'icon.ico');

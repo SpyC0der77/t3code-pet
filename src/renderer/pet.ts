@@ -86,6 +86,7 @@ function ignore(value: boolean) {
   passthrough = value;
   window.pet.mousePassthrough(value);
 }
+/** Map native window coordinates to sprite alpha before changing click-through. */
 function checkPointer(point: { x: number; y: number }) {
   if (dragging) return;
   // Pixels outside the pet and its outline pass clicks through to the desktop.

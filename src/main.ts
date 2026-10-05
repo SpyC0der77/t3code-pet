@@ -194,7 +194,7 @@ async function createPet() {
     if (pointerWindow.isDestroyed() || !pointerWindow.isVisible() || dragTimer) return;
     const point = screen.getCursorScreenPoint(), bounds = pointerWindow.getBounds();
     pointerWindow.webContents.send('pet:cursor', { x: point.x - bounds.x, y: point.y - bounds.y });
-  }, 40);
+  }, 16);
   pointerWindow.once('closed', () => clearInterval(pointerTimer));
   const ready = new Promise<void>(resolve => {
     petWindow!.once('ready-to-show', () => {

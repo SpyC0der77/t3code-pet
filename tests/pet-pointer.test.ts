@@ -13,7 +13,7 @@ test('pet hit testing follows cursor coordinates without native enter/leave feed
   const events = new Map<string, () => void>();
   const canvas = { width: 288, height: 288, addEventListener() {},
     getBoundingClientRect: () => ({ left: 8, top: 8, width: 144, height: 144 }),
-    getContext: () => ({ getImageData: () => ({ data: [0, 0, 0, alpha] }) }) };
+    getContext: () => ({ getImageData: (x: number, y: number) => ({ data: [0, 0, 0, x === 144 && y === 144 ? alpha : 0] }) }) };
   runInNewContext(source, {
     document: { querySelector: () => canvas, createElement: () => canvas,
       addEventListener: (name: string, listener: () => void) => events.set(name, listener) },

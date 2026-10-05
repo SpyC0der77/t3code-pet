@@ -27,6 +27,7 @@ export class ToastWindows {
   private closing?: ReturnType<typeof setTimeout>;
   private hitAreas: ToastRect[] = [];
   private inside = false;
+  private interactive = false;
   private paused = false;
   private captured = false;
 
@@ -70,7 +71,7 @@ export class ToastWindows {
     win.on('closed', () => {
       if (this.window !== win) return;
       this.window = null; this.ready = false; this.windows.clear(); this.state.clear();
-      this.hitAreas = []; this.inside = false; this.paused = false; this.captured = false;
+      this.hitAreas = []; this.inside = false; this.interactive = false; this.paused = false; this.captured = false;
       if (this.ticker) clearInterval(this.ticker);
       this.ticker = undefined;
     });
@@ -113,17 +114,25 @@ export class ToastWindows {
   capture(sender: WebContents, active: boolean) {
     if (!this.isSender(sender)) return;
     this.captured = active;
-    this.checkPointer(true);
+    this.checkPointer();
+    this.setInteractive(this.captured || this.inside);
   }
-  private checkPointer(force = false) {
+  /** Update native capture without reporting a synthetic pointer entry or exit. */
+  private setInteractive(active: boolean) {
+    if (active === this.interactive || !this.window || this.window.isDestroyed()) return;
+    this.interactive = active;
+    this.window.setIgnoreMouseEvents(!active);
+  }
+  /** Track physical hover separately from the native capture used by gestures. */
+  private checkPointer() {
     const win = this.window;
-    if ((!this.pointerTracking && !force) || !win || win.isDestroyed() || !this.ready) return;
+    if (!this.pointerTracking || !win || win.isDestroyed() || !this.ready) return;
     const point = screen.getCursorScreenPoint(), bounds = win.getBounds();
-    const inside = this.captured || this.hitAreas.some(r => point.x >= bounds.x + r.x && point.x < bounds.x + r.x + r.width &&
+    const inside = this.hitAreas.some(r => point.x >= bounds.x + r.x && point.x < bounds.x + r.x + r.width &&
       point.y >= bounds.y + r.y && point.y < bounds.y + r.y + r.height);
+    this.setInteractive(this.captured || inside);
     if (inside === this.inside) return;
     this.inside = inside;
-    win.setIgnoreMouseEvents(!inside);
     win.webContents.send('toast:pointer', inside);
   }
   publish() {
