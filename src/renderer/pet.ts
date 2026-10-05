@@ -4,6 +4,17 @@ import type { AppState } from '../shared';
 
 const cat = document.querySelector<HTMLCanvasElement>('#cat')!;
 let current: AppState | null = null;
+const notificationAudio = {
+  completion: new Audio('notification-completion.mp3'),
+  input: new Audio('notification-input.mp3'),
+};
+for (const audio of Object.values(notificationAudio)) audio.preload = 'auto';
+window.pet.onNotificationSound((kind, test) => {
+  if (!current?.preferences.notificationSound || (!test && !current.preferences.notificationsEnabled)) return;
+  // A burst should play one cue, rather than several sounds over each other.
+  for (const audio of Object.values(notificationAudio)) { audio.pause(); audio.currentTime = 0; }
+  void notificationAudio[kind].play().catch(error => console.error('Notification sound could not play', error));
+});
 let dragging = false;
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let hoverSent = false;
@@ -22,6 +33,9 @@ const motion = matchMedia('(prefers-reduced-motion: reduce)');
 
 function render(state: AppState) {
   current = state;
+  if (!state.preferences.notificationsEnabled || !state.preferences.notificationSound) {
+    for (const audio of Object.values(notificationAudio)) audio.pause();
+  }
   // Keep the artwork at the selected size, with room for its thin outline.
   cat.style.width = `${state.preferences.size * 288 / 256}px`;
   cat.style.height = `${state.preferences.size * 288 / 256}px`;
@@ -46,9 +60,9 @@ void loadSprites().then(() => { spriteReady = true; paint(); requestAnimationFra
 window.pet.onState(render);
 void window.pet.getState().then(render);
 cat.addEventListener('keydown', event => {
-  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.pet.showMenu(); }
+  if (event.key === 'Enter' || event.key === ' ' || event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); window.pet.showMenu(); }
 });
-cat.addEventListener('contextmenu', event => { event.preventDefault(); window.pet.showMenu(); });
+cat.addEventListener('contextmenu', event => { event.preventDefault(); window.pet.showMenu({ x: event.screenX, y: event.screenY }); });
 cat.addEventListener('pointerdown', event => {
   if (event.button !== 0) return;
   cancelHover();

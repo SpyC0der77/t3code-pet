@@ -4,7 +4,7 @@ svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width:
 .wizard-header { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 12px; flex-shrink: 0; }
 .wizard-identity { display: flex; align-items: center; gap: 6px; min-height: 32px; color: var(--muted); font-size: 1.7143rem; font-weight: 500; letter-spacing: -.025em; }
 .wizard-identity img { width: 24px; height: 24px; border-radius: 4px; }
-.steps { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.steps { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .steps li { min-width: 0; }
 .steps button { width: 100%; min-width: 0; justify-content: flex-start; padding: 8px 10px; border-color: transparent; background: transparent; color: var(--muted); text-align: left; }
 .steps button:disabled { opacity: 1; }
@@ -47,6 +47,10 @@ h1:focus { outline: none; }
 .wizard-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 24px; flex-shrink: 0; }
 .wizard-actions { display: flex; gap: 12px; margin-left: auto; }
 .setup-error { color: var(--error); font-size: 0.8571rem; line-height: 1.5; margin-top: 12px; overflow-wrap: anywhere; flex-shrink: 0; }
+@media (max-width: 640px) {
+  .steps button { flex-direction: column; gap: 4px; padding: 6px 4px; }
+  .step-label { font-size: 0.8571rem; }
+}
 @media (max-width: 540px) {
   .wizard-header { padding: 20px 16px 12px; }
   #onboarding-form { padding: 20px 16px; }

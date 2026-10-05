@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { compress } from 'snappyjs';
 import { readThemeLog, readThemeTable, ThemeStorage } from '../src/theme-storage';
 import { resolveUiTheme, T3ThemeSync } from '../src/t3-theme';
-import { palettes } from '../src/t3-palettes';
+import { defaultUiPalette, palettes } from '../src/t3-palettes';
 import { maskedCrc32c } from '../src/leveldb-checksum';
 import { writeThemeManifestFixture } from '../src/theme-fixture';
 
@@ -104,6 +104,53 @@ test('T3 palettes follow appearance modes, system changes, aliases, halves and c
   assert.equal(theme.source, 'dark');
   assert.equal(theme.fontFamily, 'Georgia'); assert.equal(theme.fontSize, 16);
 });
+
+function luminance(hex: string) {
+  assert.match(hex, /^#[0-9a-f]{6}$/i, 'dark palette colors must use opaque sRGB values');
+  const channels = hex.slice(1).match(/../g)!.map(channel => {
+    const value = parseInt(channel, 16) / 255;
+    return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+  });
+  return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+}
+function contrast(a: string, b: string) {
+  const values = [luminance(a), luminance(b)].sort((a, b) => b - a);
+  return (values[0] + .05) / (values[1] + .05);
+}
+
+test('every built-in dark palette has readable text, actions and input boundaries', () => {
+  const themes = [
+    resolveUiTheme({ 't3code:theme': 'dark' }, false),
+    resolveUiTheme({ 't3code:theme': 'system' }, true),
+    ...Object.keys(palettes).map(id => resolveUiTheme({ 't3code:theme': id, 't3code:theme-appearance-mode': 'dark' }, false)),
+  ];
+  for (const theme of themes) {
+    const colors = theme.colors;
+    for (const surface of ['canvas', 'chrome', 'surface', 'surfaceOverlay', 'accentSurface']) {
+      for (const foreground of ['text', 'mutedForeground', 'errorForeground']) {
+        assert.ok(contrast(colors[foreground], colors[surface]) >= 4.5, `${theme.id}: ${foreground} on ${surface}`);
+      }
+      assert.ok(contrast(colors.input, colors[surface]) >= 3, `${theme.id}: input on ${surface}`);
+      assert.ok(contrast(colors.messageAction, colors[surface]) >= 3, `${theme.id}: focus on ${surface}`);
+    }
+    for (const background of ['messageAction', 'messageActionHover']) {
+      assert.ok(contrast(colors.messageActionForeground, colors[background]) >= 4.5, `${theme.id}: button text on ${background}`);
+    }
+    assert.ok(luminance(colors.canvas) < luminance(colors.surface));
+    assert.ok(luminance(colors.surface) < luminance(colors.surfaceOverlay));
+    assert.ok(luminance(colors.surfaceOverlay) < luminance(colors.accentSurface));
+  }
+});
+
+test('dark packaged-check fixtures resolve the restrained Ember and Iris palettes', () => {
+  for (const id of ['ember', 'iris'] as const) {
+    const theme = resolveUiTheme({ 't3code:theme': id, 't3code:theme-appearance-mode': 'dark' }, false);
+    assert.deepEqual(theme.colors, palettes[id].dark);
+    assert.equal(theme.colors.canvas, defaultUiPalette.dark.canvas);
+    assert.equal(theme.colors.surfaceOverlay, defaultUiPalette.dark.surfaceOverlay);
+  }
+  assert.notEqual(palettes.ember.dark.messageAction, palettes.iris.dark.messageAction);
+});
 test('the live watcher publishes a theme edit without status polling or restarting', async t => {
   t.mock.method(globalThis, 'setInterval', () => { throw new Error('The watcher test must not start periodic refresh'); });
   const root = mkdtempSync(join(tmpdir(), 't3pet-theme-watch-')), directory = join(root, 'Local Storage', 'leveldb');
@@ -112,8 +159,27 @@ test('the live watcher publishes a theme edit without status polling or restarti
   const changes: string[] = [];
   const sync = new T3ThemeSync(() => root, () => root, () => false, theme => changes.push(theme.id), null);
   t.after(() => { sync.dispose(); rmSync(root, { recursive: true, force: true }); });
+  // Let the native watcher start before editing. macOS directory events can
+  // be batched, especially while the rest of the CI suite is running.
+  await new Promise<void>(resolve => setImmediate(resolve));
   writeFileSync(join(directory, '000002.log'), log({ 't3code:theme': 'iris' }, 100n));
-  const deadline = Date.now() + 2000;
+  const deadline = Date.now() + 10_000;
   while (!changes.includes('iris') && Date.now() < deadline) await new Promise(r => setTimeout(r, 20));
-  assert.deepEqual(changes, ['ember', 'iris']);
+  assert.deepEqual(changes, ['ember', 'iris'], 'Native filesystem events must publish the edit without periodic refresh.');
+});
+
+test('custom themes retain warning colors and both preview variants, including mixed halves', () => {
+  const values = {
+    't3code:theme': 'custom', 't3code:theme-appearance-mode': 'dark',
+    't3code:themes:v1': JSON.stringify([{ id: 'custom', appearance: 'light',
+      colors: { canvas: '#faf0e0', warningForeground: '#aabbcc' },
+      variants: { dark: { canvas: '#112233', warningForeground: '#ccbbaa' } } }]),
+  };
+  const theme = resolveUiTheme(values, false);
+  assert.equal(theme.colors.warningForeground, '#ccbbaa');
+  assert.equal(theme.previewColors?.light.canvas, '#faf0e0');
+  assert.equal(theme.previewColors?.dark.canvas, '#112233');
+  const mixed = resolveUiTheme({ ...values, 't3code:theme-halves:v1': JSON.stringify({ light: 'grove' }) }, false);
+  assert.equal(mixed.previewColors?.light.canvas, palettes.grove.light.canvas);
+  assert.equal(mixed.previewColors?.dark.canvas, '#112233');
 });

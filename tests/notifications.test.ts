@@ -41,3 +41,19 @@ test('alerts per chat, completion turns, and failures independent of provider', 
   engine.update(snapshot(thread({ turnState: 'completed' })), true, null, false);
   assert.equal(engine.update(snapshot(thread({ turnId: 'second', turnState: 'completed' })), true, null, false)[0].title, 'Turn finished');
 });
+
+test('pending counts do not repeat attention alerts, but a new turn or attention kind does', () => {
+  const engine = new ChatNotifications();
+  engine.update(snapshot(thread()), true, null, false);
+  assert.equal(engine.update(snapshot(thread({ pendingApproval: 1 })), true, null, false).length, 1);
+  assert.deepEqual(engine.update(snapshot(thread({ pendingApproval: 2 })), true, null, false), []);
+  assert.equal(engine.update(snapshot(thread({ pendingApproval: 2, turnId: 'next' })), true, null, false).length, 1);
+  assert.equal(engine.update(snapshot(thread({ pendingInput: 1, turnId: 'next' })), true, null, false)[0].kind, 'Input needed');
+});
+
+test('newly discovered chats establish a baseline instead of alerting on historical attention', () => {
+  const engine = new ChatNotifications();
+  engine.update(snapshot(thread()), true, null, false);
+  assert.deepEqual(engine.update(snapshot(thread(), thread({ id: 'b', pendingInput: 1 })), true, null, false), []);
+  assert.equal(engine.update(snapshot(thread(), thread({ id: 'b', pendingInput: 1, turnId: 'next' })), true, null, false)[0].threadId, 'b');
+});

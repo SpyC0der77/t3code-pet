@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, watch, type FSWatcher } from 'node:fs';
 import { join } from 'node:path';
-import { palettes } from './t3-palettes';
+import { defaultUiPalette, palettes } from './t3-palettes';
 import { ThemeStorage } from './theme-storage';
 
 export interface UiTheme {
@@ -8,19 +8,17 @@ export interface UiTheme {
   source: 'light' | 'dark' | 'system';
   id: string;
   colors: Record<string, string>;
+  previewColors?: { light: Record<string, string>; dark: Record<string, string> };
   fontFamily: string;
   fontSize: number;
 }
-const stock = {
-  light: { canvas: '#fafafa', chrome: '#fafafa', surface: '#ffffff', surfaceOverlay: '#ffffff', text: '#27272a', mutedForeground: '#71717a', border: '#e4e4e7', input: '#d4d4d8', messageAction: 'oklch(0.488 0.217 264)', messageActionForeground: '#ffffff', messageActionHover: 'oklch(0.488 0.217 264)', accentSurface: '#f4f4f5', errorForeground: '#b91c1c' },
-  dark: { canvas: '#0a0a0a', chrome: '#0a0a0a', surface: '#111111', surfaceOverlay: '#191919', text: '#f5f5f5', mutedForeground: '#8e8e8e', border: '#191919', input: '#1e1e1e', messageAction: 'oklch(0.571 0.21 264)', messageActionForeground: '#ffffff', messageActionHover: 'oklch(0.571 0.21 264)', accentSurface: '#141414', errorForeground: '#ff6467' },
-};
+const stock = defaultUiPalette;
 const font = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 function json(raw: string | undefined, fallback: any): any { try { return JSON.parse(raw ?? ''); } catch { return fallback; } }
 const record = (value: any): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);
 function overrides(value: unknown) {
   if (!record(value)) return {};
-  return Object.fromEntries(Object.keys(stock.light).filter(key => typeof value[key] === 'string' && value[key].length <= 200).map(key => [key, value[key]]));
+  return Object.fromEntries([...Object.keys(stock.light), 'warningForeground'].filter(key => typeof value[key] === 'string' && value[key].length <= 200).map(key => [key, value[key]]));
 }
 export function resolveUiTheme(values: Record<string, string>, systemDark: boolean, settings: Record<string, unknown> = {}): UiTheme {
   const custom = json(values['t3code:themes:v1'], []);
@@ -48,7 +46,15 @@ export function resolveUiTheme(values: Record<string, string>, systemDark: boole
     const half = record(halves) && typeof halves[mode] === 'string' ? definitions[alias(halves[mode])] : null;
     return !theme || theme.appearance === mode || record(theme.variants?.[mode]) || !!(half && (half.appearance === mode || record(half.variants?.[mode])));
   };
+  const preview = (variant: 'light' | 'dark') => {
+    const half = record(halves) && typeof halves[variant] === 'string' ? definitions[alias(halves[variant])] : null;
+    const candidate = half && (half.appearance === variant || record(half.variants?.[variant])) ? half : theme;
+    return candidate && (candidate.appearance === variant || record(candidate.variants?.[variant]))
+      ? { ...palettes['t3-chat'][variant], ...overrides(candidate.appearance === variant ? candidate.colors : candidate.variants[variant]) }
+      : stock[variant];
+  };
   return { appearance, source: mode === 'system' && supports('light') && supports('dark') ? 'system' : appearance, id: usableHalf ? halves[appearance] : selected, colors,
+    previewColors: { light: preview('light'), dark: preview('dark') },
     fontFamily: typeof settings.fontFamilySans === 'string' && settings.fontFamilySans.trim() && settings.fontFamilySans.length <= 500 ? settings.fontFamilySans : font,
     fontSize: typeof settings.fontSizeInterface === 'number' && settings.fontSizeInterface >= 10 && settings.fontSizeInterface <= 24 ? settings.fontSizeInterface : 14 };
 }

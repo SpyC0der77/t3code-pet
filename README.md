@@ -13,7 +13,7 @@ A desktop pet that follows your [T3 Code](https://github.com/pingdotgg/t3code) a
 - Follows all local chats or a single chat you choose.
 - Lets you ignore projects so their chats and alerts stay out of the way.
 - Offers optional custom or OS notifications with sound, including a guided switch from T3 Code's alerts.
-- Follows T3 Code's saved theme automatically in settings, setup, and the chat list, including custom palettes and light/dark theme mixes.
+- Follows T3 Code's saved theme by default, including custom palettes and light/dark mixes. Settings and onboarding also offer independent themes with light, dark, or system appearance.
 - Moves wherever you drag it, lets clicks through its transparent surroundings, and hides during fullscreen use on supported desktops.
 
 Choose a size, switch to still poses, or have your pet start when you sign in. Right-click the pet or use its tray icon to change settings, preview animations, hide it, or quit.
@@ -56,16 +56,25 @@ Pet notifications start off. Enable them during setup and use **Send a test** in
 
 Open **Settings** from the pet's right-click menu or tray icon:
 
+Both open a compact custom menu that uses the pet's theme and T3 Code's font. Use arrow keys or type a label to navigate; Escape closes the preview submenu, then the menu. Enter, Space, Shift+F10, or the Context Menu key also opens it from the focused pet.
+
+- **General** opens first, with visual Theme and Theme style selectors plus login startup. Theme defaults to **Follow T3 Code**; other themes apply only to T3 Pet.
 - **Chats** shows the local connection and lets you change the data folder.
 - **Filters** has searchable project and chat lists. Each can be a blocklist or whitelist. Expand **Advanced chat filters** beneath the projects to choose chats.
-- **Pet** shows a responsive grid of character previews. Choose the preview state, select a character, then save to apply it to the desktop. Size, still poses, and login startup are also available here.
-- **Notifications** controls desktop alerts, Custom or OS style, and sound, with setup and test buttons. Custom alerts follow your T3 Code theme and appear beside the pet. Send a test previews the selected style before saving.
+- **Pet** shows a responsive grid of character previews. Choose the preview state, select a character, then save to apply it to the desktop. Size and still poses are also available here.
+- **Notifications** controls desktop alerts, Custom or OS style, and sound, with setup and test buttons. Custom alerts use the pet's theme and appear beside it. Send a test previews the selected style before saving.
+
+Hovering over the pet groups subagents under their parent chats, including nested subagents. Child rows name their parent. Each group takes its position from its most urgent chat. Subagents follow their parent's settlement and snooze state.
 
 A blocklist excludes checked items. A whitelist follows only checked items. Chats must pass both filters.
 
 Click **Save changes** to apply your changes. The grid's preview state stays selected while you browse and does not change the desktop pet's live activity.
 
-Custom notifications use T3 Code's compact inline layout, with an action on the right and a close button overlapping the top-right corner. Their height fits the content. They show up to three alerts at once, replace older alerts for the same chat, and dismiss after ten seconds. Hovering or focusing an alert pauses its timer. Use Open chat to navigate, or drag the notification body away to dismiss. Each drag locks to its initial horizontal or vertical direction and fades the alert in proportion to the distance moved. Release after dragging at least 40 pixels to let it finish sliding and fading away. While held, it follows your pointer. A shorter drag returns it to its original position and fades it back in. The close button and Escape also dismiss it. Custom alerts use the system beep when sound is enabled; OS alerts use the system notification sound. Custom alerts do not enter the OS notification center or inherit its Do Not Disturb setting. Both styles pause during detected fullscreen use.
+Custom notifications form a compact pile beside the pet, with the newest alert in front. Hover or keyboard focus expands the pile into readable rows and pauses timed alerts. Moving between rows keeps it open. Alerts slide in, slide out, and move smoothly as the stack changes. Updates for the same chat keep the existing card. Completion alerts last five seconds. Approval and input alerts remain until handled or dismissed; error alerts and test previews last ten seconds. The pile remains limited to the three newest alerts.
+
+Use Open chat to navigate, or swipe the notification body away from the pet to dismiss it. A 40-pixel swipe or a quick outward flick dismisses on release. Short or cancelled gestures animate back; swipes toward the pet resist dismissal. The close button and Escape also dismiss alerts. Placement stays fixed while the stack is open and adjusts to the monitor's available space. Transparent space around the pile passes clicks through to the desktop. Reduced motion removes the visual transitions.
+
+Both styles use T3 Code's input and completion sounds when sound is enabled. Custom alerts do not enter the OS notification center or inherit its Do Not Disturb setting. Both styles pause during detected fullscreen use.
 
 ## Your data
 

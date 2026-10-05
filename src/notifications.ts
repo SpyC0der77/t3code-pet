@@ -18,9 +18,8 @@ export class ChatNotifications {
       const prior = this.previous.get(t.id);
       const waiting = attention(t);
       let kind: string | null = null;
-      if (this.initialized) {
-        if (waiting && (!prior || attention(prior) !== waiting || prior.turnId !== t.turnId ||
-          t.pendingApproval > prior.pendingApproval || t.pendingInput > prior.pendingInput)) kind = waiting;
+      if (this.initialized && prior) {
+        if (waiting && (attention(prior) !== waiting || prior.turnId !== t.turnId)) kind = waiting;
         else if (!waiting && prior && (t.turnId !== prior.turnId || t.turnState !== prior.turnState) && t.turnState === 'completed') kind = 'Turn finished';
         else if (!waiting && prior && ((t.turnState === 'error' && (prior.turnState !== 'error' || t.turnId !== prior.turnId)) ||
           (t.sessionStatus === 'error' && prior.sessionStatus !== 'error'))) kind = 'Chat failed';

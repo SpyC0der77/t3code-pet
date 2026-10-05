@@ -1,26 +1,33 @@
 :root, body { margin: 0; height: 100%; background: transparent; }
 * { box-sizing: border-box; }
-body { padding: 8px; overflow: hidden; transition: opacity 150ms ease; }
-main { position: relative; display: flex; align-items: center; gap: 6px; padding: 12px 24px 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--overlay); color: var(--text); touch-action: none; cursor: grab; user-select: none; }
-main[data-dragging] { cursor: grabbing; }
-.message { display: flex; flex: 1; min-width: 0; align-items: flex-start; gap: 8px; }
-.content { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+body { overflow: hidden; }
+#stack { position: relative; height: 100%; pointer-events: none; }
+.toast { position: absolute; top: 0; left: var(--card-left, 48px); width: calc(100% - 96px); border: 1px solid var(--border); border-radius: 8px; background: var(--overlay); color: var(--text); touch-action: pan-y; cursor: grab; user-select: none; pointer-events: auto; transform-origin: center top; transition: transform 500ms cubic-bezier(.22,1,.36,1), opacity 500ms ease, height 150ms ease; will-change: transform, opacity; }
+#stack[data-vertical="bottom"] .toast { transform-origin: center bottom; }
+.toast[data-entering] { transition: none; }
+.toast[data-dragging] { cursor: grabbing; transition: height 150ms ease; }
+.toast[data-ending] { pointer-events: none; }
+.toast-body { display: flex; align-items: center; gap: 6px; padding: 12px 24px 12px 14px; transition: opacity 150ms ease; }
+.toast[data-behind] .toast-body, .toast[data-behind] .dismiss { opacity: 0; pointer-events: none; }
+.message { display: flex; min-width: 0; align-items: flex-start; gap: 8px; }
+.content { display: flex; flex: 1; min-width: 0; min-height: 0; max-height: calc(var(--card-height) - 26px); overflow-y: auto; flex-direction: column; gap: 2px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 svg { flex-shrink: 0; }
-#status-icon { width: 16px; height: 1.5rem; }
-main[data-kind="Chat failed"] #status-icon { color: var(--error); }
-p { margin: 0; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.5; }
-#title { font-weight: 500; }
-#title, #description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-#description { color: var(--muted); }
-#open-error { color: var(--error); }
-button { font: inherit; cursor: pointer; }
-#open { flex-shrink: 0; white-space: nowrap; height: 24px; padding: 0 7px; font-size: .8571rem; font-weight: 500; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent); color: var(--on-accent); }
-#open:hover { background: var(--accent-hover); }
-#dismiss { position: absolute; top: -6px; right: -6px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--overlay); color: var(--muted); }
-#dismiss svg { width: 12px; height: 12px; }
-#dismiss:hover { background: var(--selected); color: var(--text); }
+.status-icon { width: 16px; height: 1.5rem; }
+.toast[data-kind="Turn finished"] .status-icon { color: var(--success); }
+.toast[data-kind="Approval needed"] .status-icon { color: var(--warning); }
+.toast[data-kind="Chat failed"] .status-icon { color: var(--error); }
+p { margin: 0; min-width: 0; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.5; }
+.title { font-weight: 500; }
+.description { color: var(--muted); }
+.open-error { color: var(--error); }
+button { font: inherit; cursor: pointer; transition: color 150ms ease, background-color 150ms ease; }
+.open { flex-shrink: 0; white-space: nowrap; min-height: 24px; padding: 2px 7px; font-size: .8571rem; line-height: 1.25; font-weight: 500; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent); color: var(--on-accent); }
+.open:hover { background: var(--accent-hover); }
+.dismiss { position: absolute; top: -6px; right: -6px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--overlay); color: var(--muted); }
+.dismiss svg { width: 12px; height: 12px; }
+.dismiss:hover { background: var(--selected); color: var(--text); }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 button:disabled { cursor: default; opacity: .5; }
 ::selection { background: var(--selected); color: var(--text); }
 [hidden] { display: none !important; }
-@media (prefers-reduced-motion: reduce) { button, body { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .toast, .toast-body, button { transition: none; } }

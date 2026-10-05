@@ -1,0 +1,14 @@
+import { spawn } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+const [packageDir, label] = process.argv.slice(2);
+const directory = resolve('release/menu-video-review'); mkdirSync(directory, {recursive:true});
+const env = {...process.env}; delete env.ELECTRON_RUN_AS_NODE;
+const recorder = spawn(process.env.FFMPEG_PATH || 'ffmpeg', ['-hide_banner','-loglevel','error','-y','-f','gdigrab','-framerate','60','-offset_x','1320','-offset_y','680','-video_size','600x344','-i','desktop','-t','12','-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p',join(directory,label+'.mp4')], {windowsHide:true,stdio:'inherit'});
+const recording = new Promise((resolve,reject)=>{recorder.once('exit',resolve);recorder.once('error',reject);});
+await new Promise(resolve=>setTimeout(resolve,400));
+const app = spawn(resolve(packageDir,'win-unpacked/T3 Pet.exe'), ['--smoke-test',join(directory,label+'-fixture'),'--menu-video-test'], {env,windowsHide:true,stdio:'inherit'});
+const code = await new Promise((resolve,reject)=>{app.once('exit',resolve);app.once('error',reject);});
+const videoCode = await recording;
+console.log(JSON.stringify({appExit:code,videoExit:videoCode}));
+if(code !== 0 || videoCode !== 0) process.exitCode=1;

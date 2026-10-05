@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { unsettledChats } from '../src/unsettled';
+import { unsettledChats, hoverChats, inheritSubagentSettlement } from '../src/unsettled';
 import type { ThreadStatus } from '../src/shared';
 const now = Date.now();
 const thread = (patch: Partial<ThreadStatus>): ThreadStatus => ({ id: 'chat', title: 'Chat', project: '', provider: 'any', sessionStatus: 'ready', turnId: 'turn', turnState: 'completed', completedAt: new Date(now).toISOString(), updatedAt: new Date(now).toISOString(), pendingApproval: 0, pendingInput: 0, ...patch });
@@ -51,4 +51,42 @@ test('old errors remain visible without outranking active work', () => {
     thread({id:'recent-error',turnState:'error'}),
   ], now);
   assert.deepEqual(rows.map(row => [row.thread.id, row.priority]), [['recent-error',1],['work',3],['old-turn',4],['old-session',4]]);
+});
+
+test('hover keeps nested subagents under their parent and ranks the group by urgent children', () => {
+  const rows = hoverChats([
+    thread({ id: 'other', sessionStatus: 'running' }),
+    thread({ id: 'root', title: 'Parent' }),
+    thread({ id: 'child', title: 'Review', parentThreadId: 'root', settledOverride: 'settled' }),
+    thread({ id: 'nested', title: 'Check', parentThreadId: 'child', pendingInput: 1 }),
+  ], now);
+  assert.deepEqual(rows.map(row => [row.thread.id, row.depth, row.parentTitle]), [
+    ['root', 0, null], ['child', 1, 'Parent'], ['nested', 2, 'Review'], ['other', 0, null],
+  ]);
+});
+
+test('subagent settlement and snoozing follow ancestors even when filters remove the parent', () => {
+  for (const patch of [{ settledOverride: 'settled' }, { snoozedUntil: new Date(now + 60_000).toISOString() }]) {
+    const threads = [thread({ id: 'root', ...patch }), thread({ id: 'child', parentThreadId: 'root' }),
+      thread({ id: 'nested', parentThreadId: 'child', pendingApproval: 1 })];
+    assert.equal(hoverChats(threads, now).length, 0);
+    assert.equal(unsettledChats(inheritSubagentSettlement(threads).filter(thread => thread.id !== 'root'), now).length, 0);
+  }
+});
+
+test('missing and cyclic lineage never drops or duplicates chats', () => {
+  const rows = hoverChats([thread({ id: 'orphan', parentThreadId: 'filtered', parentTitle: 'Filtered parent' }),
+    thread({ id: 'a', parentThreadId: 'b' }), thread({ id: 'b', parentThreadId: 'a' }),
+    thread({ id: 'self', parentThreadId: 'self' })], now);
+  assert.equal(rows.length, 4);
+  assert.equal(new Set(rows.map(row => row.thread.id)).size, 4);
+  assert.equal(rows.find(row => row.thread.id === 'orphan')?.parentTitle, 'Filtered parent');
+});
+
+test('cyclic lineage preserves each thread settlement instead of inheriting another node', () => {
+  const a = thread({ id: 'a', parentThreadId: 'b', settledOverride: 'settled' });
+  const b = thread({ id: 'b', parentThreadId: 'a' });
+  const rows = inheritSubagentSettlement([a, b]);
+  assert.equal(rows[1].settledOverride, b.settledOverride);
+  assert.deepEqual(unsettledChats(rows, now).map(row => row.thread.id), ['b']);
 });

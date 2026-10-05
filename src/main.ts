@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage, nativeTheme, ipcMain, dialog, screen, shell, Notification } from 'electron';
+import { app, BrowserWindow, Tray, nativeImage, nativeTheme, ipcMain, dialog, screen, shell, Notification } from 'electron';
 import { chatUrl } from './t3-navigation';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
@@ -11,6 +11,11 @@ import { runFullscreenCheck, runFullscreenFixture } from './fullscreen-test';
 import { loadPreferences, storePreferences, validatePreferences } from './preferences';
 import { ChatNotifications, type ChatNotification } from './notifications';
 import { ToastWindows } from './toast-windows';
+import { runToastSmoke } from './toast-smoke';
+import { PetMenu, type MenuAction } from './pet-menu';
+import { runMenuSmoke } from './menu-smoke';
+import { activateSettingsWindow } from './settings-window';
+import { runMenuVideo } from './menu-video';
 import { allowedSnapshot } from './project-filter';
 import { inspectNotifications, migrateNotifications, closeT3, consentedSwitch } from './t3-notifications';
 import { nativeHelperPath, nativeWindowId } from './platform';
@@ -19,9 +24,13 @@ import type { AppState, NotificationSetup, PetMood, Preferences, Snapshot } from
 import { pets, petAnimation } from './pets';
 import { moodAnimation } from './animations';
 import { T3ThemeSync, t3ProfileDirectory, resolveUiTheme } from './t3-theme';
+import { resolvePetTheme } from './pet-theme';
+import { runThemePreferenceSmoke } from './theme-preference-smoke';
+import { hoverChats } from './unsettled';
 import { writeThemeFixture } from './theme-fixture';
 
 const fullscreenTest = process.argv.includes('--fullscreen-test');
+if (process.argv.includes('--menu-video-test')) { app.commandLine.appendSwitch('disable-backgrounding-occluded-windows'); app.commandLine.appendSwitch('disable-renderer-backgrounding'); }
 // Wayland prevents desktop pets from positioning themselves. XWayland gives
 // Linux the same window positioning and global pointer API as an X11 session.
 if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform', 'x11');
@@ -31,6 +40,8 @@ const fixtureIndex = process.argv.indexOf('--fullscreen-fixture');
 const fixtureDirectory = fixtureIndex >= 0 ? process.argv[fixtureIndex + 1] : undefined;
 const smokeIndex = process.argv.indexOf(fullscreenTest ? '--fullscreen-test' : '--smoke-test');
 const smokeDirectory = smokeIndex >= 0 ? process.argv[smokeIndex + 1] : undefined;
+let smokeStateDelay = 0;
+let smokeStateFailures = 0;
 if (smokeDirectory) app.setPath('userData', join(smokeDirectory, 'user-data'));
 if (fixtureDirectory) app.setPath('userData', join(fixtureDirectory, 'fixture-user-data'));
 if (closeFixtureDirectory) app.setPath('userData', join(closeFixtureDirectory, 'close-fixture-user-data'));
@@ -43,7 +54,7 @@ traceSmoke('main loaded');
 if (smokeDirectory) setTimeout(() => {
   traceSmoke('smoke timeout');
   app.exit(1);
-}, 45_000).unref();
+}, process.argv.some(arg => ['--menu-input-test', '--hover-input-test'].includes(arg)) ? 300_000 : 60_000).unref();
 app.setName('T3 Pet');
 app.setAppUserModelId('dev.t3pet.companion');
 
@@ -64,6 +75,10 @@ let tray: Tray | null = null;
 let preferences: Preferences;
 let preferencesPath: string;
 let uiTheme = resolveUiTheme({}, false);
+let followedTheme = uiTheme;
+function refreshUiTheme() {
+  uiTheme = resolvePetTheme(followedTheme, preferences.theme, preferences.themeAppearance, nativeTheme.shouldUseDarkColors);
+}
 let themeSync: T3ThemeSync | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
@@ -73,27 +88,38 @@ let quitting = false;
 let polling = false;
 let connectionGeneration = 0;
 const visibility = new PetVisibility();
-const hoverPanel = new HoverPanel(() => petWindow, state, () => visibility.visible && !dragTimer && !!petWindow?.isVisible());
+const hoverPanel = new HoverPanel(() => petWindow, state, () => visibility.visible && !dragTimer && !contextMenu.visible && !!petWindow?.isVisible());
 visibility.fullscreen = true;
 let stopFullscreenWatch: (() => void) | undefined;
 let fullscreenCheckFailed = false;
 let fullscreenCheckReady = false;
-let snapshot: Snapshot = { connected: false, message: 'Looking for T3 Code…', threads: [], checkedAt: Date.now() };
+let snapshot: Snapshot = { connected: false, message: 'Looking for T3 Code\u2026', threads: [], checkedAt: Date.now() };
 const machine = new PetStateMachine();
 let pet = machine.update(snapshot, null);
 const moods: PetMood[] = ['idle', 'working', 'waiting', 'done', 'error', 'offline'];
 const labels: Record<PetMood, string> = { idle: 'Resting', working: 'Working', waiting: 'Approval needed', done: 'Turn finished', error: 'A chat hit an error', offline: 'T3 Code offline' };
+const contextMenu = new PetMenu(() => ({ state: state(), hidden: visibility.manualHidden, previewMood }), (action, mood) => {
+  if (action === 'visibility') { visibility.manualHidden = !visibility.manualHidden; applyVisibility(); publish(); }
+  else if (action === 'settings') showSettings();
+  else if (action === 'notifications') showSettings(true);
+  else if (action === 'preview') setPreview(mood);
+  else if (action === 'reset') resetPosition();
+  else if (action === 'quit') app.quit();
+});
 
 function state(): AppState {
-  return { theme: uiTheme, notificationsSupported: Notification.isSupported(), darkBackground, preferences, snapshot, pet: previewMood ? { ...pet, mood: previewMood, label: `${labels[previewMood]} · preview`, threadTitle: null } : pet,
+  return { theme: uiTheme, notificationsSupported: Notification.isSupported(), darkBackground, preferences, snapshot, pet: previewMood ? { ...pet, mood: previewMood, label: `${labels[previewMood]} \u00b7 preview`, threadTitle: null } : pet,
     preview: previewMood !== null, version: app.getVersion(), supportsLoginStartup: ['win32', 'darwin', 'linux'].includes(process.platform) };
 }
 
 function publish() {
   const value = state();
-  for (const win of [petWindow, settingsWindow]) if (win && !win.isDestroyed()) win.webContents.send('pet:state', value);
-  tray?.setToolTip(`T3 Pet · ${value.pet.label}`);
-  tray?.setContextMenu(menu());
+  for (const win of [petWindow, settingsWindow]) {
+    if (smokeStateDelay && win === settingsWindow) continue;
+    if (win && !win.isDestroyed()) win.webContents.send('pet:state', value);
+  }
+  tray?.setToolTip(`T3 Pet \u00b7 ${value.pet.label}`);
+  contextMenu.publish();
   if (!testingHover) hoverPanel.publish();
   customNotifications.publish();
 }
@@ -110,7 +136,6 @@ function applyVisibility() {
     if (!petWindow.isAlwaysOnTop()) petWindow.setAlwaysOnTop(true, 'floating');
   }
   else { hoverPanel.hide(); stopDrag(); if (petWindow.isVisible()) petWindow.hide(); }
-  tray?.setContextMenu(menu());
 }
 
 function showPet() { visibility.manualHidden = false; applyVisibility(); }
@@ -145,7 +170,7 @@ async function createPet() {
     icon: join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
     hasShadow: false, alwaysOnTop: true, skipTaskbar: true, show: false,
-    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, autoplayPolicy: 'no-user-gesture-required' },
   });
   lockWindow(petWindow);
   // The companion has no native menu. Alt must not activate Electron's default
@@ -173,7 +198,9 @@ async function createPet() {
 }
 
 function showSettings(onboarding = false) {
-  if (migrating) { settingsWindow?.show(); return; }
+  traceSmoke('show settings requested');
+  contextMenu.hide();
+  if (migrating) { if (settingsWindow) activateSettingsWindow(settingsWindow); return; }
   onboarding = onboarding === true;
   const file = onboarding ? 'onboarding.html' : 'settings.html';
   const width = 768;
@@ -185,7 +212,7 @@ function showSettings(onboarding = false) {
       settingsWindow.setTitle(onboarding ? 'Set up T3 Pet' : 'T3 Pet settings');
       void settingsWindow.loadFile(join(__dirname, 'renderer', file));
     }
-    settingsWindow.show(); settingsWindow.focus(); return;
+    activateSettingsWindow(settingsWindow); return;
   }
   onboardingView = onboarding;
   settingsWindow = new BrowserWindow({
@@ -195,10 +222,17 @@ function showSettings(onboarding = false) {
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   lockWindow(settingsWindow);
-  settingsWindow.once('ready-to-show', () => settingsWindow?.show());
+  const win = settingsWindow;
+  // Keep both signals: Windows can finish loading before the native window
+  // accepts its first show, while ready-to-show is not guaranteed on every path.
+  win.once('ready-to-show', () => activateSettingsWindow(win));
   settingsWindow.on('closed', () => { settingsWindow = null; });
   settingsWindow.setMenu(null);
-  void settingsWindow.loadFile(join(__dirname, 'renderer', file));
+  void settingsWindow.loadFile(join(__dirname, 'renderer', file)).then(() => {
+    traceSmoke('settings loaded');
+    activateSettingsWindow(win);
+    if (smokeDirectory) setTimeout(() => traceSmoke(`settings activation visible=${!win.isDestroyed() && win.isVisible()} focused=${!win.isDestroyed() && win.isFocused()}`), 300);
+  });
 }
 
 function setupState(): NotificationSetup {
@@ -222,15 +256,20 @@ async function openNotifiedChat(threadId: string) {
 }
 
 function showNotification(notice: ChatNotification, test = false, style = preferences.notificationStyle) {
+  const playSound = () => {
+    if (preferences.notificationSound && !smokeDirectory && petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('pet:notification-sound', notice.kind === 'Turn finished' ? 'completion' : 'input', test);
+    }
+  };
   if (style === 'custom') {
     const win = customNotifications.show(notice, test);
-    if (preferences.notificationSound && !smokeDirectory) shell.beep();
+    playSound();
     return win;
   }
   if (!Notification.isSupported()) throw new Error('Desktop notifications are unavailable on this system.');
   if (smokeDirectory && !process.argv.includes('--notification-smoke-test')) { traceSmoke(`notification ${notice.title}`); return null; }
-  const notification = new Notification({ title: `T3 Pet · ${notice.title}`, body: notice.body,
-    silent: !preferences.notificationSound,
+  const notification = new Notification({ title: `T3 Pet \u00b7 ${notice.title}`, body: notice.body,
+    silent: true,
     ...(process.platform === 'win32' ? {} : { icon: join(__dirname, '..', 'assets', 'icon.png') }) });
   activeNotifications.add(notification);
   notification.on('close', () => activeNotifications.delete(notification));
@@ -247,6 +286,7 @@ function showNotification(notice: ChatNotification, test = false, style = prefer
     });
   });
   notification.show();
+  playSound();
   return notification;
 }
 
@@ -255,25 +295,6 @@ function resetPosition() {
   petWindow?.setBounds(fitPosition(null));
   showPet();
   persist();
-}
-
-function menu() {
-  return Menu.buildFromTemplate([
-    { label: `T3 Pet · ${state().pet.label}`, enabled: false },
-    ...(pet.threadTitle ? [{ label: pet.threadTitle.slice(0, 65), enabled: false }] : []),
-    { type: 'separator' },
-    ...(fullscreenCheckFailed ? [{ label: 'Fullscreen check unavailable · retrying', enabled: false }] : []),
-    { label: visibility.manualHidden ? 'Show pet' : 'Hide pet', click: () => { visibility.manualHidden = !visibility.manualHidden; applyVisibility(); } },
-    { label: 'Settings…', click: () => showSettings() },
-    { label: 'Set up notifications…', click: () => showSettings(true) },
-    { label: 'Preview animation', submenu: [
-      ...moods.map(mood => ({ label: labels[mood], click: () => setPreview(mood) })),
-      { type: 'separator' as const }, { label: 'Follow T3 Code', click: () => setPreview(null) },
-    ] },
-    { label: 'Reset position', click: resetPosition },
-    { type: 'separator' },
-    { label: 'Quit T3 Pet', click: () => app.quit() },
-  ]);
 }
 
 function setPreview(mood: PetMood | null) {
@@ -309,6 +330,7 @@ async function poll() {
         null, visibility.fullscreen || !fullscreenCheckReady || previewMood !== null || !!smokeDirectory)) {
         showNotification(notice);
       }
+      if (!smokeDirectory) customNotifications.reconcile(followed);
       publish();
     }
   } finally {
@@ -357,6 +379,7 @@ function registerIpc() {
       notificationStyle: style, onboardingCompleted: true, notificationsEnabled: choice === 'enable' ? true : preferences.notificationsEnabled };
     storePreferences(preferencesPath, next);
     preferences = next;
+    refreshUiTheme();
     if (choice !== 'keep') { notifications.reset(); clearNotifications(); }
     migrationMessage = '';
     publish();
@@ -368,33 +391,32 @@ function registerIpc() {
     if (style !== undefined && style !== 'custom' && style !== 'os') throw new Error('Invalid notification style.');
     showNotification({ threadId: '', title: 'Test notification', body: 'Your pet can alert you when a chat needs attention, finishes, or fails.', kind: 'test' }, true, style ?? preferences.notificationStyle);
   });
-  const toastEntry = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+  const toastSender = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
     if (event.senderFrame !== event.sender.mainFrame) throw new Error('Unknown frame.');
-    const entry = customNotifications.entryFor(event.sender);
-    if (!entry) throw new Error('Unknown notification.');
-    return entry;
+    if (!customNotifications.isSender(event.sender)) throw new Error('Unknown notification window.');
   };
-  ipcMain.handle('toast:get', event => { toastEntry(event); return customNotifications.view(event.sender); });
-  ipcMain.handle('toast:open', event => { toastEntry(event); return customNotifications.activate(event.sender); });
-  ipcMain.on('toast:dismiss', event => {
+  ipcMain.handle('toast:get', event => { toastSender(event); return customNotifications.view(event.sender); });
+  ipcMain.handle('toast:open', (event, id: unknown) => {
+    toastSender(event);
+    if (typeof id !== 'number' || !Number.isSafeInteger(id)) throw new Error('Invalid notification.');
+    return customNotifications.activate(event.sender, id);
+  });
+  ipcMain.on('toast:dismiss', (event, id: unknown) => {
     if (event.senderFrame !== event.sender.mainFrame) return;
-    const entry = customNotifications.entryFor(event.sender);
+    const entry = typeof id === 'number' ? customNotifications.entryFor(event.sender, id) : undefined;
     if (entry) customNotifications.dismiss(entry.id);
   });
   ipcMain.on('toast:pause', (event, paused: unknown) => {
     if (event.senderFrame !== event.sender.mainFrame || typeof paused !== 'boolean') return;
-    const entry = customNotifications.entryFor(event.sender);
-    if (entry) customNotifications.pause(event.sender, paused);
+    customNotifications.pause(event.sender, paused);
   });
-  ipcMain.on('toast:drag', (event, action: unknown, x: unknown, y: unknown) => {
-    if (event.senderFrame !== event.sender.mainFrame || !customNotifications.entryFor(event.sender)) return;
-    if (action !== 'start' && action !== 'move' && action !== 'end' && action !== 'cancel') return;
-    if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 1_000_000 || Math.abs(y) > 1_000_000) return;
-    customNotifications.drag(event.sender, action, x, y);
+  ipcMain.on('toast:capture', (event, active: unknown) => {
+    if (event.senderFrame === event.sender.mainFrame && typeof active === 'boolean') customNotifications.capture(event.sender, active);
   });
-  ipcMain.on('toast:size', (event, height: unknown) => {
-    if (event.senderFrame !== event.sender.mainFrame || !customNotifications.entryFor(event.sender)) return;
-    if (typeof height === 'number' && Number.isFinite(height)) customNotifications.resize(event.sender, height);
+  ipcMain.on('toast:hit-test', (event, areas: unknown) => {
+    if (event.senderFrame !== event.sender.mainFrame || !Array.isArray(areas) || areas.length > 3) return;
+    if (!areas.every(r => r && ['x', 'y', 'width', 'height'].every(key => typeof r[key] === 'number' && Number.isFinite(r[key]) && Math.abs(r[key]) < 10000) && r.width >= 0 && r.height >= 0)) return;
+    customNotifications.hitTest(event.sender, areas);
   });
   ipcMain.on('pet:onboarding', event => { trusted(event); showSettings(true); });
   ipcMain.handle('pet:open-chat', async (event, threadId: unknown) => {
@@ -409,9 +431,19 @@ function registerIpc() {
   });
   ipcMain.handle('pet:state', event => {
     if (event.sender !== hoverPanel.window?.webContents || event.senderFrame !== event.sender.mainFrame) trusted(event);
-    return state();
+    return smokeStateDelay ? new Promise((resolve, reject) => setTimeout(() => {
+      if (event.sender === settingsWindow?.webContents && smokeStateFailures > 0) {
+        smokeStateFailures--; reject(new Error('Settings could not be loaded. Try again.'));
+      } else resolve(state());
+    }, smokeStateDelay)) : state();
   });
-  ipcMain.on('pet:hover', event => { trusted(event); if (event.sender === petWindow?.webContents) hoverPanel.show(); });
+  ipcMain.on('pet:hover', event => {
+    trusted(event);
+    if (event.sender === petWindow?.webContents) {
+      hoverPanel.show();
+      traceSmoke(`hover requested visible=${hoverPanel.window?.isVisible()} menu=${contextMenu.visible}`);
+    }
+  });
   ipcMain.on('pet:hover-size', (event, height: unknown) => {
     traceSmoke(`hover size=${height}`);
     if (event.sender !== hoverPanel.window?.webContents || event.senderFrame !== event.sender.mainFrame) return;
@@ -436,6 +468,7 @@ function registerIpc() {
     storePreferences(preferencesPath, next);
     preferences = next;
     if (notificationChanged || filtersChanged || directoryChanged) { notifications.reset(); clearNotifications(); }
+    refreshUiTheme();
     if (filtersChanged) {
       machine.reset();
       notifications.reset();
@@ -444,7 +477,7 @@ function registerIpc() {
       notifications.reset();
       migrationMessage = '';
       connectionGeneration++;
-      snapshot = { connected: false, message: 'Looking for T3 Code…', threads: [], checkedAt: Date.now() };
+      snapshot = { connected: false, message: 'Looking for T3 Code\u2026', threads: [], checkedAt: Date.now() };
       machine.reset();
     }
     petWindow?.setBounds(fitPosition(preferences.position));
@@ -459,7 +492,29 @@ function registerIpc() {
     const result = await dialog.showOpenDialog(settingsWindow!, { title: 'Choose T3 Code userdata folder', defaultPath: preferences.dataDirectory, properties: ['openDirectory'] });
     return result.canceled ? null : result.filePaths[0] ?? null;
   });
-  ipcMain.on('pet:menu', event => { trusted(event); hoverPanel.hide(); menu().popup({ window: petWindow ?? undefined }); });
+  ipcMain.on('pet:menu', (event, point: unknown) => {
+    trusted(event); hoverPanel.hide();
+    let anchor: { x: number; y: number } | undefined;
+    if (point && typeof point === 'object' && 'x' in point && 'y' in point && typeof point.x === 'number' && typeof point.y === 'number' && Number.isFinite(point.x) && Number.isFinite(point.y) && Math.abs(point.x) < 1_000_000 && Math.abs(point.y) < 1_000_000) anchor = {x:Math.round(point.x), y:Math.round(point.y)};
+    else if (event.sender === petWindow?.webContents && petWindow) { const b=petWindow.getBounds(); anchor={x:b.x+b.width/2,y:b.y+b.height/2}; }
+    void contextMenu.show(anchor).catch(error => dialog.showErrorBox('Could not open menu', String(error)));
+  });
+  const menuSender = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => event.senderFrame === event.sender.mainFrame && contextMenu.isSender(event.sender);
+  ipcMain.handle('menu:get', event => { if (!menuSender(event)) throw new Error('Unknown menu window.'); return contextMenu.view(); });
+  ipcMain.on('menu:close', event => { if (menuSender(event)) contextMenu.hide(); });
+  ipcMain.on('menu:pointer', event => { if (menuSender(event)) contextMenu.checkPointer(); });
+  ipcMain.on('menu:painted', (event, sequence: unknown, layout: unknown) => {
+    if (menuSender(event) && typeof sequence === 'number' && Number.isSafeInteger(sequence) && typeof layout === 'string' && layout.length < 2000) contextMenu.painted(sequence, layout);
+  });
+  ipcMain.on('menu:size', (event, main: unknown, sub: unknown, top: unknown) => {
+    if (menuSender(event) && [main, sub, top].every(value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 4000) && (main as number) > 0) contextMenu.resize(main as number, sub as number, top as number);
+  });
+  ipcMain.on('menu:action', (event, action: unknown, mood: unknown) => {
+    traceSmoke(`menu input action ${String(action)}`);
+    if (!menuSender(event) || !['visibility', 'settings', 'notifications', 'preview', 'reset', 'quit'].includes(action as string)) return;
+    if (action === 'preview' && mood !== null && !moods.includes(mood as PetMood)) return;
+    contextMenu.activate(action as MenuAction, action === 'preview' ? mood as PetMood | null : null);
+  });
   ipcMain.on('pet:settings', event => { trusted(event); showSettings(); });
   ipcMain.on('pet:quit', event => { trusted(event); app.quit(); });
   ipcMain.on('pet:preview', (event, mood: unknown) => {
@@ -515,6 +570,11 @@ async function runSmokeTest(directory: string) {
     const waiting = v2Mood() === 'waiting';
     v2Db.exec("UPDATE orchestration_v2_projection_runtime_requests SET status='resolved'; UPDATE orchestration_v2_projection_runs SET status='completed'");
     report.v2State = { working, waiting, done: v2Mood() === 'done' };
+    v2Db.exec(`INSERT INTO orchestration_v2_projection_threads VALUES('child',NULL,'Child fixture','any','2026-10-03T14:00:00Z',NULL,NULL,'{"lineage":{"parentThreadId":"v2","relationshipToParent":"subagent"}}')`);
+    const child = readThreads(v2File).find(thread => thread.id === 'child')!;
+    (report.v2State as Record<string, boolean>).lineage = child.parentThreadId === 'v2' && child.parentTitle === 'V2 fixture';
+    v2Db.exec(`UPDATE orchestration_v2_projection_threads SET payload_json='{"settledOverride":"settled"}' WHERE thread_id='v2'`);
+    (report.v2State as Record<string, boolean>).settlement = hoverChats(readThreads(v2File)).length === 0;
   } finally { v2Db.close(); }
   testingHover = true;
   const checkHoverOpen = visibility.visible;
@@ -539,6 +599,23 @@ async function runSmokeTest(directory: string) {
   ]) : null;
   if (hoverCapture) writeFileSync(join(directory, 'hover-chats.png'), hoverCapture.toPNG());
   else report.hoverCapture = 'skipped: panel hidden or capture unavailable';
+  const hierarchy = [{ ...fixtureThread, id: 'parent', title: 'Build feature', pendingApproval: 0 },
+    { ...fixtureThread, id: 'child', title: 'Review changes', parentThreadId: 'parent' },
+    { ...fixtureThread, id: 'nested', title: 'Check edge cases', parentThreadId: 'child', pendingApproval: 0, sessionStatus: 'running' }];
+  hoverWindow.webContents.send('pet:state', { ...fixtureState, snapshot: { ...snapshot, connected: true, threads: hierarchy } });
+  await wait(100);
+  report.hoverHierarchy = await hoverWindow.webContents.executeJavaScript(`(() => {
+    const rows=[...document.querySelectorAll('li')],buttons=rows.map(row=>row.querySelector('button'));
+    return {ordered:buttons.map(button=>button.dataset.chatId).join(',')==='parent,child,nested',
+      nested:rows.map(row=>row.dataset.depth).join(',')==='0,1,2',
+      indentation:rows.every(row=>parseFloat(getComputedStyle(row.querySelector('button')).paddingLeft)===12+12*Number(row.dataset.depth)),
+      parents:rows[1].textContent.includes('Subagent of Build feature') && rows[2].textContent.includes('Subagent of Review changes'),
+      accessible:buttons[1].getAttribute('aria-label').includes('subagent of Build feature'),
+      explicit:[...document.querySelectorAll('.parent')].every(label=>label.parentElement.tagName==='BUTTON' && getComputedStyle(label).whiteSpace==='normal' && label.clientWidth>0),
+      overflow:document.documentElement.scrollWidth<=innerWidth};
+  })()`);
+  hoverWindow.showInactive();
+  writeFileSync(join(directory, 'hover-subagents.png'), (await hoverWindow.webContents.capturePage()).toPNG());
   hoverWindow.hide();
   hoverWindow.webContents.send('pet:state', { ...fixtureState, snapshot: { ...snapshot, connected: true, threads: [] } });
   await wait(100);
@@ -782,7 +859,7 @@ async function runSmokeTest(directory: string) {
     writeThemeFixture(join(directory, 't3-profile'), { 't3code:theme': id, 't3code:theme-appearance-mode': appearance }, themeSequence);
     themeSequence += 100n;
     const deadline = Date.now() + 2500;
-    while ((uiTheme.id !== id || uiTheme.appearance !== appearance) && Date.now() < deadline) await wait(20);
+    while ((followedTheme.id !== id || followedTheme.appearance !== appearance) && Date.now() < deadline) await wait(20);
     await wait(50);
   };
   const themeDraft = await settingsWindow!.webContents.executeJavaScript(`(() => {const control=document.getElementById('size');control.value=control.value==='96'?'160':'96';control.dispatchEvent(new Event('change',{bubbles:true}));return control.value;})()`);
@@ -794,10 +871,11 @@ async function runSmokeTest(directory: string) {
   const hoverTheme = await hoverWindow.webContents.executeJavaScript(`({id:document.documentElement.dataset.theme,appearance:document.documentElement.style.colorScheme,canvas:document.documentElement.style.getPropertyValue('--canvas')})`);
   report.themeSync = { settings: settingsTheme, hover: hoverTheme, draftRetained: settingsTheme.draft === themeDraft, petUnchanged: beforeThemePet === JSON.stringify(pet), liveWatcher: uiTheme.id === 'iris' && uiTheme.appearance === 'dark' };
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('discard').click()`);
+  report.themePreferences = await runThemePreferenceSmoke(settingsWindow!, hoverWindow, directory, state, smokeTheme);
   const notificationPreferences = { notificationStyle: preferences.notificationStyle, notificationsEnabled: preferences.notificationsEnabled };
   report.settingsDropdowns = await settingsWindow!.webContents.executeJavaScript(`(async () => {
     document.getElementById('notifications-tab').click();
-    const selects = [...document.querySelectorAll('select')];
+    const selects = [...document.querySelectorAll('select:not([data-theme-control])')];
     const allCustom = selects.every(select => select.hidden && select.tabIndex === -1 && getComputedStyle(select).display === 'none' && document.getElementById(select.id+'-trigger')?.getAttribute('role') === 'combobox');
     const source = document.getElementById('notification-style');
     const trigger = document.getElementById('notification-style-trigger');
@@ -871,113 +949,21 @@ async function runSmokeTest(directory: string) {
   })()`);
   // Keep explicitly created smoke fixtures alive while the real desktop changes focus.
   testingToasts = true;
-  const notificationChecks: Record<string, unknown> = {};
-  for (const theme of ['light', 'dark'] as const) {
-    await smokeTheme(theme);
-    const toast = customNotifications.show({threadId: '', title: 'Approval needed', body: 'Update the notification settings', kind: 'Approval needed'}, true);
-    await wait(160);
-    notificationChecks[theme] = await toast.webContents.executeJavaScript(`({theme:document.documentElement.style.colorScheme, title:document.getElementById('title').textContent, overflow:document.documentElement.scrollWidth>innerWidth, actionFits:document.getElementById('open').getBoundingClientRect().bottom<=innerHeight, bridge:!!window.petToast, transparent:getComputedStyle(document.documentElement).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)', draggable:typeof window.petToast.drag==='function'&&getComputedStyle(document.querySelector('main')).cursor==='grab'})`);
-    writeFileSync(join(directory, `notification-${theme}.png`), (await toast.webContents.capturePage()).toPNG());
-    notificationChecks[theme + 'Layout'] = await toast.webContents.executeJavaScript(`(() => {
-      const main=document.querySelector('main').getBoundingClientRect(), message=document.querySelector('.message').getBoundingClientRect(), action=document.getElementById('open').getBoundingClientRect(), close=document.getElementById('dismiss').getBoundingClientRect();
-      return message.right<=action.left && Math.abs((action.top+action.bottom-main.top-main.bottom)/2)<2 && close.top<main.top && close.right>main.right && close.top>=0 && close.right<=innerWidth && Math.abs(innerHeight-main.height-16)<2;
-    })()`);
-    const area = screen.getDisplayMatching(petWindow!.getBounds()).workArea;
-    const bounds = toast.getBounds();
-    notificationChecks[theme + 'Bounds'] = bounds.x >= area.x && bounds.y >= area.y && bounds.x + bounds.width <= area.x + area.width && bounds.y + bounds.height <= area.y + area.height;
-    await toast.webContents.executeJavaScript(`window.petToast.pause(true)`);
-    notificationChecks[theme + 'Paused'] = customNotifications.entryFor(toast.webContents)?.resumedAt === null;
-    if (theme === 'light') await toast.webContents.executeJavaScript(`window.petToast.dismiss()`);
-    else await toast.webContents.executeJavaScript(`window.petToast.open()`);
-    await wait(30);
-    notificationChecks[theme + 'Dismissed'] = toast.isDestroyed();
-    await settingsWindow!.webContents.executeJavaScript(`document.getElementById('pet-tab').click()`);
-    await wait(100);
-    writeFileSync(join(directory, `settings-pet-${theme}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
-    await settingsWindow!.webContents.executeJavaScript(`document.getElementById('projects-tab').click()`);
-    await wait(100);
-    writeFileSync(join(directory, `settings-projects-${theme}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
-  }
-  const draggedToast = customNotifications.show({threadId: '', title: 'Drag notification', body: 'Dismiss by dragging', kind: 'test'}, true);
-  await new Promise<void>((resolve, reject) => {
-    if (!draggedToast.webContents.isLoading()) { resolve(); return; }
-    draggedToast.webContents.once('did-finish-load', resolve);
-    draggedToast.webContents.once('did-fail-load', (_event, _code, description) => reject(new Error(description)));
-  });
-  await wait(100);
-  const dragOrigin = draggedToast.getBounds();
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',108,104)`);
-  await wait(50);
-  const movedBounds = draggedToast.getBounds();
-  notificationChecks.dragMoved = movedBounds.x === dragOrigin.x + 8 && movedBounds.y === dragOrigin.y;
-  const dragOpacity = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity)`);
-  notificationChecks.dragFaded = Math.abs(dragOpacity - (1 - 8 / dragOrigin.width)) < .01;
-  notificationChecks.dragPaused = customNotifications.entryFor(draggedToast.webContents)?.resumedAt === null;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('move',108,300)`);
-  await wait(50);
-  notificationChecks.dragAxisLocked = draggedToast.getBounds().x === dragOrigin.x + 8 && draggedToast.getBounds().y === dragOrigin.y;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('end',108,300)`);
-  await wait(50);
-  notificationChecks.dragReturned = draggedToast.getBounds().x === dragOrigin.x && draggedToast.getBounds().y === dragOrigin.y;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',96,92);window.petToast.drag('move',0,92)`);
-  await wait(50);
-  notificationChecks.dragVertical = draggedToast.getBounds().x === dragOrigin.x && draggedToast.getBounds().y === dragOrigin.y - 8;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('end',0,92)`);
-  await wait(50);
-  notificationChecks.dragReturned = notificationChecks.dragReturned && !draggedToast.isDestroyed() && draggedToast.getBounds().y === dragOrigin.y;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',92,104)`);
-  await wait(50);
-  notificationChecks.dragLeft = draggedToast.getBounds().x === dragOrigin.x - 8 && draggedToast.getBounds().y === dragOrigin.y;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('cancel',92,104)`);
-  await wait(50);
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',114,100);window.petToast.drag('cancel',114,100)`);
-  await wait(50);
-  notificationChecks.dragCancelled = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x;
-  await wait(150);
-  notificationChecks.dragOpacityRestored = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity) === 1`);
-  for (const action of ['end', 'cancel'] as const) {
-    customNotifications.drag(draggedToast.webContents, 'start', 100, 100);
-    customNotifications.drag(draggedToast.webContents, 'move', 108, 100);
-    const sibling = customNotifications.show({threadId: 'drag-sibling', title: 'Turn finished', body: 'Arrived during drag', kind: 'Turn finished'});
-    await wait(100);
-    customNotifications.drag(draggedToast.webContents, action, 108, 100);
-    const returned = draggedToast.getBounds();
-    const siblingBounds = sibling.getBounds();
-    notificationChecks['dragReflow-' + action] = returned.y + returned.height + 8 === siblingBounds.y;
-    // Removing a sibling while dragging must also restore the current stack position.
-    customNotifications.drag(draggedToast.webContents, 'start', 100, 100);
-    customNotifications.drag(draggedToast.webContents, 'move', 108, 100);
-    customNotifications.dismiss(customNotifications.entryFor(sibling.webContents)!.id);
-    customNotifications.drag(draggedToast.webContents, action, 108, 100);
-    notificationChecks['dragRemoval-' + action] = draggedToast.getBounds().y === dragOrigin.y;
-  }
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('start',100,100);window.petToast.drag('move',139,100)`);
-  await wait(50);
-  notificationChecks.dragBelowThreshold = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x + 39;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('move',140,100)`);
-  await wait(200);
-  notificationChecks.dragWaitsForRelease = !draggedToast.isDestroyed() && draggedToast.getBounds().x === dragOrigin.x + 40;
-  await draggedToast.webContents.executeJavaScript(`window.petToast.drag('end',140,100)`);
-  await wait(80);
-  const autoBounds = draggedToast.getBounds();
-  notificationChecks.dragAutoContinued = autoBounds.x > dragOrigin.x + 40 && autoBounds.y === dragOrigin.y;
-  notificationChecks.dragSlower = !draggedToast.isDestroyed() && autoBounds.x < dragOrigin.x + dragOrigin.width * .7;
-  notificationChecks.dragAutoFaded = await draggedToast.webContents.executeJavaScript(`Number(getComputedStyle(document.body).opacity) < .9`);
-  await wait(450);
-  notificationChecks.dragDismissed = draggedToast.isDestroyed();
+  report.contextMenu = await runMenuSmoke(contextMenu, petWindow!, directory, smokeTheme, showSettings, () => settingsWindow!);
+  traceSmoke(`context menu checked: ${JSON.stringify(report.contextMenu)}`);
+  if (visibility.visible && petWindow!.isVisible()) {
+    await petWindow!.webContents.executeJavaScript(`window.pet.hover()`);
+    await wait(80);
+    report.hoverAfterMenu = hoverPanel.window!.isVisible();
+    hoverPanel.hide();
+  } else report.hoverAfterMenu = 'skipped: fullscreen';
+  report.customNotifications = await runToastSmoke(customNotifications, petWindow!, directory, smokeTheme);
+  testingToasts = false;
   if (process.argv.includes('--toast-smoke-test')) {
-    report.customNotifications = notificationChecks;
     writeFileSync(join(directory, 'report.json'), JSON.stringify(report, null, 2));
     app.quit();
     return;
   }
-  const burst = Array.from({length:4}, (_, i) => customNotifications.show({threadId: 'toast-fixture-' + i, title: 'Turn finished', body: 'A finished chat', kind: 'Turn finished'}));
-  await wait(160);
-  notificationChecks.bounded = customNotifications.windows.size === 3 && burst[0]!.isDestroyed();
-  customNotifications.clear();
-  notificationChecks.cleared = customNotifications.windows.size === 0;
-  testingToasts = false;
-  report.customNotifications = notificationChecks;
   preferences = { ...preferences, ...notificationPreferences }; persist(); publish();
   settingsWindow!.setSize(470, 500);
   await wait(100);
@@ -1083,9 +1069,39 @@ async function runSmokeTest(directory: string) {
   preferences = { ...preferences, onboardingCompleted: false };
   storePreferences(preferencesPath, preferences);
   const onboardingReopened = new Promise<void>(resolve => settingsWindow!.webContents.once('did-finish-load', () => resolve()));
+  smokeStateDelay = 750; smokeStateFailures = 1;
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('reopen-onboarding').click()`);
   await onboardingReopened;
-  await wait(150);
+  const beforeInitialization = JSON.stringify(preferences);
+  publish(); // Deliberately exercise a state push while the invoke is delayed.
+  report.onboardingInitialization = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const disabled=document.getElementById('continue').disabled && document.getElementById('skip').disabled;
+    document.getElementById('onboarding-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+    return disabled;
+  })()`);
+  await wait(80);
+  report.onboardingInitialization = report.onboardingInitialization && beforeInitialization === JSON.stringify(preferences);
+  await wait(850);
+  report.onboardingInitializationRetry = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const retry=document.getElementById('retry-initialization');
+    const failed=!retry.hidden && !retry.disabled && document.getElementById('continue').disabled && !document.getElementById('setup-error').hidden;
+    retry.click(); return failed;
+  })()`);
+  await wait(850); smokeStateDelay = 0;
+  report.onboardingInitializationRetry = report.onboardingInitializationRetry && await settingsWindow!.webContents.executeJavaScript(`document.getElementById('retry-initialization').hidden && !document.getElementById('continue').disabled && document.getElementById('ui-theme').value==='follow-t3-code'`);
+  report.onboardingGeneral = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    const visible = !document.getElementById('general-step').hidden;
+    const first = document.querySelector('.steps button').dataset.step === '0';
+    const defaultTheme = document.getElementById('ui-theme').value === 'follow-t3-code';
+    document.querySelector('#theme-styles input[value=ember]').click();
+    document.querySelector('#theme-modes input[value=dark]').click();
+    return {visible, first, defaultTheme};
+  })()`);
+  writeFileSync(join(directory, 'onboarding-general.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  report.onboardingProgressInitial = await settingsWindow!.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.steps button')).every(control => control.disabled)`);
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
+  await wait(200);
+  (report.onboardingGeneral as Record<string, boolean>).persisted = preferences.theme === 'ember' && preferences.themeAppearance === 'dark';
   report.onboardingConnect = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('connect-step').hidden, overflow: document.documentElement.scrollWidth > innerWidth, bridge: typeof window.pet.finishOnboarding === 'function'})`);
   settingsWindow!.setSize(470, 500);
   await settingsWindow!.webContents.executeJavaScript(`(() => {document.documentElement.style.setProperty('--ui-font-size','24px');const error=document.getElementById('setup-error');error.hidden=false;error.textContent='Could not connect. Check the selected folder and try again. This multi-line error must remain readable.';})()`);
@@ -1118,7 +1134,7 @@ async function runSmokeTest(directory: string) {
     writeFileSync(join(directory, `onboarding-${stage}.png`), (await settingsWindow!.webContents.capturePage()).toPNG());
   };
   await captureOnboarding('connect');
-  report.onboardingProgressInitial = await settingsWindow!.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.steps button')).every(control => control.disabled)`);
+
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('connection-settings').open = true`);
   await captureOnboarding('connection-folder');
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('connection-settings').open = false`);
@@ -1126,7 +1142,7 @@ async function runSmokeTest(directory: string) {
   await wait(200);
   report.onboardingDropdowns = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const source=document.getElementById('pet-size');const trigger=document.getElementById('pet-size-trigger');
-    const allCustom=[...document.querySelectorAll('select')].every(select=>select.hidden && document.getElementById(select.id+'-trigger')?.getAttribute('role')==='combobox');
+    const allCustom=[...document.querySelectorAll('select:not([data-theme-control])')].every(select=>select.hidden && document.getElementById(select.id+'-trigger')?.getAttribute('role')==='combobox');
     trigger.scrollIntoView({block:'nearest'});trigger.click();
     const popup=document.getElementById('pet-size-listbox');const rect=popup.getBoundingClientRect();
     const fits=rect.left>=0 && rect.right<=innerWidth && rect.top>=0 && rect.bottom<=innerHeight;
@@ -1147,11 +1163,14 @@ async function runSmokeTest(directory: string) {
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
   (report.onboardingPet as Record<string, boolean>).draftRetained = await settingsWindow!.webContents.executeJavaScript(`document.querySelector('#pet-gallery input[value=miso]').checked && document.getElementById('pet-size').value === '96' && document.getElementById('pet-still').checked`);
+  (report.onboardingPet as Record<string, boolean>).themeDraftRetained = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('ui-theme').value==='ember' && document.getElementById('theme-appearance').value==='dark' && !document.getElementById('theme-appearance-field').hidden`);
   await captureOnboarding('pet');
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
   const chosenPet = loadPreferences(preferencesPath);
   (report.onboardingPet as Record<string, boolean>).persisted = chosenPet.petId === 'miso' && chosenPet.size === 96 && chosenPet.reducedMotion;
+  (report.onboardingPet as Record<string, boolean>).themePersisted = chosenPet.theme === 'ember' && chosenPet.themeAppearance === 'dark' && uiTheme.id === 'ember' && uiTheme.appearance === 'dark';
+  await settingsWindow!.webContents.executeJavaScript(`window.pet.savePreferences({theme:'follow-t3-code',themeAppearance:'system'})`);
   report.onboardingNotifications = await settingsWindow!.webContents.executeJavaScript(`({visible: !document.getElementById('notifications-step').hidden, migration: !document.getElementById('migrate-option').hidden, text: document.getElementById('notification-check').textContent, overflow: document.documentElement.scrollWidth > innerWidth, footerFits: document.getElementById('continue').getBoundingClientRect().bottom <= innerHeight})`);
   report.onboardingNotificationStyle = await settingsWindow!.webContents.executeJavaScript(`(async () => {
     const before=(await window.pet.getState()).preferences;
@@ -1171,10 +1190,10 @@ async function runSmokeTest(directory: string) {
   })()`);
   report.onboardingProgressBack = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const controls = document.querySelectorAll('.steps button');
-    const backEnabled = !controls[0].disabled && !controls[1].disabled && controls[2].disabled && controls[3].disabled;
-    controls[1].click();
+    const backEnabled = !controls[0].disabled && !controls[1].disabled && !controls[2].disabled && controls[3].disabled && controls[4].disabled;
+    controls[2].click();
     return { backEnabled, returned: !document.getElementById('pet-step').hidden,
-      current: controls[1].getAttribute('aria-current') === 'step', folder: document.getElementById('directory').value === ${JSON.stringify(fixture)}, pet: document.querySelector('#pet-gallery input[value=miso]').checked };
+      current: controls[2].getAttribute('aria-current') === 'step', folder: document.getElementById('directory').value === ${JSON.stringify(fixture)}, pet: document.querySelector('#pet-gallery input[value=miso]').checked };
   })()`);
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('continue').click()`);
   await wait(200);
@@ -1263,8 +1282,10 @@ else {
     themeSync = new T3ThemeSync(
       () => smokeDirectory ? join(smokeDirectory, 't3-profile') : t3ProfileDirectory(app.getPath('appData')),
       () => preferences.dataDirectory, () => nativeTheme.shouldUseDarkColors,
-      theme => { uiTheme = theme; nativeTheme.themeSource = theme.source; publish(); });
-    nativeTheme.on('updated', () => themeSync?.refresh());
+      theme => { followedTheme = theme; refreshUiTheme(); publish(); });
+    // Keep nativeTheme on the OS setting so an independent System appearance
+    // never inherits the previously selected T3 or pet light/dark override.
+    nativeTheme.on('updated', () => { themeSync?.refresh(); refreshUiTheme(); publish(); });
     if (process.platform === 'linux' && preferences.launchAtLogin && !smokeDirectory) {
       setLinuxLoginStartup(true, linuxStartupCommand(process.execPath, app.getAppPath(), app.isPackaged, process.env.APPIMAGE));
     }
@@ -1294,9 +1315,9 @@ else {
     if (process.platform === 'darwin') trayImage.setTemplateImage(true);
     tray = new Tray(trayImage);
     tray.setToolTip('T3 Pet');
-    tray.setContextMenu(menu());
-    if (process.platform === 'win32') tray.on('click', () => tray?.popUpContextMenu(menu()));
-    if (process.platform === 'linux') tray.on('click', () => showSettings());
+    const openTrayMenu = () => { hoverPanel.hide(); void contextMenu.show().catch(error => dialog.showErrorBox('Could not open menu', String(error))); };
+    tray.on('click', openTrayMenu);
+    tray.on('right-click', openTrayMenu);
     tray.on('double-click', () => showSettings());
     screen.on('display-removed', () => { petWindow?.setBounds(fitPosition(preferences.position)); customNotifications.position(); });
     screen.on('display-metrics-changed', () => { petWindow?.setBounds(fitPosition(preferences.position)); customNotifications.position(); });
@@ -1304,10 +1325,21 @@ else {
     await poll();
     traceSmoke('first poll finished');
     if (!smokeDirectory && !preferences.onboardingCompleted) showSettings(true);
-    if (smokeDirectory && fullscreenTest) await runFullscreenCheck(smokeDirectory, petWindow!, visibility);
+    if (smokeDirectory && process.argv.some(arg => ['--menu-input-test', '--hover-input-test'].includes(arg))) {
+      stopFullscreenWatch?.(); visibility.fullscreen = false; fullscreenCheckReady = true;
+      visibility.manualHidden = false;
+      const area = screen.getPrimaryDisplay().workArea;
+      petWindow!.setBounds(fitPosition({ x: area.x + Math.round(area.width / 2), y: area.y + Math.round(area.height / 2) }));
+      applyVisibility();
+      await contextMenu!.show({x:area.x+Math.round(area.width/2),y:area.y+Math.round(area.height/2)});
+      if (process.argv.includes('--hover-input-test')) contextMenu.hide();
+      traceSmoke('physical menu input fixture ready');
+    }
+    else if (smokeDirectory && process.argv.includes('--menu-video-test')) { await runMenuVideo(contextMenu, petWindow!, smokeDirectory); app.quit(); }
+    else if (smokeDirectory && fullscreenTest) await runFullscreenCheck(smokeDirectory, petWindow!, visibility);
     else if (smokeDirectory) await runSmokeTest(smokeDirectory);
   }).catch(error => {
-    traceSmoke(`startup error: ${error instanceof Error ? error.stack : String(error)}`);
+    traceSmoke(`startup error: ${error instanceof Error ? error.stack : JSON.stringify(error, Object.getOwnPropertyNames(error ?? {}))}`);
     if (smokeDirectory) { app.exit(1); return; }
     dialog.showErrorBox('T3 Pet could not start', error instanceof Error ? error.message : String(error));
     app.quit();
@@ -1318,6 +1350,7 @@ else {
     quitting = true;
     themeSync?.dispose();
     hoverPanel.dispose();
+    contextMenu.dispose();
     stopFullscreenWatch?.();
     stopDrag();
     if (timer) clearTimeout(timer);

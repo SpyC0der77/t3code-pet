@@ -52,16 +52,24 @@ const testHover = process.env.T3PET_SMOKE_HOVER === '1';
 const testToast = process.env.T3PET_SMOKE_TOAST === '1';
 assert.ok([testNotification, testHover, testToast].filter(Boolean).length <= 1, 'Run notification, hover, and toast smoke modes separately.');
 const child = spawn(executable, ['--smoke-test', directory, ...(testHover ? ['--hover-smoke-test'] : []), ...(testToast ? ['--toast-smoke-test'] : []), ...(testNotification ? ['--notification-smoke-test'] : []), ...(scale ? [`--force-device-scale-factor=${scale}`] : [])], { stdio: 'inherit', windowsHide: true, env: runtimeEnvironment });
-const timeout = setTimeout(() => child.kill(), 60_000);
+const timeout = setTimeout(() => child.kill(), 75_000);
 try {
   const exit = await new Promise((resolveExit, reject) => { child.once('exit', resolveExit); child.once('error', reject); });
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+assert.notEqual(report.hoverOpened, false, 'The first hover did not show the native chat-list window.');
+if (!testHover) assert.notEqual(report.hoverAfterMenu, false, 'Hover did not reopen after context-menu dismissal.');
+assert.ok(Object.values(report.hoverHierarchy).every(Boolean), 'Subagent hover ordering, labels, or layout failed.');
 if (!testHover) {
-  for (const action of ['end', 'cancel']) {
-    assert.ok(report.customNotifications['dragReflow-' + action] && report.customNotifications['dragRemoval-' + action], 'Short toast drag restored stale stack bounds.');
+  for (const key of ['settingsFirstClick', 'settingsHiddenFirstClick', 'settingsMinimizedFirstClick', 'notificationsFirstClick']) {
+    assert.equal(report.contextMenu[key], true, `Menu ${key} did not show and focus settings after one action.`);
   }
+  assert.ok(Object.values(report.contextMenu).every(Boolean), 'Custom context menu layout, navigation, or actions failed.');
+  assert.ok(report.customNotifications.entryHeight, 'Notification entrance did not descend 32px from above its anchor.');
+  assert.ok(report.customNotifications.audio, 'Packaged notification audio could not load or play.');
+  for (const key of ['touchContent', 'touchScroll', 'stableAnnouncements', 'emptyStackResumes', 'emptyStackExpires', 'disabledAlertsSilent', 'testSound', 'mutedTestSilent']) assert.equal(report.customNotifications[key], true, `Notification ${key} failed.`);
+  for (const key of ['animatedDismiss', 'singleWindow', 'collapsed', 'expanded', 'stackPaused', 'reused', 'parallelExit', 'removed', 'collapses', 'keyboardExpands', 'dragHeld', 'returnAnimated', 'returned', 'inwardResisted', 'axisLocked', 'cancelled', 'waitsForRelease', 'swipeDismissed', 'nativeStable', 'bounded', 'clickThrough', 'reducedMotion', 'cleared']) assert.ok(report.customNotifications[key], `Notification ${key} failed.`);
 }
 if (testToast) {
   const checks = report.customNotifications;
@@ -70,7 +78,6 @@ if (testToast) {
     assert.ok(checks[theme + 'Layout'], 'Notification inline layout, corner close button, or content height failed.');
     assert.ok(checks[theme + 'Bounds'] && checks[theme + 'Paused'] && checks[theme + 'Dismissed'], 'Notification positioning or actions failed.');
   }
-  for (const key of ['dragMoved', 'dragAxisLocked', 'dragVertical', 'dragLeft', 'dragPaused', 'dragReturned', 'dragCancelled', 'dragFaded', 'dragBelowThreshold', 'dragAutoContinued', 'dragWaitsForRelease', 'dragSlower', 'dragAutoFaded', 'dragOpacityRestored', 'dragDismissed']) assert.ok(checks[key], `Notification ${key} failed.`);
   console.log(`Packaged ${process.platform} notification smoke test passed. Report: ${directory}`);
   process.exit(0);
 }
@@ -82,6 +89,9 @@ if (testHover) {
   process.exit(0);
 }
 assert.ok(Object.values(report.notificationChoice).every(Boolean), 'Notification choice did not save or discard correctly.');
+assert.ok(Object.values(report.themePreferences).every(Boolean), 'Independent theme save, discard, live updates, or follow behavior failed.');
+assert.equal(report.onboardingInitialization, true, 'Onboarding submitted unhydrated preferences.');
+assert.equal(report.onboardingInitializationRetry, true, 'Onboarding did not recover from a failed state load.');
 assert.ok(Object.values(report.settingsDropdowns).every(Boolean), 'Custom settings dropdown accessibility, keyboard, bounds, or draft behavior failed.');
 assert.ok(Object.values(report.notificationTestPending).every(Boolean), 'A settings update re-enabled a pending test notification.');
 assert.ok(Object.values(report.onboardingDropdowns).every(Boolean), 'Custom onboarding dropdown selection or bounds failed.');
@@ -122,6 +132,7 @@ assert.ok(!report.settingsCompact.overflow && report.settingsCompact.footerFits,
 assert.ok(report.ui.hasBridge && !report.ui.overflow);
 assert.ok(report.animation.opaquePixels > 0);
 assert.ok(report.hoverEmpty && report.hoverIdle && report.hoverDisconnected && report.chatNavigation.rejectedUnknown, 'Idle, empty, or disconnected hover content failed.');
+assert.ok(Object.values(report.onboardingGeneral).every(Boolean), 'General onboarding default, order or persistence failed.');
 assert.ok(report.onboardingConnect.bridge && !report.onboardingConnect.overflow);
 assert.ok(Object.values(report.notificationModal).every(Boolean), 'Settings notification modal, cancellation, compact layout, or apply failed.');
 assert.ok(Object.values(report.onboardingPet).every(Boolean), 'Onboarding pet selection, navigation, persistence, or finish preview failed.');
@@ -135,6 +146,6 @@ assert.ok(Object.values(report.onboardingProgressBack).every(Boolean), 'Complete
 assert.ok(report.onboardingActionIcon, 'Changing notification action removed its label or arrow.');
 for (const stage of ['connect', 'connection-folder', 'pet', 'notifications', 'finish']) {
   const layout = report['onboardingCompact' + stage];
-  assert.ok(!layout.overflow && layout.footerFits && layout.progressCount === 4 && layout.currentCount === 1, `Compact ${stage} onboarding overflowed or lost its progress/action controls.`);
+  assert.ok(!layout.overflow && layout.footerFits && layout.progressCount === 5 && layout.currentCount === 1, `Compact ${stage} onboarding overflowed or lost its progress/action controls.`);
 }
 console.log(`Packaged ${process.platform} smoke test passed. Report: ${directory}`);

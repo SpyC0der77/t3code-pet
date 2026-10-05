@@ -1,7 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'"><title>T3 Pet notification</title><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="notification.css"></head><body>
-<main role="status" aria-live="polite">
-  <div class="message"><svg id="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path id="status-mark" d="M12 8v5m0 3h.01"/></svg>
-  <div class="content"><p id="title"></p><p id="description"></p><p id="open-error" role="alert" hidden></p></div></div>
-  <button id="open" type="button">Open chat</button>
-  <button id="dismiss" type="button" aria-label="Dismiss notification"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-</main><script src="notification.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'"><title>T3 Pet notifications</title><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="notification.css"></head><body>
+<section id="stack" aria-label="Notifications" aria-live="polite"></section>
+<template id="toast-template"><article class="toast">
+  <div class="toast-body"><div class="content"><div class="message"><svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg><p class="title"></p></div><p class="description"></p><p class="open-error" role="alert" hidden></p></div><button class="open" type="button">Open chat</button></div>
+  <button class="dismiss" type="button" aria-label="Dismiss notification"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+</article></template><script src="notification.js"></script></body></html>
