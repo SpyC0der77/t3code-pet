@@ -1,4 +1,9 @@
-import { app, BrowserWindow, Tray, nativeImage, nativeTheme, ipcMain, dialog, screen, shell, Notification } from 'electron';
+import { app, BrowserWindow, Tray, nativeImage, nativeTheme, ipcMain, dialog, screen, shell, Notification, clipboard } from 'electron';
+import { release } from 'node:os';
+import { diagnostics, inspectSchema } from './diagnostics';
+import { runNotificationControlsSmoke } from './notification-controls-smoke';
+import { alertsPaused, eventEnabled, notificationPolicy, pauseUntil } from './notification-policy';
+import { applicationIdentity, repairShortcutIcon, startMenuShortcut } from './windows-identity';
 import { chatUrl } from './t3-navigation';
 import { join } from 'node:path';
 import { mkdirSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
@@ -61,8 +66,11 @@ if (smokeDirectory) setTimeout(() => {
   traceSmoke('smoke timeout');
   app.exit(1);
 }, process.argv.some(arg => ['--menu-input-test', '--hover-input-test'].includes(arg)) ? 300_000 : 60_000).unref();
-app.setName('T3 Pet');
-app.setAppUserModelId('dev.t3pet.companion');
+// Electron's notification registration rewrites a shortcut named after the
+// app. Tests must use their own name, app ID, and notification activator.
+const identity = applicationIdentity(!!(smokeDirectory || fixtureDirectory || closeFixtureDirectory));
+app.setName(identity.name);
+app.setAppUserModelId(identity.appId);
 const windowIcon = appIconPath(join(__dirname, '..'), process.resourcesPath, app.isPackaged);
 
 let petWindow: BrowserWindow | null = null;
@@ -75,7 +83,7 @@ let onboardingView = false;
 let migrationMessage = '';
 let migrating = false;
 const notifications = new ChatNotifications();
-const activeNotifications = new Set<Notification>();
+const activeNotifications = new Map<Notification, ChatNotification>();
 const customNotifications = new ToastWindows(() => petWindow, () => uiTheme,
   async (threadId, test) => { if (test) showSettings(); else await openNotifiedChat(threadId); },
   error => { migrationMessage = `Could not show the custom notification: ${error instanceof Error ? error.message : String(error)}`; publish(); });
@@ -110,6 +118,10 @@ const contextMenu = new PetMenu(() => ({ state: state(), hidden: visibility.manu
   if (action === 'visibility') { visibility.manualHidden = !visibility.manualHidden; applyVisibility(); publish(); }
   else if (action === 'settings') showSettings();
   else if (action === 'notifications') showSettings(false, 'notifications');
+  else if (action === 'pause-notifications') {
+    try { setNotificationPause(alertsPaused(preferences) ? 'resume' : '30-minutes'); }
+    catch (error) { dialog.showErrorBox('Could not pause notifications', error instanceof Error ? error.message : 'Try again.'); }
+  }
   else if (action === 'preview') setPreview(mood);
   else if (action === 'reset') resetPosition();
   else if (action === 'quit') app.quit();
@@ -255,7 +267,7 @@ function showSettings(onboarding = false, tab?: 'notifications', approved = fals
   });
   lockWindow(settingsWindow);
   if (process.platform === 'win32') settingsWindow.setAppDetails({
-    appId: 'dev.t3pet.companion', appIconPath: windowIcon, appIconIndex: 0,
+    appId: identity.appId, appIconPath: windowIcon, appIconIndex: 0,
     ...(app.isPackaged && !smokeDirectory ? {
       relaunchCommand: `"${process.execPath}"`, relaunchDisplayName: 'T3 Pet',
     } : {}),
@@ -288,8 +300,22 @@ function setupState(): NotificationSetup {
 function notificationSupported(style = preferences.notificationStyle) { return style === 'custom' || Notification.isSupported(); }
 function clearNotifications() {
   customNotifications.clear();
-  for (const notice of activeNotifications) notice.close();
+  for (const notice of activeNotifications.keys()) notice.close();
   activeNotifications.clear();
+}
+
+function setNotificationPause(choice: unknown) {
+  if (migrating) throw new Error('Finish the notification switch before pausing alerts.');
+  const next = { ...preferences, notificationsPausedUntil: pauseUntil(choice) };
+  storePreferences(preferencesPath, next);
+  preferences = next;
+  if (alertsPaused(preferences)) clearNotifications();
+  notifications.update(allowedSnapshot(snapshot, preferences), notificationSupported() && preferences.notificationsEnabled,
+    null, true, notificationPolicy(preferences));
+  // Keep notification tracking active. Polling releases outstanding requests
+  // when the pause expires, without replaying completions from the pause.
+  publish();
+  return state();
 }
 
 async function openNotifiedChat(threadId: string) {
@@ -307,7 +333,7 @@ function showNotification(notice: ChatNotification, test = false, style = prefer
   };
   if (style === 'custom') {
     const win = customNotifications.show(notice, test);
-    playSound();
+    if (customNotifications.state.entries.some(entry => entry.notice === notice)) playSound();
     return win;
   }
   if (!Notification.isSupported()) throw new Error('Desktop notifications are unavailable on this system.');
@@ -315,7 +341,7 @@ function showNotification(notice: ChatNotification, test = false, style = prefer
   const notification = new Notification({ title: `T3 Pet \u00b7 ${notice.title}`, body: notice.body,
     silent: true,
     ...(process.platform === 'win32' ? {} : { icon: join(__dirname, '..', 'assets', 'icon-transparent.png') }) });
-  activeNotifications.add(notification);
+  activeNotifications.set(notification, notice);
   notification.on('close', () => activeNotifications.delete(notification));
   notification.on('failed', (_event, error) => {
     activeNotifications.delete(notification);
@@ -370,11 +396,11 @@ async function poll() {
       snapshot = next;
       const followed = allowedSnapshot(snapshot, preferences);
       pet = machine.update(followed, null);
+      if (!smokeDirectory) customNotifications.reconcile(followed);
       if (!testingNotificationTracking) for (const notice of notifications.update(followed, notificationSupported() && preferences.notificationsEnabled,
-        null, visibility.fullscreen || !fullscreenCheckReady || previewMood !== null || !!smokeDirectory)) {
+        null, visibility.fullscreen || !fullscreenCheckReady || previewMood !== null || !!smokeDirectory, notificationPolicy(preferences))) {
         showNotification(notice);
       }
-      if (!smokeDirectory) customNotifications.reconcile(followed);
       publish();
     }
   } finally {
@@ -389,6 +415,19 @@ function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) {
 }
 
 function registerIpc() {
+  ipcMain.handle('pet:pause-notifications', (event, choice: unknown) => {
+    trusted(event);
+    return setNotificationPause(choice);
+  });
+  ipcMain.handle('pet:copy-diagnostics', event => {
+    trusted(event);
+    const report = diagnostics({ version: app.getVersion(), platform: process.platform,
+      architecture: process.arch, osRelease: release(), electron: process.versions.electron,
+      node: process.versions.node, chrome: process.versions.chrome,
+      schema: inspectSchema(preferences.dataDirectory), snapshot, preferences,
+      fullscreen: visibility.fullscreen, fullscreenReady: fullscreenCheckReady });
+    return clipboard.writeText(report);
+  });
   ipcMain.handle('pet:notification-setup', async event => {
     trusted(event);
     if (smokeDirectory && smokeSetupDelay) await new Promise(resolve => setTimeout(resolve, smokeSetupDelay));
@@ -519,10 +558,13 @@ function registerIpc() {
     const next = validatePreferences(raw, preferences);
     // Renderer settings cannot move the desktop window. Dragging owns position.
     next.position = preferences.position;
+    // Pause controls apply immediately through their own validated action.
+    next.notificationsPausedUntil = preferences.notificationsPausedUntil;
     const directoryChanged = next.dataDirectory !== preferences.dataDirectory;
     const filterKey = (p: Preferences) => JSON.stringify([p.projectFilter.mode, p.projectFilter.selected.map(item => item.id).sort(), p.chatFilter.mode, p.chatFilter.selected.map(item => item.id).sort()]);
     const filtersChanged = filterKey(next) !== filterKey(preferences);
     const notificationChanged = next.notificationStyle !== preferences.notificationStyle || next.notificationsEnabled !== preferences.notificationsEnabled;
+    const eventChoicesChanged = next.notificationAttention !== preferences.notificationAttention || next.notificationCompletion !== preferences.notificationCompletion || next.notificationError !== preferences.notificationError;
     if (next.launchAtLogin !== preferences.launchAtLogin && !smokeDirectory) {
       if (process.platform === 'linux') setLinuxLoginStartup(next.launchAtLogin,
         linuxStartupCommand(process.execPath, app.getAppPath(), app.isPackaged, process.env.APPIMAGE));
@@ -531,6 +573,13 @@ function registerIpc() {
     storePreferences(preferencesPath, next);
     preferences = next;
     if (notificationChanged || filtersChanged || directoryChanged) { notifications.reset(); clearNotifications(); }
+    else if (eventChoicesChanged) {
+      const policy = notificationPolicy(preferences);
+      customNotifications.applyPolicy(policy);
+      for (const [notification, notice] of activeNotifications) {
+        if (notice.kind !== 'test' && !eventEnabled(notice.kind, policy)) { notification.close(); activeNotifications.delete(notification); }
+      }
+    }
     refreshUiTheme();
     if (filtersChanged) {
       machine.reset();
@@ -574,7 +623,7 @@ function registerIpc() {
   });
   ipcMain.on('menu:action', (event, action: unknown, mood: unknown) => {
     traceSmoke(`menu input action ${String(action)}`);
-    if (!menuSender(event) || !['visibility', 'settings', 'notifications', 'preview', 'reset', 'quit'].includes(action as string)) return;
+    if (!menuSender(event) || !['visibility', 'settings', 'notifications', 'pause-notifications', 'preview', 'reset', 'quit'].includes(action as string)) return;
     if (action === 'preview' && mood !== null && !moods.includes(mood as PetMood)) return;
     contextMenu.activate(action as MenuAction, action === 'preview' ? mood as PetMood | null : null);
   });
@@ -621,6 +670,12 @@ async function runSmokeTest(directory: string) {
     visible ||= pixels[i] > 0;
   }
   report.windowIcon = { path: windowIcon, loaded: !icon.isEmpty(), transparent, visible, ...icon.getSize() };
+  if (process.platform === 'win32' && app.isPackaged) {
+    const shortcut = shell.readShortcutLink(startMenuShortcut(app.getPath('appData'), identity.name));
+    report.shellIdentity = { isolated: identity.appId !== applicationIdentity(false).appId,
+      shortcutTarget: shortcut.target === process.execPath, shortcutIcon: shortcut.icon === windowIcon && shortcut.iconIndex === 0,
+      shortcutAppId: shortcut.appUserModelId === identity.appId, notificationActivator: !!shortcut.toastActivatorClsid };
+  }
   if (!icon.isEmpty()) writeFileSync(join(directory, 'window-icon.png'), icon.toPNG());
   const { DatabaseSync } = await import('node:sqlite');
   const v2File = join(directory, 'statev2-fixture.sqlite');
@@ -832,29 +887,22 @@ async function runSmokeTest(directory: string) {
   pet = machine.update(snapshot, null);
   publish();
   await wait(150);
-  report.chatActivity = await settingsWindow!.webContents.executeJavaScript(`(() => {
-    document.getElementById('chats-tab').click();
-    const list = document.getElementById('chat-activity');
-    const loaded = list.querySelectorAll('button').length === 2 && list.textContent.includes('Working') && list.textContent.includes('Approval needed');
-    const search = document.getElementById('activity-search');
-    search.value = 'Sandbox'; search.dispatchEvent(new Event('input', {bubbles:true}));
-    const searched = list.querySelectorAll('button').length === 1 && list.textContent.includes('Experiment');
-    search.value = 'no-such-chat'; search.dispatchEvent(new Event('input', {bubbles:true}));
-    const emptySearch = list.children.length === 0 && !document.getElementById('activity-empty').hidden && document.getElementById('activity-empty').textContent.includes('No chats match');
-    search.value = ''; search.dispatchEvent(new Event('input', {bubbles:true}));
-    return {loaded, searched, emptySearch};
+  report.settingsConnection = await settingsWindow!.webContents.executeJavaScript(`(() => {
+    document.getElementById('general-tab').click();
+    const panel = document.getElementById('general-panel');
+    const directory = document.getElementById('directory');
+    const original = directory.value;
+    directory.value = original + '-draft'; directory.dispatchEvent(new Event('input', {bubbles:true}));
+    const directoryMarksGeneral = document.getElementById('general-tab').textContent.includes('*') && !document.getElementById('save').disabled;
+    document.getElementById('discard').click();
+    return {noActivityTab: !document.getElementById('chats-tab') && !document.getElementById('chat-activity'),
+      controlsInGeneral: ['connection','directory','connection-retry','copy-diagnostics'].every(id => panel.contains(document.getElementById(id))),
+      connected: document.getElementById('connection').textContent === 'Connected to T3 Code',
+      directoryMarksGeneral, directoryDiscarded: directory.value === original && !document.getElementById('general-tab').textContent.includes('*')};
   })()`);
-  writeFileSync(join(directory, 'settings-chat-activity.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
-  const activityReport = report.chatActivity as Record<string, boolean>;
-  settingsWindow!.webContents.send('pet:state', { ...state(), snapshot: { ...snapshot, threads: snapshot.threads.map(thread => ({ ...thread, sessionStatus: 'ready', turnState: 'completed', pendingApproval: 0 })) } });
-  await wait(80);
-  activityReport.updated = await settingsWindow!.webContents.executeJavaScript(`document.querySelectorAll('#chat-activity button').length === 2 && !document.getElementById('chat-activity').textContent.includes('Working') && document.getElementById('chat-activity').textContent.includes('Completed')`);
-  settingsWindow!.webContents.send('pet:state', { ...state(), snapshot: { ...snapshot, threads: [] } });
-  await wait(80);
-  activityReport.empty = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chat-activity').children.length === 0 && !document.getElementById('activity-empty').hidden && document.getElementById('activity-empty').textContent.includes('No chats yet')`);
   settingsWindow!.webContents.send('pet:state', { ...state(), snapshot: { ...snapshot, connected: false, message: 'Open T3 Code to connect.' } });
   await wait(80);
-  activityReport.disconnected = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chat-activity').children.length === 0 && document.getElementById('activity-empty').textContent === 'Open T3 Code to connect.'`);
+  (report.settingsConnection as Record<string, boolean>).disconnected = await settingsWindow!.webContents.executeJavaScript(`document.getElementById('connection-detail').textContent === 'Open T3 Code to connect.' && document.getElementById('data-folder').open && !document.getElementById('connection-recovery').hidden`);
   publish();
   await wait(80);
   report.projectBlocklist = await settingsWindow!.webContents.executeJavaScript(`(async () => {
@@ -944,6 +992,13 @@ async function runSmokeTest(directory: string) {
   report.themeSync = { settings: settingsTheme, hover: hoverTheme, draftRetained: settingsTheme.draft === themeDraft, petUnchanged: beforeThemePet === JSON.stringify(pet), liveWatcher: uiTheme.id === 'iris' && uiTheme.appearance === 'dark' };
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('discard').click()`);
   report.themePreferences = await runThemePreferenceSmoke(settingsWindow!, hoverWindow, directory, state, smokeTheme);
+  report.notificationControls = await runNotificationControlsSmoke(settingsWindow!);
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('notifications-tab').click();document.getElementById('notification-attention').scrollIntoView({block:'start'})`);
+  await wait(100);
+  writeFileSync(join(directory, 'settings-notification-controls.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('general-tab').click();document.getElementById('data-folder').open=true;document.getElementById('data-folder').scrollIntoView({block:'start'})`);
+  await wait(100);
+  writeFileSync(join(directory, 'settings-diagnostics.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   const notificationPreferences = { notificationStyle: preferences.notificationStyle, notificationsEnabled: preferences.notificationsEnabled };
   report.settingsDropdowns = await settingsWindow!.webContents.executeJavaScript(`(async () => {
     document.getElementById('notifications-tab').click();
@@ -1050,7 +1105,7 @@ async function runSmokeTest(directory: string) {
   report.advancedCompact = await settingsWindow!.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth,footerFits:document.getElementById('save').getBoundingClientRect().bottom<=innerHeight,chatControlsVisible:document.getElementById('chat-search').getBoundingClientRect().bottom<document.getElementById('save').getBoundingClientRect().top})`);
   writeFileSync(join(directory, 'settings-filters-expanded-compact.png'), (await settingsWindow!.webContents.capturePage()).toPNG());
   await settingsWindow!.webContents.executeJavaScript(`document.getElementById('advanced-settings').open=false`);
-  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chats-tab').click();document.documentElement.style.setProperty('--ui-font-size','24px')`);
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('general-tab').click();document.getElementById('data-folder').open=true;document.getElementById('data-folder').scrollIntoView({block:'start'});document.documentElement.style.setProperty('--ui-font-size','24px')`);
   report.largeFontSettings = await settingsWindow!.webContents.executeJavaScript(`(() => {
     const textFits = selector => [...document.querySelectorAll(selector)].every(node => {const style=getComputedStyle(node);return parseFloat(style.lineHeight)>=parseFloat(style.fontSize);});
     const tabs=[...document.querySelectorAll('.settings-tabs button')];
@@ -1063,7 +1118,7 @@ async function runSmokeTest(directory: string) {
   report.hoverTransparency = await hoverWindow.webContents.executeJavaScript(`getComputedStyle(document.documentElement).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)'`);
   await smokeTheme('light');
   settingsWindow!.setSize(768, 600);
-  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('chats-tab').click()`);
+  await settingsWindow!.webContents.executeJavaScript(`document.getElementById('general-tab').click();document.getElementById('data-folder').open=true;document.getElementById('data-folder').scrollIntoView({block:'start'})`);
   snapshot = liveSnapshot;
   preferences = livePreferences;
   polling = wasPolling;
@@ -1399,6 +1454,19 @@ else {
   app.on('second-instance', () => { showPet(); showSettings(); });
   app.whenReady().then(async () => {
     traceSmoke('app ready');
+    if (process.platform === 'win32') {
+      // Notification.isSupported initializes Electron's asynchronous Windows
+      // registration. It may recreate even an installer-provided shortcut and
+      // omit its icon. Repair only the icon after registration has written it.
+      Notification.isSupported();
+      const shortcut = startMenuShortcut(app.getPath('appData'), identity.name);
+      let attempts = 0;
+      const repair = setInterval(() => {
+        try { repairShortcutIcon(shortcut, process.execPath, windowIcon, shell); } catch { /* Registration may not have created it yet. */ }
+        if (++attempts === 20) clearInterval(repair);
+      }, 250);
+      repair.unref();
+    }
     preferencesPath = join(app.getPath('userData'), 'preferences.json');
     preferences = loadPreferences(preferencesPath);
     themeSync = new T3ThemeSync(

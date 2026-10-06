@@ -60,8 +60,7 @@ Open **Settings** from the pet's right-click menu or tray icon:
 
 Both open a compact custom menu that uses the pet's theme and T3 Code's font. Use arrow keys or type a label to navigate; Escape closes the preview submenu, then the menu. Enter, Space, Shift+F10, or the Context Menu key also opens it from the focused pet.
 
-- **General** opens first, with Appearance and Color theme selectors plus login startup. **Follow T3 Code** is on by default; turn it off to choose independent appearance settings. **Run setup again…** is available here.
-- **Activity** shows the local connection and lets you change the data folder.
+- **General** opens first, with Appearance and Color theme selectors plus login startup. **Follow T3 Code** is on by default; turn it off to choose independent appearance settings. **Run setup again…** is available here. Connection status and expandable **Connection settings** provide data folder selection, a connection check, and diagnostics.
 - **Filters** has searchable project and chat lists. Choose **Follow everything except selected** or **Follow only selected** for each list. The result shows how many loaded chats will be followed after saving. Expand **Advanced chat filters** beneath the projects to choose chats.
 - **Pet** shows a responsive grid of character previews. Choose the preview state, select a character, then save to apply it to the desktop. Size and still poses are also available here.
 - **Notifications** controls desktop alerts, Beside the pet or System notifications, and sound. Configure the notification source at any time. Preview notification uses the selected style before saving and the saved sound preference. Alerts beside the pet use its theme and do not follow system Do Not Disturb.
@@ -77,6 +76,12 @@ Custom notifications form a compact pile beside the pet, with the newest alert i
 Use Open chat to navigate, or swipe the notification body away from the pet to dismiss it. A 40-pixel swipe or a quick outward flick dismisses on release. Short or cancelled gestures animate back; swipes toward the pet resist dismissal. The close button and Escape also dismiss alerts. Placement stays fixed while the stack is open and adjusts to the monitor's available space. Transparent space around the pile passes clicks through to the desktop. Reduced motion removes the visual transitions.
 
 Both styles use T3 Code's input and completion sounds when sound is enabled. Custom alerts do not enter the OS notification center or inherit its Do Not Disturb setting. Both styles pause during detected fullscreen use.
+
+Notification settings let you choose approval/input requests, completed turns, and errors independently. Pause alerts for 30 minutes, one hour, or until the next local midnight. Pause and Resume now apply immediately, while event toggles apply on Save changes. The pet keeps following activity, and the pause survives restarting T3 Pet. On resuming, requests that still need you can alert again; completions and errors during the pause are not replayed. The pet and tray menus also offer a quick 30-minute pause or Resume notifications.
+
+Requests that still need action stay ahead of completion, error, and preview alerts in the custom pile. Timed alerts cannot displace them. The pile still shows at most three alerts; when more than three requests arrive, it keeps the newest three. The hover list shows the other followed, unsettled chats.
+
+Use **Copy diagnostics** under **Connection settings** in General to copy T3 Pet and runtime versions, platform details, connection state, detected database schema, notification choices, and fullscreen detector state. The report excludes chat titles, IDs, messages, credentials, folder paths, and raw error text.
 
 ## Your data
 

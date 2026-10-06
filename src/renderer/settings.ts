@@ -4,9 +4,9 @@ import { enhanceDropdowns, syncDropdowns, closeDropdowns } from './dropdown';
 import type { AppState, PetMood, Preferences, SelectionFilter } from '../shared';
 import { createPetGallery } from './pet-gallery';
 import { pets } from '../pets';
-import { unsettledChats } from '../unsettled';
 import { allowedThreads } from '../project-filter';
 import { createNotificationModal } from './notification-modal';
+import { alertsPaused, type PauseChoice } from '../notification-policy';
 const element = (id: string) => document.getElementById(id)!;
 const input = (id: string) => element(id) as HTMLInputElement;
 const select = (id: string) => element(id) as HTMLSelectElement;
@@ -25,45 +25,7 @@ let current: AppState;
 let saved: Preferences | undefined;
 let saving = false;
 let testingNotification = false;
-let activitySignature = '';
-function renderActivity() {
-  const snapshot = current.snapshot;
-  const query = input('activity-search').value.trim().toLocaleLowerCase();
-  const active = new Map(unsettledChats(snapshot.threads).map(chat => [chat.thread.id, chat]));
-  const followed = new Set(allowedThreads(snapshot.threads, current.preferences).map(thread => thread.id));
-  const chats = snapshot.connected ? snapshot.threads.filter(thread =>
-    (thread.title + ' ' + thread.project).toLocaleLowerCase().includes(query)
-  ).map(thread => ({ thread, status: active.get(thread.id)?.status ??
-    (thread.turnState === 'completed' ? 'Completed' : ['stopped', 'interrupted'].includes(thread.sessionStatus ?? '') ? 'Stopped' : 'Ready'),
-    priority: active.get(thread.id)?.priority ?? 5
-  })).sort((a, b) => a.priority - b.priority || b.thread.updatedAt.localeCompare(a.thread.updatedAt) || a.thread.id.localeCompare(b.thread.id)) : [];
-  const signature = JSON.stringify([snapshot.connected, query, chats.map(({ thread, status }) =>
-    [thread.id, thread.title, thread.project, status, followed.has(thread.id)])]);
-  element('activity-empty').hidden = chats.length > 0;
-  text('activity-empty', !snapshot.connected ? snapshot.message : query ? 'No chats match your search.' : 'No chats yet. Start a chat in T3 Code.');
-  if (signature === activitySignature) return;
-  activitySignature = signature;
-  const focusedId = (document.activeElement as HTMLElement)?.dataset.activityId;
-  element('chat-activity').replaceChildren(...chats.map(({ thread, status }) => {
-    const row = document.createElement('li');
-    const open = document.createElement('button'); open.type = 'button'; open.dataset.activityId = thread.id;
-    open.title = 'Open chat in T3 Code in your browser';
-    const name = document.createElement('span'); name.className = 'activity-name'; name.textContent = thread.title || 'Untitled chat';
-    const project = document.createElement('span'); project.className = 'activity-project';
-    project.textContent = (thread.project || 'No project') + (followed.has(thread.id) ? '' : ' · Excluded by filters');
-    name.append(project);
-    const detail = document.createElement('span'); detail.className = 'activity-status'; detail.textContent = status;
-    open.append(name, detail); row.append(open);
-    open.addEventListener('click', async () => {
-      open.disabled = true; element('activity-error').hidden = true;
-      try { await window.pet.openChat(thread.id); }
-      catch (error) { text('activity-error', errorText(error)); element('activity-error').hidden = false; }
-      finally { open.disabled = false; }
-    });
-    return row;
-  }));
-  if (focusedId) [...element('chat-activity').querySelectorAll<HTMLButtonElement>('button')].find(button => button.dataset.activityId === focusedId)?.focus({ preventScroll: true });
-}
+let changingPause = false;
 type Kind = 'project' | 'chat';
 const selections: Record<Kind, SelectionFilter['selected']> = { project: [], chat: [] };
 const signatures: Record<Kind, string> = { project: '', chat: '' };
@@ -86,6 +48,9 @@ function draft() {
     size: Number(select('size').value), reducedMotion: input('reduced-motion').checked,
     launchAtLogin: input('login').checked, notificationsEnabled: input('notifications').checked,
     notificationSound: input('notification-sound').checked,
+    notificationAttention: input('notification-attention').checked,
+    notificationCompletion: input('notification-completion').checked,
+    notificationError: input('notification-error').checked,
     notificationStyle: select('notification-style').value as Preferences['notificationStyle'],
   };
 }
@@ -103,9 +68,9 @@ function updateControls(message?: string) {
   for (const tab of tabs) {
     const panel = element(tab.getAttribute('aria-controls')!);
     const keys: Record<string, (keyof ReturnType<typeof draft>)[]> = {
-      'general-panel': ['theme', 'themeAppearance', 'launchAtLogin'], 'chats-panel': ['dataDirectory'],
+      'general-panel': ['theme', 'themeAppearance', 'launchAtLogin', 'dataDirectory'],
       'projects-panel': ['projectFilter', 'chatFilter'], 'pet-panel': ['petId', 'size', 'reducedMotion'],
-      'notifications-panel': ['notificationsEnabled', 'notificationSound', 'notificationStyle'],
+      'notifications-panel': ['notificationsEnabled', 'notificationSound', 'notificationStyle', 'notificationAttention', 'notificationCompletion', 'notificationError'],
     };
     const edited = saved && keys[panel.id].some(key => JSON.stringify(value[key]) !== JSON.stringify(
       key === 'projectFilter' || key === 'chatFilter' ? { ...saved![key], selected: sorted(saved![key].selected) } : saved![key]));
@@ -131,6 +96,13 @@ function updateNotificationControls() {
   const supported = select('notification-style').value === 'custom' || !!current?.notificationsSupported;
   input('notifications').disabled = saving || !supported;
   input('notification-sound').disabled = saving || !supported || !input('notifications').checked;
+  for (const id of ['notification-attention', 'notification-completion', 'notification-error']) input(id).disabled = saving || !supported || !input('notifications').checked;
+  const paused = current && alertsPaused(current.preferences);
+  button('pause-notifications').disabled = saving || changingPause;
+  button('resume-notifications').disabled = saving || changingPause;
+  select('notification-pause').disabled = saving || changingPause;
+  button('resume-notifications').hidden = !paused;
+  text('notification-pause-status', paused ? `Alerts paused until ${new Date(current.preferences.notificationsPausedUntil!).toLocaleString()}. Your pet still follows activity.` : 'Alerts are not paused. Pause controls apply immediately.');
   select('notification-style').disabled = saving;
   button('test-notification').disabled = saving || testingNotification || !supported;
   text('notification-style-help', select('notification-style').value === 'custom' ? "Alerts beside the pet use its theme and do not follow system Do Not Disturb." : supported ? 'System alerts use your notification settings and notification center.' : 'System notifications are unavailable on this system. Choose Beside the pet to receive alerts.');
@@ -196,6 +168,9 @@ function hydrate(p: Preferences) {
   input('pet-id').value=p.petId;showPetCredit();
   input('reduced-motion').checked=p.reducedMotion;input('login').checked=p.launchAtLogin;
   input('notifications').checked=p.notificationsEnabled;input('notification-sound').checked=p.notificationSound;
+  input('notification-attention').checked=p.notificationAttention;
+  input('notification-completion').checked=p.notificationCompletion;
+  input('notification-error').checked=p.notificationError;
   select('notification-style').value=p.notificationStyle;
   renderSelectors();updateControls();updatePreview();
 }
@@ -221,19 +196,17 @@ function render(state: AppState) {
   if (!saved || (!changed && JSON.stringify(saved) !== JSON.stringify(state.preferences))) hydrate(state.preferences);
   renderSelectors();
   updateFilterResult();
-  renderActivity();
   text('connection', state.snapshot.connected ? 'Connected to T3 Code' : 'Not connected');
   text('connection-detail', state.snapshot.connected ? 'Agent status updates automatically.' : state.snapshot.message);
   element('connection-recovery').hidden = state.snapshot.connected;
   if (!state.snapshot.connected && wasConnected !== false) (element('data-folder') as HTMLDetailsElement).open = true;
-  text('version', `v${state.version}`); text('chat-count', `${state.snapshot.threads.length} ${state.snapshot.threads.length === 1 ? 'chat' : 'chats'}`);
+  text('version', `v${state.version}`);
   input('login').closest('label')!.title = state.supportsLoginStartup ? '' : 'Login startup is unavailable on this system.';
   updateNotificationControls();
 }
 window.pet.onState(render); void window.pet.getState().then(render);
 window.pet.onSettingsTab(() => showTab(tabs.findIndex(tab => tab.id === 'notifications-tab')));
 if (new URLSearchParams(location.search).get('tab') === 'notifications') showTab(tabs.findIndex(tab => tab.id === 'notifications-tab'));
-input('activity-search').addEventListener('input', () => { if (current) renderActivity(); });
 element('settings-form').addEventListener('change', event => { if ((event.target as HTMLElement).id !== 'preview') updateControls(); });
 input('directory').addEventListener('input', () => updateControls());
 element('advanced-settings').addEventListener('toggle', () => {
@@ -277,6 +250,21 @@ button('connection-retry').addEventListener('click', async () => {
     updateControls(); renderSelectors(); processExit();
   }
 });
+button('copy-diagnostics').addEventListener('click', async () => {
+  button('copy-diagnostics').disabled = true;
+  try { await window.pet.copyDiagnostics(); text('diagnostics-status', 'Diagnostics copied. No chat titles, messages, credentials, or folder paths included.'); }
+  catch (error) { text('diagnostics-status', errorText(error)); }
+  finally { button('copy-diagnostics').disabled = false; }
+});
+async function changePause(choice: PauseChoice) {
+  if (changingPause || saving) return;
+  changingPause = true; updateNotificationControls();
+  try { render(await window.pet.pauseNotifications(choice)); }
+  catch (error) { text('notification-status', errorText(error)); }
+  finally { changingPause = false; updateNotificationControls(); }
+}
+button('pause-notifications').addEventListener('click', () => void changePause(select('notification-pause').value as PauseChoice));
+button('resume-notifications').addEventListener('click', () => void changePause('resume'));
 button('test-notification').addEventListener('click', async () => {
   if (testingNotification) return;
   testingNotification = true; updateNotificationControls();

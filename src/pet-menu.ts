@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { AppState, PetMood } from './shared';
 import { menuPlacement } from './menu-layout';
 
-export type MenuAction = 'visibility' | 'settings' | 'notifications' | 'preview' | 'reset' | 'quit';
+export type MenuAction = 'visibility' | 'settings' | 'notifications' | 'pause-notifications' | 'preview' | 'reset' | 'quit';
 export interface PetMenuData { state: AppState; hidden: boolean; previewMood: PetMood | null; }
 export interface PetMenuView extends PetMenuData { layout: ReturnType<typeof menuPlacement>; sequence: number; }
 export class PetMenu {

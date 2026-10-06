@@ -1,5 +1,6 @@
 import type { ChatNotification } from './notifications';
 import type { Snapshot } from './shared';
+import { eventEnabled, isAttention, type NotificationPolicy } from './notification-policy';
 
 function lifetime(notice: ChatNotification, test: boolean) {
   if (test) return 10_000;
@@ -25,6 +26,9 @@ export class ToastState {
     const entry: ToastEntry = previous ?? { id: ++this.nextId, notice, test, remaining: 10_000, resumedAt: now };
     Object.assign(entry, { notice, test, remaining: lifetime(notice, test), resumedAt: now });
     this.entries.push(entry);
+    // The end of the array is the front of the pile. Requests outrank timed
+    // alerts; retain the newest three within each priority when overflowing.
+    this.entries.sort((a, b) => Number(!a.test && isAttention(a.notice.kind)) - Number(!b.test && isAttention(b.notice.kind)));
     this.entries = this.entries.slice(-3);
     return entry;
   }
@@ -39,6 +43,9 @@ export class ToastState {
     this.entries = this.entries.filter(entry => entry.remaining > (entry.resumedAt === null ? 0 : now - entry.resumedAt));
   }
   clear() { this.entries = []; }
+  applyPolicy(policy: NotificationPolicy) {
+    this.entries = this.entries.filter(entry => entry.test || eventEnabled(entry.notice.kind, policy));
+  }
   reconcile(snapshot: Snapshot) {
     if (!snapshot.connected) return;
     this.entries = this.entries.filter(entry => {

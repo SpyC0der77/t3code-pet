@@ -1,4 +1,5 @@
 import type { Snapshot, ThreadStatus } from './shared';
+import { eventEnabled, isAttention, type NotificationPolicy } from './notification-policy';
 
 export interface ChatNotification { threadId: string; title: string; body: string; kind: string; }
 function attention(thread: ThreadStatus) {
@@ -10,7 +11,8 @@ export class ChatNotifications {
   private initialized = false;
   private selection: string | null | undefined;
   reset() { this.previous.clear(); this.queued.clear(); this.initialized = false; }
-  update(snapshot: Snapshot, enabled: boolean, follow: string | null, suppressed: boolean): ChatNotification[] {
+  update(snapshot: Snapshot, enabled: boolean, follow: string | null, suppressed: boolean,
+    policy: NotificationPolicy = { attention: true, completion: true, error: true, paused: false }): ChatNotification[] {
     if (!enabled || this.selection !== follow) { this.reset(); this.selection = follow; }
     if (!enabled || !snapshot.connected) return [];
     const threads = snapshot.threads.filter(t => !follow || t.id === follow);
@@ -24,17 +26,20 @@ export class ChatNotifications {
         else if (!waiting && prior && ((t.turnState === 'error' && (prior.turnState !== 'error' || t.turnId !== prior.turnId)) ||
           (t.sessionStatus === 'error' && prior.sessionStatus !== 'error'))) kind = 'Chat failed';
       }
-      if (kind) this.queued.set(t.id, { threadId: t.id, title: kind, body: t.title, kind });
+      // During an explicit pause, keep only requests that still need action.
+      // Include existing requests so clearing visible alerts does not lose them.
+      if (policy.paused && waiting) kind = waiting;
+      if (kind && eventEnabled(kind, policy) && (!policy.paused || isAttention(kind))) this.queued.set(t.id, { threadId: t.id, title: kind, body: t.title, kind });
     }
     this.previous = new Map(threads.map(t => [t.id, { ...t }]));
     this.initialized = true;
     for (const [id, notice] of this.queued) {
       const thread = this.previous.get(id);
-      if (!thread || (['Approval needed', 'Input needed'].includes(notice.kind) && attention(thread) !== notice.kind) ||
+      if (!thread || !eventEnabled(notice.kind, policy) || (policy.paused && !isAttention(notice.kind)) || (isAttention(notice.kind) && attention(thread) !== notice.kind) ||
         (notice.kind === 'Turn finished' && thread.turnState !== 'completed') ||
         (notice.kind === 'Chat failed' && thread.turnState !== 'error' && thread.sessionStatus !== 'error')) this.queued.delete(id);
     }
-    if (suppressed) return [];
+    if (suppressed || policy.paused) return [];
     const result = [...this.queued.values()];
     this.queued.clear();
     return result;

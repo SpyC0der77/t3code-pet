@@ -9,7 +9,8 @@ export function defaults(): Preferences {
   return { theme: 'follow-t3-code', themeAppearance: 'system', petId: 'lfg', onboardingCompleted: false, notificationsEnabled: false, notificationSound: true, notificationStyle: 'os',
     dataDirectory: join(homedir(), '.t3', 'userdata'), followThreadId: null, blockedProjects: [],
     projectFilter: { mode: 'blocklist', selected: [] }, chatFilter: { mode: 'blocklist', selected: [] }, size: 128,
-    reducedMotion: false, showLabel: true, launchAtLogin: false, position: null };
+    reducedMotion: false, showLabel: true, launchAtLogin: false, position: null,
+    notificationAttention: true, notificationCompletion: true, notificationError: true, notificationsPausedUntil: null };
 }
 
 export function validatePreferences(input: unknown, current: Preferences): Preferences {
@@ -70,11 +71,16 @@ export function validatePreferences(input: unknown, current: Preferences): Prefe
     if (typeof raw.size !== 'number' || ![96, 128, 160].includes(raw.size)) throw new Error('Invalid pet size.');
     next.size = raw.size;
   }
-  for (const key of ['reducedMotion', 'showLabel', 'launchAtLogin', 'onboardingCompleted', 'notificationsEnabled', 'notificationSound'] as const) {
+  for (const key of ['reducedMotion', 'showLabel', 'launchAtLogin', 'onboardingCompleted', 'notificationsEnabled', 'notificationSound', 'notificationAttention', 'notificationCompletion', 'notificationError'] as const) {
     if (key in raw) {
       if (typeof raw[key] !== 'boolean') throw new Error('Invalid preference.');
       next[key] = raw[key];
     }
+  }
+  if ('notificationsPausedUntil' in raw) {
+    const until = raw.notificationsPausedUntil;
+    if (until !== null && (typeof until !== 'number' || !Number.isSafeInteger(until) || until < 0 || until > 8.64e15)) throw new Error('Invalid notification pause.');
+    next.notificationsPausedUntil = until as number | null;
   }
   if ('position' in raw) {
     const pos = raw.position as { x?: unknown; y?: unknown } | null;

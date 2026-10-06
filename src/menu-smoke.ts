@@ -1,8 +1,8 @@
-import { screen, type BrowserWindow } from 'electron';
+import { app, screen, type BrowserWindow } from 'electron';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PetMenu } from './pet-menu';
-import { taskbarWindowCount } from './window-taskbar-smoke';
+import { taskbarWindowCount, checkWindowIcon } from './window-taskbar-smoke';
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory: string, theme: (appearance: 'light' | 'dark') => Promise<void>, settings: (onboarding?: boolean) => void, settingsWindow: () => BrowserWindow | null) {
@@ -92,6 +92,7 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
   checks.settingsFirstClick = await openSettingsOnce('settings');
   if (process.platform === 'win32') checks.settingsTaskbarVisible = await taskbarWindowCount() === 1;
   const createdSettings = settingsWindow();
+  if (process.platform === 'win32' && app.isPackaged && createdSettings) checks.settingsNativeIcons = await checkWindowIcon(createdSettings, directory);
   if (createdSettings && !createdSettings.isDestroyed()) {
     createdSettings.hide();
     checks.settingsHiddenFirstClick = await openSettingsOnce('settings') && settingsWindow() === createdSettings;
@@ -115,6 +116,14 @@ export async function runMenuSmoke(menu: PetMenu, pet: BrowserWindow, directory:
   checks.selected = await win.webContents.executeJavaScript(`document.querySelector('[data-mood=working]').getAttribute('aria-checked')==='true'`);
   await win.webContents.executeJavaScript(`document.querySelector('[data-mood=follow]').click()`); await wait(80);
   checks.follow = menu.view().previewMood === null;
+  win = await show();
+  await win.webContents.executeJavaScript(`document.querySelector('[data-action=pause-notifications]').click()`); await wait(80);
+  const pausedUntil = menu.view().state.preferences.notificationsPausedUntil;
+  checks.pauseAlerts = !!pausedUntil && pausedUntil > Date.now() + 29 * 60_000 && !menu.visible;
+  win = await show();
+  checks.resumeLabel = await win.webContents.executeJavaScript(`document.getElementById('pause-label').textContent==='Resume notifications'`);
+  await win.webContents.executeJavaScript(`document.querySelector('[data-action=pause-notifications]').click()`); await wait(80);
+  checks.resumeAlerts = menu.view().state.preferences.notificationsPausedUntil === null && !menu.visible;
   win = await show();
   const hidden = menu.view().hidden;
   await win.webContents.executeJavaScript(`document.querySelector('[data-action=visibility]').click()`); await wait(80);

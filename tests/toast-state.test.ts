@@ -50,7 +50,7 @@ test('notification style upgrades to OS and rejects invalid values without chang
   assert.throws(() => validatePreferences({notificationStyle:'both'}, custom), /Invalid notification style/);
 });
 
-test('toast bursts retain three newest alerts and replace outdated alerts for the same chat', () => {
+test('attention bursts retain three newest requests and same-chat completion replaces its request', () => {
   const state = new ToastState();
   const first = state.add(notice('a'), false, 0);
   state.add(notice('b'), false, 0);
@@ -61,7 +61,37 @@ test('toast bursts retain three newest alerts and replace outdated alerts for th
   state.add(notice('b', 'Turn finished'), false, 500);
   assert.equal(state.entries.length, 3);
   assert.equal(state.entries.filter(entry => entry.notice.threadId === 'b').length, 1);
-  assert.equal(state.entries.at(-1)!.notice.kind, 'Turn finished');
+  assert.equal(state.entries[0]!.notice.kind, 'Turn finished');
+  assert.equal(state.entries.at(-1)!.notice.kind, 'Approval needed');
+});
+
+test('completion and error bursts cannot displace unresolved attention, including with previews', () => {
+  const state = new ToastState();
+  const request = state.add(notice('approval'), false, 0);
+  for (let i = 0; i < 10; i++) state.add(notice('done' + i, i % 2 ? 'Turn finished' : 'Chat failed'), false, i);
+  assert.equal(state.entries.length, 3);
+  assert.equal(state.entries.at(-1), request);
+  state.add(notice('preview'), true, 20);
+  assert.equal(state.entries.at(-1), request);
+  state.add(notice('input', 'Input needed'), false, 21);
+  state.add(notice('approval2'), false, 22);
+  const requests = [...state.entries];
+  state.add(notice('discarded', 'Turn finished'), false, 23);
+  assert.deepEqual(state.entries, requests);
+  state.dismiss(request.id);
+  state.add(notice('new', 'Turn finished'), false, 24);
+  assert.equal(state.entries[0].notice.threadId, 'new');
+});
+
+test('changing event choices removes disabled alerts while keeping enabled requests and previews', () => {
+  const state = new ToastState();
+  state.add(notice('request'), false, 0);
+  state.add(notice('completed', 'Turn finished'), false, 0);
+  state.add(notice('preview'), true, 0);
+  state.applyPolicy({attention:true,completion:false,error:true,paused:false});
+  assert.deepEqual(state.entries.map(entry => entry.notice.threadId), ['preview', 'request']);
+  state.applyPolicy({attention:false,completion:false,error:true,paused:false});
+  assert.deepEqual(state.entries.map(entry => entry.notice.threadId), ['preview']);
 });
 
 test('hover or keyboard focus pauses expiry and resumes only the remaining time', () => {

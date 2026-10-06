@@ -9,7 +9,6 @@
   <header class="window-header"><img class="app-mark" src="../../assets/icon-transparent.svg" alt=""><strong>T3 Pet</strong><span class="header-detail">Settings</span><div class="header-end"><span id="version"></span></div></header>
   <nav class="settings-tabs" role="tablist" aria-label="Settings">
     <button id="general-tab" type="button" role="tab" aria-selected="true" aria-controls="general-panel">General</button>
-    <button id="chats-tab" type="button" role="tab" aria-selected="false" aria-controls="chats-panel" tabindex="-1">Activity</button>
     <button id="projects-tab" type="button" role="tab" aria-selected="false" aria-controls="projects-panel" tabindex="-1">Filters</button>
     <button id="pet-tab" type="button" role="tab" aria-selected="false" aria-controls="pet-panel" tabindex="-1">Pet</button>
     <button id="notifications-tab" type="button" role="tab" aria-selected="false" aria-controls="notifications-panel" tabindex="-1">Notifications</button>
@@ -26,16 +25,16 @@
       </div>
       <label class="preference-row"><span>Start when I sign in<span class="help">Launch T3 Pet automatically.</span></span><input id="login" type="checkbox"></label>
       <button id="reopen-onboarding" type="button">Run setup again…</button>
-    </section>
-    <section id="chats-panel" class="tab-panel" role="tabpanel" aria-labelledby="chats-tab" hidden>
-      <h1 class="panel-title">Chat activity</h1>
-      <p class="panel-description">Your pet follows your local agents.</p>
-      <div class="connection-status"><div><strong id="connection">Looking for T3 Code...</strong><p id="connection-detail" role="status">Checking your local connection.</p></div><span id="chat-count">0 chats</span></div>
-      <input id="activity-search" type="search" aria-label="Search chat activity" placeholder="Search chats" autocomplete="off" spellcheck="false" aria-controls="chat-activity">
-      <button id="connection-retry" type="button">Check connection</button><p id="connection-recovery" class="help" hidden>Open T3 Code, or choose its data folder below, then check again.</p><p id="activity-error" class="help" role="status" hidden></p>
-      <ul id="chat-activity" class="chat-activity" aria-label="Chat activity"></ul>
-      <p id="activity-empty" class="filter-empty" role="status">Checking your local connection.</p>
-      <details class="data-folder" id="data-folder"><summary>Connection settings</summary><div class="field-group"><label for="directory">T3 Code data folder</label><div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div><p class="help" id="folder-help">Choose the userdata folder containing statev2.sqlite or state.sqlite.</p></div></details>
+      <div class="connection-status"><strong id="connection">Looking for T3 Code...</strong><p id="connection-detail" role="status">Checking your local connection.</p></div>
+      <details class="data-folder" id="data-folder">
+        <summary>Connection settings</summary>
+        <div class="connection-controls">
+          <div class="field-group"><label for="directory">T3 Code data folder</label><div class="folder-row"><input id="directory" type="text" spellcheck="false" autocomplete="off" aria-describedby="folder-help"><button id="browse" type="button">Browse…</button></div><p class="help" id="folder-help">Choose the userdata folder containing statev2.sqlite or state.sqlite.</p></div>
+          <div class="connection-actions"><button id="connection-retry" type="button">Check connection</button><button id="copy-diagnostics" type="button">Copy diagnostics</button></div>
+          <p id="connection-recovery" class="help" hidden>Open T3 Code, or choose its data folder above, then check again.</p>
+          <p id="diagnostics-status" class="help" role="status">Copies versions, connection state, and schema information. No chat titles, messages, credentials, or folder paths.</p>
+        </div>
+      </details>
     </section>
     <section id="projects-panel" class="tab-panel projects-panel" role="tabpanel" aria-labelledby="projects-tab" hidden>
       <h1 class="panel-title">Filters</h1><p class="panel-description">Choose which activity your pet follows. Chats must pass both filters.</p>
@@ -66,6 +65,14 @@
       <div class="field-group"><label for="notification-style">Notification style</label><select id="notification-style" aria-describedby="notification-style-help"><option value="custom">Beside the pet</option><option value="os">System notifications</option></select></div>
       <p class="help" id="notification-style-help">Alerts beside the pet use its theme and do not follow system Do Not Disturb.</p>
       <label class="preference-row"><span>Play sounds<span class="help">Include sound with your alerts.</span></span><input id="notification-sound" type="checkbox"></label>
+      <fieldset class="notification-events"><legend>Alert types</legend>
+        <label><input id="notification-attention" type="checkbox">Approval and input requests</label>
+        <label><input id="notification-completion" type="checkbox">Completed turns</label>
+        <label><input id="notification-error" type="checkbox">Errors</label>
+      </fieldset>
+      <div class="field-group"><label for="notification-pause">Pause alerts</label><select id="notification-pause"><option value="30-minutes">For 30 minutes</option><option value="1-hour">For 1 hour</option><option value="tomorrow">Until tomorrow at midnight</option></select></div>
+      <div class="notification-settings"><button id="pause-notifications" type="button">Pause alerts</button><button id="resume-notifications" type="button" hidden>Resume now</button></div>
+      <p id="notification-pause-status" class="help" role="status">Alerts are not paused. Pause controls apply immediately.</p>
       <div class="notification-settings"><button id="notification-setup" type="button">Configure notification source…</button><button id="test-notification" type="button">Preview notification</button></div>
       <p class="help">Preview uses the selected style without saving. Sound uses your saved preference.</p><p class="help" id="notification-status" role="status">Alerts pause during fullscreen use where supported.</p>
     </section>

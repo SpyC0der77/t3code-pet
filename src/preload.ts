@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { AppState, PetBridge } from './shared';
 
 const bridge: PetBridge = {
+  pauseNotifications: choice => ipcRenderer.invoke('pet:pause-notifications', choice),
+  copyDiagnostics: () => ipcRenderer.invoke('pet:copy-diagnostics'),
   onSettingsExit: listener => {
     const handler = (_event: Electron.IpcRendererEvent, action: unknown) => {
       if (action === 'close' || action === 'onboarding') listener(action);

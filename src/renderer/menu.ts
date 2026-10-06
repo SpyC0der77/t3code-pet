@@ -3,6 +3,7 @@ import type { MenuAction, PetMenuView } from '../pet-menu';
 import { PREVIEW_DURATION_MS } from '../shared';
 import type { PetMood } from '../shared';
 import { headingToSubmenu } from '../menu-pointer';
+import { alertsPaused } from '../notification-policy';
 
 declare global { interface Window { petMenu: {
   onVisible(listener: (visible: boolean) => void): () => void;
@@ -84,6 +85,7 @@ function render(next: PetMenuView) {
   view = next; applyUiTheme(next.state.theme);
   document.documentElement.style.setProperty('--available-height', `${next.layout.availableHeight}px`);
   document.getElementById('visibility-label')!.textContent = next.hidden ? 'Show pet' : 'Hide pet';
+  document.getElementById('pause-label')!.textContent = alertsPaused(next.state.preferences) ? 'Resume notifications' : 'Pause alerts for 30 min';
   for (const node of submenu.querySelectorAll<HTMLElement>('[data-mood]')) node.setAttribute('aria-checked', String(node.dataset.mood === (next.previewMood ?? 'follow')));
   const rect = (node: HTMLElement, r: { x: number; y: number; width: number }) => { node.style.left = `${r.x}px`; node.style.top = `${r.y}px`; node.style.width = `${r.width}px`; };
   rect(primary, next.layout.main);

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, mkdtempSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
+import { rm, copyFile } from 'node:fs/promises';
+import { editWindowsResources } from 'app-builder-lib/out/util/resEdit.js';
 import { resolve, join, dirname } from 'node:path';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -13,8 +14,19 @@ const candidates = (process.platform === 'darwin'
   ? [`mac-${process.arch}/T3 Pet.app/Contents/MacOS/T3 Pet`, 'mac/T3 Pet.app/Contents/MacOS/T3 Pet']
   : process.platform === 'linux' ? [`linux-${process.arch}-unpacked/t3-pet`, 'linux-unpacked/t3-pet'] : ['win-unpacked/T3 Pet.exe'])
   .map(path => join(packageDirectory, path));
-const executable = candidates.map(path => resolve(path)).find(path => existsSync(path));
+let executable = candidates.map(path => resolve(path)).find(path => existsSync(path));
 assert.ok(executable, 'Package the app for this platform before running the packaged test.');
+const installedShortcut = process.platform === 'win32' ? join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'T3 Pet.lnk') : null;
+const installedShortcutBefore = installedShortcut && existsSync(installedShortcut) ? readFileSync(installedShortcut) : null;
+if (process.platform === 'win32') {
+  // Electron's Windows notification shortcut uses the EXE's ProductName,
+  // ignoring app.setName(). Give a test-only copy its own resource identity.
+  const testExecutable = join(dirname(executable), 'T3 Pet test.exe');
+  await copyFile(executable, testExecutable);
+  const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+  await editWindowsResources({file:testExecutable,versionStrings:{ProductName:'T3 Pet test',FileDescription:'T3 Pet test'},fileVersion:version,productVersion:version});
+  executable = testExecutable;
+}
 if (process.platform !== 'win32') {
   const resources = process.platform === 'darwin' ? resolve(dirname(executable), '../Resources') : join(dirname(executable), 'resources');
   const helper = join(resources, 'native', 't3-close');
@@ -58,8 +70,13 @@ try {
   assert.equal(exit, 0, 'Packaged app smoke test failed.');
 } finally { clearTimeout(timeout); }
 const report = JSON.parse(readFileSync(join(directory, 'report.json'), 'utf8'));
+if (installedShortcut) {
+  if (installedShortcutBefore) assert.deepEqual(readFileSync(installedShortcut), installedShortcutBefore, 'Smoke test changed the installed app shortcut.');
+  else assert.equal(existsSync(installedShortcut), false, 'Smoke test created a production app shortcut.');
+}
 assert.ok(report.windowIcon.loaded && report.windowIcon.transparent && report.windowIcon.visible, 'Packaged taskbar icon failed to load with transparency.');
 if (process.platform === 'win32') assert.equal(report.windowIcon.path, join(dirname(executable), 'resources', 'icon.ico'), 'Windows taskbar icon must use the persistent shell resource.');
+if (process.platform === 'win32') assert.ok(Object.values(report.shellIdentity).every(Boolean), 'Smoke identity or Windows shortcut icon failed.');
 assert.notEqual(report.hoverOpened, false, 'The first hover did not show the native chat-list window.');
 if (!testHover) assert.notEqual(report.hoverAfterMenu, false, 'Hover did not reopen after context-menu dismissal.');
 assert.ok(Object.values(report.hoverHierarchy).every(Boolean), 'Subagent hover ordering, labels, or layout failed.');
@@ -91,6 +108,7 @@ if (testHover) {
   process.exit(0);
 }
 assert.ok(Object.values(report.notificationChoice).every(Boolean), 'Notification choice did not save or discard correctly.');
+assert.ok(Object.values(report.notificationControls).every(Boolean), 'Alert pause, event settings, or diagnostics clipboard failed.');
 assert.ok(Object.values(report.themePreferences).every(Boolean), 'Independent theme save, discard, live updates, or follow behavior failed.');
 assert.equal(report.onboardingInitialization, true, 'Onboarding submitted unhydrated preferences.');
 assert.equal(report.onboardingInitializationRetry, true, 'Onboarding did not recover from a failed state load.');
@@ -128,7 +146,7 @@ assert.equal(report.projectBlocklist.workingCount, 1);
 assert.ok(report.projectBlocklist.footerFits);
 assert.ok(Object.values(report.settingsDraft).every(Boolean), 'Search, draft retention, or discard failed.');
 assert.ok(Object.values(report.settingsUx).every(Boolean), 'Settings exit guard, failed-save recovery, or save-on-close failed.');
-assert.ok(Object.values(report.chatActivity).every(Boolean), 'Chat activity did not load or search correctly.');
+assert.ok(Object.values(report.settingsConnection).every(Boolean), 'General connection controls, directory draft, or recovery failed.');
 assert.ok(Object.values(report.selectionFilters).every(Boolean), 'Project/chat filter modes, search, intersection, or discard failed.');
 assert.ok(!report.advancedCompact.overflow && report.advancedCompact.footerFits && report.advancedCompact.chatControlsVisible, 'Advanced filters are inaccessible in the compact window.');
 assert.ok(!report.settingsCompact.overflow && report.settingsCompact.footerFits, 'Compact settings layout overflowed.');

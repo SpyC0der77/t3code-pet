@@ -44,6 +44,10 @@ export interface Preferences {
   onboardingCompleted: boolean;
   notificationsEnabled: boolean;
   notificationSound: boolean;
+  notificationAttention: boolean;
+  notificationCompletion: boolean;
+  notificationError: boolean;
+  notificationsPausedUntil: number | null;
   notificationStyle: 'custom' | 'os';
   dataDirectory: string;
   followThreadId: string | null;
@@ -76,6 +80,8 @@ export interface AppState {
 }
 
 export interface PetBridge {
+  pauseNotifications(choice: '30-minutes' | '1-hour' | 'tomorrow' | 'resume'): Promise<AppState>;
+  copyDiagnostics(): Promise<void>;
   onSettingsExit(listener: (action: 'close' | 'onboarding') => void): () => void;
   completeSettingsExit(action: 'close' | 'onboarding'): void;
   onSettingsTab(listener: (tab: 'notifications') => void): () => void;

@@ -2,9 +2,50 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ChatNotifications } from '../src/notifications';
 import type { Snapshot, ThreadStatus } from '../src/shared';
+import type { NotificationPolicy } from '../src/notification-policy';
 
 const thread = (patch: Partial<ThreadStatus> = {}): ThreadStatus => ({ id: 'a', title: 'Example chat', project: '', provider: 'anything', sessionStatus: 'running', turnId: 'turn', turnState: 'running', completedAt: null, updatedAt: '2026-09-30', pendingApproval: 0, pendingInput: 0, ...patch });
 const snapshot = (...threads: ThreadStatus[]): Snapshot => ({ connected: true, message: '', checkedAt: Date.now(), threads });
+const policy: NotificationPolicy = { attention: true, completion: true, error: true, paused: false };
+
+test('pause keeps live tracking and resumes only still-pending requests without replaying timed alerts', () => {
+  const engine = new ChatNotifications();
+  engine.update(snapshot(thread(), thread({id:'b'}), thread({id:'c'})), true, null, false);
+  const paused = { ...policy, paused: true };
+  const events = snapshot(thread({pendingApproval:1}), thread({id:'b', turnState:'completed'}), thread({id:'c',turnState:'error'}));
+  assert.deepEqual(engine.update(events, true, null, false, paused), []);
+  assert.deepEqual(engine.update(events, true, null, false, policy).map(n => n.kind), ['Approval needed']);
+  assert.deepEqual(engine.update(events, true, null, false, policy), []);
+  engine.update(events, true, null, false, paused);
+  assert.deepEqual(engine.update(snapshot(thread()), true, null, false, policy), []);
+});
+
+test('pause requeues visible requests and survives a paused launch, but disabled types remain silent', () => {
+  const engine = new ChatNotifications();
+  engine.update(snapshot(thread()), true, null, false);
+  const waiting = snapshot(thread({pendingInput:1}));
+  assert.equal(engine.update(waiting, true, null, false).length, 1);
+  engine.update(waiting, true, null, false, {...policy,paused:true});
+  assert.equal(engine.update(waiting, true, null, false, policy).length, 1);
+  engine.reset();
+  engine.update(waiting, true, null, false, {...policy,paused:true});
+  assert.deepEqual(engine.update(waiting, true, null, false, {...policy,attention:false}), []);
+  assert.deepEqual(engine.update(waiting, true, null, false, policy), []);
+});
+
+test('event toggles filter both fresh events and fullscreen-queued events without replay on reenable', () => {
+  for (const [key, patch] of [
+    ['attention', {pendingApproval:1}], ['completion', {turnState:'completed'}], ['error', {turnState:'error'}],
+  ] as const) {
+    const engine = new ChatNotifications();
+    engine.update(snapshot(thread()), true, null, false);
+    engine.update(snapshot(thread(patch)), true, null, true);
+    assert.deepEqual(engine.update(snapshot(thread(patch)), true, null, false, {...policy,[key]:false}), []);
+    assert.deepEqual(engine.update(snapshot(thread(patch)), true, null, false, policy), []);
+    engine.update(snapshot(thread()), true, null, false);
+    assert.deepEqual(engine.update(snapshot(thread(patch)), true, null, false, {...policy,[key]:false}), []);
+  }
+});
 test('alerts only on new events, without repeats on polling or reconnection', () => {
   const engine = new ChatNotifications();
   assert.deepEqual(engine.update(snapshot(thread({ turnState: 'completed' })), true, null, false), []);

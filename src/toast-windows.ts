@@ -4,6 +4,7 @@ import type { ChatNotification } from './notifications';
 import type { UiTheme } from './t3-theme';
 import type { Snapshot } from './shared';
 import { ToastState } from './toast-state';
+import type { NotificationPolicy } from './notification-policy';
 import { toastPlacement, type ToastRect } from './toast-layout';
 
 export interface ToastView {
@@ -101,6 +102,7 @@ export class ToastWindows {
   }
   dismiss(id: number) { this.state.dismiss(id); this.sync(); }
   reconcile(snapshot: Snapshot) { const count = this.state.entries.length; this.state.reconcile(snapshot); if (count !== this.state.entries.length) this.sync(); }
+  applyPolicy(policy: NotificationPolicy) { const count = this.state.entries.length; this.state.applyPolicy(policy); if (count !== this.state.entries.length) this.sync(); }
   pause(sender: WebContents, paused: boolean) {
     if (!this.isSender(sender)) return;
     this.paused = paused;
