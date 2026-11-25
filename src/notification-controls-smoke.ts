@@ -1,8 +1,9 @@
 import { clipboard, ClipboardItem, type BrowserWindow } from 'electron';
 
 export async function runNotificationControlsSmoke(win: BrowserWindow) {
-  // Snapshot every representation before exercising the native bridge.
-  const originalClipboard = await Promise.all((await clipboard.read()).map(async item => new ClipboardItem(
+  // Snapshot every representation before exercising the native bridge. An empty
+  // clipboard (fresh CI runners) yields items with no types, which ClipboardItem rejects.
+  const originalClipboard = await Promise.all((await clipboard.read()).filter(item => item.types.length > 0).map(async item => new ClipboardItem(
     Object.fromEntries(await Promise.all(item.types.map(async type => [type, await item.getType(type)]))),
   )));
   try {
@@ -54,5 +55,8 @@ export async function runNotificationControlsSmoke(win: BrowserWindow) {
     const report = JSON.parse(await clipboard.readText());
     return { ...checks, clipboard: report.app === 'T3 Pet' && !!report.runtime.electron && !!report.databaseSchema,
       privateFieldsOmitted: !('threads' in report) && !('message' in report) && !('dataDirectory' in report) };
-  } finally { await clipboard.write(originalClipboard); }
+  } finally {
+    if (originalClipboard.length) await clipboard.write(originalClipboard);
+    else clipboard.clear();
+  }
 }
