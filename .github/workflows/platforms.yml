@@ -9,7 +9,7 @@ jobs:
         include:
           - os: windows-latest
             target: win
-          - os: macos-14
+          - os: macos-15
             target: mac
           - os: ubuntu-22.04
             target: linux
